@@ -1,5 +1,5 @@
 # ApnaGhar
-# Smart Real Estate Platform with Real-Time Construction Tracking, AI, and Blockchain
+# A Smart and Secure Real Estate Platform 
 
 ApnaGhar is a comprehensive real estate platform designed to solve the challenges of uncertainty, lack of transparency, and inefficient communication in property transactions. Our mission is to create a seamless, transparent, and trustworthy experience for all stakeholders—from buyers and investors to builders and lawyers. We will achieve this by integrating cutting-edge technologies like real-time construction tracking, an AI-powered chatbot, and blockchain security.
 
