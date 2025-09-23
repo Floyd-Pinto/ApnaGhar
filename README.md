@@ -35,21 +35,36 @@ The following features are part of our long-term vision and will be implemented 
   * **Financial Forecaster**: A comprehensive tool that calculates the long-term total cost of ownership, including taxes, maintenance, and insurance.
   * **Agent Performance Ledger**: A blockchain-based system to create a transparent, tamper-proof record of a real estate agent's transaction history and performance metrics.
 
-## Detailed Technical Stack
+## Detailed Technical Stack  
 
-Our chosen tech stack provides a robust and scalable foundation for the project:
+Our chosen tech stack provides a robust and scalable foundation for the project:  
 
-  * **Frontend**: `React` / `Next.js` for building a fast and dynamic user interface.
-  * **Backend**: `Django`, a high-level Python web framework, for rapid, secure, and clean development.
-  * **Database**: `PostgreSQL` for reliable, scalable, and structured data storage.
-  * **Blockchain**:
-      * **Core Platform**: We will use a `Hyperledger` framework, specifically **Hyperledger Fabric**. Unlike public, permissionless blockchains, Hyperledger is a private, permissioned network. This means we can control who can join and what data they can see, which is essential for a platform dealing with sensitive financial and property data.
-      * **Smart Contracts (Chaincode)**: Written in languages like `Go`, `JavaScript`, or `Java`, these will handle all core transaction logic, including property tokenization, fractional share transfers, and secure booking agreements.
-      * **Data Privacy and Verification**: We will implement `IPFS` (InterPlanetary File System) for storing and verifying the integrity of uploaded media (photos, videos, and legal documents). The hash of each file will be stored on the Hyperledger ledger. For sensitive data, Hyperledger Fabric’s **channels** will allow private, secure communication between specific parties (e.g., a buyer and a builder), ensuring confidentiality.
-  * **AI Integration**: We will use the `OpenAI API` for developing and integrating our AI chatbot.
-  * **Push Notifications**: `Firebase Cloud Messaging` will be used to enable real-time updates and push notifications across devices.
-  * **Hosting**: We will leverage a cloud platform like `AWS` or `Google Cloud Platform` for a scalable and robust operating environment.
-  * **Version Control**: `Git` & `GitHub` for collaborative development.
+- **Frontend**:  
+  React / Next.js for building a fast and dynamic user interface.  
+
+- **Backend**:  
+  Django, a high-level Python web framework, for rapid, secure, and clean development.  
+
+- **Database**:  
+  PostgreSQL for reliable, scalable, and structured data storage.  
+
+- **Blockchain**:  
+  - **Core Platform**: Ethereum (or Ethereum-compatible chains like Polygon)  
+  - **Smart Contracts**: Written in Solidity, handling property tokenization, fractional ownership, and booking agreements  
+  - **Data Privacy and Verification**: Media files (photos, videos, and legal documents) will be stored on IPFS. Each file’s hash will be stored on the blockchain for verification. Sensitive information can be encrypted before upload.  
+
+- **AI Integration**:  
+  OpenAI API for chatbot functionality.  
+
+- **Push Notifications**:  
+  Firebase Cloud Messaging for real-time alerts across devices.  
+
+- **Hosting**:  
+  Cloud infrastructure on AWS or Google Cloud Platform for scalability and reliability.  
+
+- **Version Control**:  
+  Git & GitHub for collaborative development.  
+
 
 ## Getting Started
 
