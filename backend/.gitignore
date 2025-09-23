@@ -1,8 +1,0 @@
-# Virtual Environment
-venv/
-
-# Python cache
-__pycache__/
-
-# Local database file (if you use it for testing)
-*.sqlite3

@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.env
+db.sqlite3
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+backend/.env
+
+# Next.js
+.next/
+out/
+build/
+node_modules/
+.env*.local
+frontend/.env
+
+# misc
+.DS_Store
+*.pem
+.vercel
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
