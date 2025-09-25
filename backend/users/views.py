@@ -13,6 +13,11 @@ class LoginView(TokenObtainPairView):
     permission_classes = (AllowAny,)
     serializer_class = LoginSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         
@@ -20,13 +25,20 @@ class LoginView(TokenObtainPairView):
             serializer.is_valid(raise_exception=True)
         except Exception as e:
             return Response({
-                "error": "Invalid credentials",
-                "details": str(e)
+                "error": "Invalid credentials"
             }, status=status.HTTP_401_UNAUTHORIZED)
 
         return Response({
             "success": "Login successful",
-            "tokens": serializer.validated_data
+            "tokens": {
+                "access": serializer.validated_data.get('access'),
+                "refresh": serializer.validated_data.get('refresh')
+            },
+            "user": {
+                "id": serializer.validated_data.get('id'),
+                "username": serializer.validated_data.get('username'),
+                "email": serializer.validated_data.get('email')
+            }
         }, status=status.HTTP_200_OK)
 
 class RegisterView(generics.CreateAPIView):

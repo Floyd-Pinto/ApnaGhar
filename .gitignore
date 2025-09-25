@@ -40,3 +40,5 @@ frontend/.env
 # Logs
 logs/
 *.log
+*.env
+.env.*
