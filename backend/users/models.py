@@ -11,8 +11,30 @@ class CustomUser(AbstractUser):
     last_name = models.CharField(max_length=150)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    # phone_number = models.CharField(max_length=15, blank=True, null=True)
-    # profile_picture = models.URLField(max_length=255, blank=True, null=True)
+    
+    # Profile fields
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    bio = models.TextField(max_length=500, blank=True, null=True)
+    avatar = models.URLField(max_length=255, blank=True, null=True)
+    
+    # Preferences
+    theme_preference = models.CharField(
+        max_length=10, 
+        choices=[('light', 'Light'), ('dark', 'Dark')], 
+        default='light'
+    )
+    language = models.CharField(max_length=10, default='en')
+    timezone = models.CharField(max_length=50, default='UTC')
+    
+    # Notification preferences
+    email_notifications = models.BooleanField(default=True)
+    push_notifications = models.BooleanField(default=False)
+    marketing_emails = models.BooleanField(default=False)
+    
+    # Privacy settings
+    profile_visibility = models.BooleanField(default=True)
+    show_activity_status = models.BooleanField(default=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']

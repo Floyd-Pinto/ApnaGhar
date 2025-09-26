@@ -75,3 +75,42 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop('password2', None)
         user = User.objects.create(**validated_data)
         return user
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    """Serializer for user profile information"""
+    
+    class Meta:
+        model = User
+        fields = (
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'phone', 'address', 'bio', 'avatar',
+            'theme_preference', 'language', 'timezone',
+            'email_notifications', 'push_notifications', 'marketing_emails',
+            'profile_visibility', 'show_activity_status',
+            'date_joined', 'is_active', 'is_staff'
+        )
+        read_only_fields = ('id', 'username', 'date_joined', 'is_active', 'is_staff')
+
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating user profile"""
+    
+    class Meta:
+        model = User
+        fields = (
+            'first_name', 'last_name', 'phone', 'address', 'bio', 'avatar',
+            'theme_preference', 'language', 'timezone',
+            'email_notifications', 'push_notifications', 'marketing_emails',
+            'profile_visibility', 'show_activity_status'
+        )
+    
+    def validate_phone(self, value):
+        if value and len(value) < 10:
+            raise serializers.ValidationError("Phone number must be at least 10 digits.")
+        return value
+    
+    def validate_bio(self, value):
+        if value and len(value) > 500:
+            raise serializers.ValidationError("Bio must not exceed 500 characters.")
+        return value
