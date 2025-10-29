@@ -174,6 +174,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
     "http://172.20.10.9:8080",
+    "https://apnaghar-5kyvs9tza-floyds-projects-498299bc.vercel.app/",  # Replace with your actual frontend URL
+    "https://your-frontend-name.netlify.app",  # If using Netlify
+    "https://apnaghar-2emb.onrender.com/",  # If using Render
 ]
 CORS_ALLOW_HEADERS = [
     'accept',
