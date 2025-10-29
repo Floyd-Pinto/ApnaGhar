@@ -6,6 +6,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ const RegisterPage: React.FC = () => {
     password2: '',
     first_name: '',
     last_name: '',
+    role: 'buyer' as 'buyer' | 'builder',
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -131,6 +133,30 @@ const RegisterPage: React.FC = () => {
                 onChange={handleChange}
                 placeholder="john@example.com"
               />
+            </div>
+
+            <div className="space-y-3">
+              <Label>I am a</Label>
+              <RadioGroup
+                value={formData.role}
+                onValueChange={(value) => setFormData({ ...formData, role: value as 'buyer' | 'builder' })}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2 border rounded-lg p-4 flex-1 cursor-pointer hover:bg-accent">
+                  <RadioGroupItem value="buyer" id="buyer" />
+                  <Label htmlFor="buyer" className="cursor-pointer flex-1">
+                    <div className="font-semibold">Buyer</div>
+                    <div className="text-sm text-muted-foreground">Looking to buy property</div>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 border rounded-lg p-4 flex-1 cursor-pointer hover:bg-accent">
+                  <RadioGroupItem value="builder" id="builder" />
+                  <Label htmlFor="builder" className="cursor-pointer flex-1">
+                    <div className="font-semibold">Builder</div>
+                    <div className="text-sm text-muted-foreground">Selling or listing property</div>
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
 
             <div className="space-y-2">

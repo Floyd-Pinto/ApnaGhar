@@ -42,7 +42,8 @@ class LoginSerializer(serializers.Serializer):
                 'access': str(refresh.access_token),
                 'id': str(user.id),
                 'username': user.username,
-                'email': user.email
+                'email': user.email,
+                'role': user.role
             }
         
         raise serializers.ValidationError(
@@ -53,16 +54,18 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
+    role = serializers.ChoiceField(choices=[('buyer', 'Buyer'), ('builder', 'Builder')], required=True)
 
     class Meta:
         model = User
         fields = ('username', 'email', 'password', 'password2', 
-                 'first_name', 'last_name')
+                 'first_name', 'last_name', 'role')
         extra_kwargs = {
             'first_name': {'required': True},
             'last_name': {'required': True},
             'email': {'required': True},
-            'username': {'required': True}
+            'username': {'required': True},
+            'role': {'required': True}
         }
 
     def validate(self, attrs):
@@ -86,14 +89,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'id', 'username', 'email', 'first_name', 'last_name',
+            'id', 'username', 'email', 'first_name', 'last_name', 'role',
             'phone', 'address', 'bio', 'avatar',
             'theme_preference', 'language', 'timezone',
             'email_notifications', 'push_notifications', 'marketing_emails',
             'profile_visibility', 'show_activity_status',
             'date_joined', 'is_active', 'is_staff'
         )
-        read_only_fields = ('id', 'username', 'date_joined', 'is_active', 'is_staff')
+        read_only_fields = ('id', 'username', 'role', 'date_joined', 'is_active', 'is_staff')
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):

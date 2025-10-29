@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PropertyCard from '@/components/PropertyCard';
 import TimelineItem from '@/components/TimelineItem';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   TrendingUp, 
   Eye, 
@@ -24,7 +24,8 @@ import propertyExample2 from '@/assets/property-example-2.jpg';
 import constructionUpdate1 from '@/assets/construction-update-1.jpg';
 
 const Dashboard = () => {
-  const [userType, setUserType] = useState<'investor' | 'builder'>('investor');
+  const { user } = useAuth();
+  const userType = user?.role || 'buyer';
 
   // Mock data for investor dashboard
   const investments = [
@@ -366,25 +367,18 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">
-              {userType === 'investor' ? 'My Investment Dashboard' : 'My Projects Dashboard'}
+              {userType === 'buyer' ? 'My Properties Dashboard' : 'My Projects Dashboard'}
             </h1>
             <p className="text-muted-foreground mt-2">
-              {userType === 'investor' 
-                ? 'Track your real estate investments and portfolio performance'
-                : 'Manage your projects and engage with investors'
+              {userType === 'buyer' 
+                ? 'Track your real estate investments and property interests'
+                : 'Manage your projects and engage with buyers'
               }
             </p>
           </div>
-          
-          <Tabs value={userType} onValueChange={(value) => setUserType(value as 'investor' | 'builder')}>
-            <TabsList>
-              <TabsTrigger value="investor">Investor View</TabsTrigger>
-              <TabsTrigger value="builder">Builder View</TabsTrigger>
-            </TabsList>
-          </Tabs>
         </div>
 
-        {userType === 'investor' ? <InvestorDashboard /> : <BuilderDashboard />}
+        {userType === 'buyer' ? <InvestorDashboard /> : <BuilderDashboard />}
       </div>
     </div>
   );

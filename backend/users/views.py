@@ -37,7 +37,8 @@ class LoginView(TokenObtainPairView):
             "user": {
                 "id": serializer.validated_data.get('id'),
                 "username": serializer.validated_data.get('username'),
-                "email": serializer.validated_data.get('email')
+                "email": serializer.validated_data.get('email'),
+                "role": serializer.validated_data.get('role')
             }
         }, status=status.HTTP_200_OK)
 
@@ -46,10 +47,12 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
     def create(self, request, *args, **kwargs):
+        print("Registration data received:", request.data)  # Debug log
         serializer = self.get_serializer(data=request.data)
         
         if not serializer.is_valid():
-            # Return detailed validation errors
+            # Log and return detailed validation errors
+            print("Registration validation errors:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         user = serializer.save()
@@ -68,7 +71,8 @@ class RegisterView(generics.CreateAPIView):
                 "username": user.username,
                 "email": user.email,
                 "first_name": user.first_name,
-                "last_name": user.last_name
+                "last_name": user.last_name,
+                "role": user.role
             }
         }, status=status.HTTP_201_CREATED)
 

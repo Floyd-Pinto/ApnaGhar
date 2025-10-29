@@ -4,11 +4,17 @@ from django.contrib.auth.hashers import make_password
 import uuid
 
 class CustomUser(AbstractUser):
+    USER_ROLES = [
+        ('buyer', 'Buyer'),
+        ('builder', 'Builder'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, unique=True)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
+    role = models.CharField(max_length=10, choices=USER_ROLES, default='buyer')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

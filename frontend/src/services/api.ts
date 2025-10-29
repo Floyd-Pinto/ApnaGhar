@@ -14,6 +14,7 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
+  role: 'buyer' | 'builder';
   phone?: string;
   address?: string;
   bio?: string;
@@ -69,6 +70,7 @@ export interface RegisterRequest {
   password2: string;
   first_name: string;
   last_name: string;
+  role: 'buyer' | 'builder';
 }
 
 // Helper function to get auth headers
