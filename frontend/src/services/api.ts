@@ -84,20 +84,31 @@ const getAuthHeaders = () => {
 export const authAPI = {
   // Login user
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
-    const response = await fetch(joinURL(API_BASE_URL, 'api/auth/login/'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
+    const url = joinURL(API_BASE_URL, 'api/auth/login/');
+    console.log("Login Endpoint attempt to:", url);
+    console.log("API_BASE_URL:", API_BASE_URL);
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include credentials for CORS
+        body: JSON.stringify(credentials),
+      });
+      
+      if (!response.ok) {
+        console.log("Response not ok:", response);
+        const error = await response.json();
+        throw new Error(error.error || 'Login failed');
+      }
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
+      return response.json();
+    } catch (error) {
+      console.error("Login fetch error:", error);
+      throw error;
     }
-
-    return response.json();
   },
 
   // Register user

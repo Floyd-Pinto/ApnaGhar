@@ -45,6 +45,33 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        
+        if not serializer.is_valid():
+            # Return detailed validation errors
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = serializer.save()
+        
+        # Generate tokens for the new user
+        refresh = RefreshToken.for_user(user)
+        
+        return Response({
+            "success": "User registered successfully",
+            "tokens": {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh)
+            },
+            "user": {
+                "id": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name
+            }
+        }, status=status.HTTP_201_CREATED)
+
 class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)
 
