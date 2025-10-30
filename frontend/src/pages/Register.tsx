@@ -18,7 +18,8 @@ const RegisterPage: React.FC = () => {
     last_name: '',
     role: 'buyer' as 'buyer' | 'builder',
   });
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [generalError, setGeneralError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const { register, isAuthenticated } = useAuth();
@@ -36,29 +37,59 @@ const RegisterPage: React.FC = () => {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setErrors({});
+    setGeneralError('');
 
-    // Basic validation
+    // Validate passwords match
     if (formData.password !== formData.password2) {
-      setError('Passwords do not match');
+      setErrors({ password2: ['Passwords do not match'] });
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
+      setErrors({ password: ['Password must be at least 8 characters long'] });
       return;
     }
 
     setIsLoading(true);
-
     try {
       await register(formData);
-      // After successful registration and auto-login, redirect to dashboard
       navigate('/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      
+      // Parse backend validation errors
+      if (err.response && err.response.data) {
+        const backendErrors = err.response.data;
+        
+        // Check if it's a field-specific error object
+        if (typeof backendErrors === 'object' && !Array.isArray(backendErrors)) {
+          const parsedErrors: Record<string, string[]> = {};
+          
+          Object.keys(backendErrors).forEach(field => {
+            if (Array.isArray(backendErrors[field])) {
+              parsedErrors[field] = backendErrors[field];
+            } else if (typeof backendErrors[field] === 'string') {
+              parsedErrors[field] = [backendErrors[field]];
+            }
+          });
+          
+          // Check if we have field-specific errors or a general error message
+          if (Object.keys(parsedErrors).length > 0) {
+            setErrors(parsedErrors);
+          } else {
+            setGeneralError(backendErrors.detail || backendErrors.message || 'Registration failed');
+          }
+        } else if (typeof backendErrors === 'string') {
+          setGeneralError(backendErrors);
+        } else {
+          setGeneralError('Registration failed');
+        }
+      } else {
+        setGeneralError(err.message || 'Registration failed');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -75,9 +106,9 @@ const RegisterPage: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
+            {generalError && (
               <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>{generalError}</AlertDescription>
               </Alert>
             )}
             
@@ -92,7 +123,11 @@ const RegisterPage: React.FC = () => {
                   value={formData.first_name}
                   onChange={handleChange}
                   placeholder="John"
+                  className={errors.first_name ? 'border-red-500' : ''}
                 />
+                {errors.first_name && (
+                  <p className="text-sm text-red-500">{errors.first_name.join(', ')}</p>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -105,7 +140,11 @@ const RegisterPage: React.FC = () => {
                   value={formData.last_name}
                   onChange={handleChange}
                   placeholder="Doe"
+                  className={errors.last_name ? 'border-red-500' : ''}
                 />
+                {errors.last_name && (
+                  <p className="text-sm text-red-500">{errors.last_name.join(', ')}</p>
+                )}
               </div>
             </div>
 
@@ -119,7 +158,11 @@ const RegisterPage: React.FC = () => {
                 value={formData.username}
                 onChange={handleChange}
                 placeholder="johndoe"
+                className={errors.username ? 'border-red-500' : ''}
               />
+              {errors.username && (
+                <p className="text-sm text-red-500">{errors.username.join(', ')}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -132,7 +175,11 @@ const RegisterPage: React.FC = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="john@example.com"
+                className={errors.email ? 'border-red-500' : ''}
               />
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email.join(', ')}</p>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -157,6 +204,9 @@ const RegisterPage: React.FC = () => {
                   </Label>
                 </div>
               </RadioGroup>
+              {errors.role && (
+                <p className="text-sm text-red-500">{errors.role.join(', ')}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -169,7 +219,11 @@ const RegisterPage: React.FC = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Enter your password"
+                className={errors.password ? 'border-red-500' : ''}
               />
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password.join(', ')}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -182,7 +236,11 @@ const RegisterPage: React.FC = () => {
                 value={formData.password2}
                 onChange={handleChange}
                 placeholder="Confirm your password"
+                className={errors.password2 ? 'border-red-500' : ''}
               />
+              {errors.password2 && (
+                <p className="text-sm text-red-500">{errors.password2.join(', ')}</p>
+              )}
             </div>
 
             <Button

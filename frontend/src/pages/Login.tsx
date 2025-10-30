@@ -12,7 +12,8 @@ const LoginPage: React.FC = () => {
     username_or_email: '',
     password: '',
   });
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [generalError, setGeneralError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const { login, isAuthenticated } = useAuth();
@@ -33,14 +34,46 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setErrors({});
+    setGeneralError('');
     setIsLoading(true);
 
     try {
       await login(formData);
       // Navigation will be handled by the Navigate component above
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      
+      // Parse backend validation errors
+      if (err.response && err.response.data) {
+        const backendErrors = err.response.data;
+        
+        // Check if it's a field-specific error object
+        if (typeof backendErrors === 'object' && !Array.isArray(backendErrors)) {
+          const parsedErrors: Record<string, string[]> = {};
+          
+          Object.keys(backendErrors).forEach(field => {
+            if (Array.isArray(backendErrors[field])) {
+              parsedErrors[field] = backendErrors[field];
+            } else if (typeof backendErrors[field] === 'string') {
+              parsedErrors[field] = [backendErrors[field]];
+            }
+          });
+          
+          // Check if we have field-specific errors or a general error message
+          if (Object.keys(parsedErrors).length > 0 && !backendErrors.detail) {
+            setErrors(parsedErrors);
+          } else {
+            setGeneralError(backendErrors.detail || backendErrors.message || 'Login failed');
+          }
+        } else if (typeof backendErrors === 'string') {
+          setGeneralError(backendErrors);
+        } else {
+          setGeneralError('Login failed');
+        }
+      } else {
+        setGeneralError(err.message || 'Login failed');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -57,9 +90,9 @@ const LoginPage: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
+            {generalError && (
               <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>{generalError}</AlertDescription>
               </Alert>
             )}
             
@@ -73,7 +106,11 @@ const LoginPage: React.FC = () => {
                 value={formData.username_or_email}
                 onChange={handleChange}
                 placeholder="Enter your username or email"
+                className={errors.username_or_email ? 'border-red-500' : ''}
               />
+              {errors.username_or_email && (
+                <p className="text-sm text-red-500">{errors.username_or_email.join(', ')}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -86,7 +123,11 @@ const LoginPage: React.FC = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Enter your password"
+                className={errors.password ? 'border-red-500' : ''}
               />
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password.join(', ')}</p>
+              )}
             </div>
 
             <Button
