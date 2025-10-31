@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',  # Required by allauth
     'rest_framework',
+    'rest_framework.authtoken',  # Required by dj-rest-auth
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
@@ -238,3 +239,11 @@ SOCIALACCOUNT_CALLBACK_URL = os.getenv('BACKEND_URL', 'https://apnaghar-2emb.onr
 # After social login, redirect to frontend
 ACCOUNT_ADAPTER = 'users.adapters.CustomAccountAdapter'
 SOCIALACCOUNT_ADAPTER = 'users.adapters.CustomSocialAccountAdapter'
+
+# dj-rest-auth configuration to use JWT
+REST_AUTH = {
+    'USE_JWT': True,
+    'JWT_AUTH_HTTPONLY': False,
+    'JWT_AUTH_COOKIE': None,
+    'JWT_AUTH_REFRESH_COOKIE': None,
+}
