@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,12 @@ import {
   Bell,
   Settings,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Search,
+  Menu,
+  MapPin,
+  Mic,
+  User
 } from 'lucide-react';
 import propertyExample1 from '@/assets/property-example-1.jpg';
 import propertyExample2 from '@/assets/property-example-2.jpg';
@@ -361,16 +366,124 @@ const Dashboard = () => {
     </div>
   );
 
+  // Search state for the top hero search (only affects the header area)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTab, setSelectedTab] = useState<string>('buy');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Minimal behavior for now; wire to real search later
+    console.log('Search submitted', { selectedTab, searchQuery });
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
+      {/* Large top header + hero to resemble 99acres */}
+      <div className="relative">
+        <div className="sticky top-0 z-50">
+          <div className="w-full bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 text-white">
+            <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="text-2xl font-extrabold">ApnaGhar</div>
+                <div className="hidden lg:flex items-center text-sm opacity-90">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Buy in Western Mumbai
+                </div>
+              </div>
+
+              <nav className="hidden md:flex items-center space-x-6 text-sm">
+                <a className="hover:underline" href="#">For Buyers</a>
+                <a className="hover:underline" href="#">For Tenants</a>
+                <a className="hover:underline" href="#">For Owners</a>
+                <a className="hover:underline" href="#">For Dealers / Builders</a>
+                <a className="hover:underline" href="#">Insights</a>
+              </nav>
+
+              <div className="flex items-center space-x-3">
+                <Button variant="outline" className="text-sm">Post property <span className="ml-2 text-xs bg-green-500 text-white px-2 rounded">FREE</span></Button>
+                <Bell className="h-5 w-5 text-white/90" />
+                <User className="h-6 w-6 text-white/90" />
+                <Menu className="h-6 w-6 text-white/90 md:hidden" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Hero image */}
+        <div className="w-full h-[420px] bg-slate-800">
+          <div className="relative w-full h-full overflow-hidden">
+            <img src={propertyExample1} alt="hero" className="w-full h-full object-cover opacity-95" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/40" />
+
+            {/* Right-side hero content */}
+            <div className="absolute right-10 top-1/3 max-w-lg text-right text-white">
+              <h2 className="text-3xl font-bold mb-3">JOY AURA</h2>
+              <p className="text-sm opacity-90 mb-4">100% TRIPARTY PLOT AT ULWE, NAVI MUMBAI — Explore curated listings and projects</p>
+              <Button variant="outline" className="text-white">Explore Now</Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Search card that overlaps the hero (attached visually to the hero bottom) */}
+        <div className="-mt-14">
+          <div className="max-w-4xl mx-auto bg-card p-4 rounded-xl shadow-lg">
+            {/* Small secondary nav / tabs attached to the top of search */}
+            <div className="mb-3">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {['buy','rent','newlaunch','commercial','plots','projects'].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setSelectedTab(t)}
+                    className={`px-4 py-2 rounded-md text-sm font-medium ${selectedTab === t ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground bg-transparent'}`}>
+                    {t === 'newlaunch' ? 'New Launch' : t === 'plots' ? 'Plots/Land' : t.charAt(0).toUpperCase() + t.slice(1)}
+                  </button>
+                ))}
+
+                <button className="ml-3 px-3 py-1 text-sm bg-green-50 text-green-600 rounded-md border border-green-200">
+                  Post Property <span className="ml-2 text-xs bg-green-500 text-white px-2 rounded">FREE</span>
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleSearch} className="flex flex-col md:flex-row items-center gap-3">
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={selectedTab === 'projects' ? 'Search projects, locations, builders...' : 'Search city, locality or project...'}
+                className="flex-1 px-4 py-3 rounded-md border border-input bg-transparent text-foreground"
+              />
+
+              <select className="w-44 px-3 py-3 rounded-md border border-input bg-background text-foreground">
+                <option>All Residential</option>
+                <option>All</option>
+                <option>Premium</option>
+              </select>
+
+              <div className="flex items-center space-x-2">
+                <button type="button" className="w-10 h-10 rounded-full bg-background border border-input flex items-center justify-center text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                </button>
+                <button type="button" className="w-10 h-10 rounded-full bg-background border border-input flex items-center justify-center text-muted-foreground">
+                  <Mic className="h-4 w-4" />
+                </button>
+              </div>
+
+              <Button type="submit" className="whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white">
+                <Search />
+                <span className="ml-2">Search</span>
+              </Button>
+            </form>
+          </div>
+        </div>
+
+        {/* Page title & description moved below the hero so the new header is only on the first page area */}
+        <div className="mt-8 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground">
               {userType === 'buyer' ? 'My Properties Dashboard' : 'My Projects Dashboard'}
             </h1>
             <p className="text-muted-foreground mt-2">
-              {userType === 'buyer' 
+              {userType === 'buyer'
                 ? 'Track your real estate investments and property interests'
                 : 'Manage your projects and engage with buyers'
               }
