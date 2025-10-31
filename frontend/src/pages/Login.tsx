@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -7,8 +7,6 @@ import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { authAPI } from '../services/api';
-import { openOAuthPopup } from '../lib/oauth';
-import { useToast } from '../hooks/use-toast';
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -19,10 +17,8 @@ const LoginPage: React.FC = () => {
   const [generalError, setGeneralError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, isAuthenticated, refreshToken } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
-  const { toast } = useToast();
 
   // If already logged in, redirect to intended page or dashboard
   if (isAuthenticated) {
@@ -58,42 +54,8 @@ const LoginPage: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-    const googleAuthUrl = authAPI.getGoogleAuthUrl();
-    
-    openOAuthPopup(
-      googleAuthUrl,
-      async (data) => {
-        // Store tokens
-        localStorage.setItem('access_token', data.access);
-        localStorage.setItem('refresh_token', data.refresh);
-
-        toast({
-          title: "Success!",
-          description: "Signed in with Google successfully",
-        });
-
-        try {
-          // Refresh user state
-          await refreshToken();
-          // Navigate to dashboard
-          navigate('/dashboard');
-        } catch (error) {
-          console.error('Failed to fetch user profile:', error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load user profile. Please try again.",
-          });
-        }
-      },
-      (error) => {
-        toast({
-          variant: "destructive",
-          title: "OAuth Failed",
-          description: error,
-        });
-      }
-    );
+    // Redirect directly to Google OAuth (no popup)
+    window.location.href = authAPI.getGoogleAuthUrl();
   };
 
   return (
