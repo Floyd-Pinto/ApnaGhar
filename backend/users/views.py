@@ -6,10 +6,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
-from allauth.socialaccount.models import SocialToken, SocialAccount
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from dj_rest_auth.registration.views import SocialLoginView
 import os
 from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer, UserProfileUpdateSerializer
 
@@ -124,53 +120,26 @@ class UserProfileView(APIView):
         return self.put(request)
 
 
-class GoogleLogin(SocialLoginView):
+class GoogleOAuthRedirect(APIView):
     """
-    Google OAuth2 login view
-    """
-    adapter_class = GoogleOAuth2Adapter
-    callback_url = os.getenv('BACKEND_URL', 'https://apnaghar-2emb.onrender.com') + '/api/auth/google/callback/'
-    client_class = OAuth2Client
-
-
-class GoogleLoginCallback(APIView):
-    """
-    Handle Google OAuth callback and return JWT tokens
+    After successful Google OAuth, generate JWT tokens and redirect to frontend
+    This is called by the custom adapter after social account is connected
     """
     permission_classes = (AllowAny,)
     
     def get(self, request):
-        code = request.GET.get('code')
-        if not code:
-            return Response({'error': 'No code provided'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Exchange code for tokens using GoogleLogin view
-        try:
-            # Import here to avoid circular imports
-            from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-            from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-            
-            adapter = GoogleOAuth2Adapter(request)
-            callback_url = os.getenv('BACKEND_URL', 'https://apnaghar-2emb.onrender.com') + '/api/auth/google/callback/'
-            client = OAuth2Client(request, adapter.get_provider().get_app(request), callback_url=callback_url)
-            
-            # Get access token from Google
-            access_token = adapter.complete_login(request, None, code)
-            
-            # Get or create user
-            social_login = adapter.complete_login(request, None, code)
-            user = social_login.user
-            
-            # Generate JWT tokens
-            refresh = RefreshToken.for_user(user)
+        # This endpoint is hit after allauth processes the OAuth callback
+        # and the user is logged in via Django session
+        if request.user.is_authenticated:
+            # Generate JWT tokens for the authenticated user
+            refresh = RefreshToken.for_user(request.user)
             
             # Redirect to frontend with tokens
             frontend_url = os.getenv('FRONTEND_URL', 'https://apnaghar-five.vercel.app')
-            redirect_url = f"{frontend_url}/auth/callback?access={str(refresh.access_token)}&refresh={str(refresh)}&user_id={user.id}"
+            redirect_url = f"{frontend_url}/auth/callback?access={str(refresh.access_token)}&refresh={str(refresh)}&user_id={request.user.id}"
             
             return redirect(redirect_url)
-            
-        except Exception as e:
-            print(f"Google OAuth error: {str(e)}")
+        else:
+            # OAuth failed
             frontend_url = os.getenv('FRONTEND_URL', 'https://apnaghar-five.vercel.app')
             return redirect(f"{frontend_url}/login?error=oauth_failed")

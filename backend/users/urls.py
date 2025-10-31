@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import LoginView, RegisterView, LogoutView, UserProfileView, GoogleLogin, GoogleLoginCallback
+from .views import LoginView, RegisterView, LogoutView, UserProfileView, GoogleOAuthRedirect
 
 urlpatterns = [
     path('login/', LoginView.as_view(), name='login'),
@@ -9,7 +9,6 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('profile/', UserProfileView.as_view(), name='user_profile'),
     
-    # OAuth URLs
-    path('google/', GoogleLogin.as_view(), name='google_login'),
-    path('google/callback/', GoogleLoginCallback.as_view(), name='google_callback'),
+    # OAuth callback - called after allauth processes Google OAuth
+    path('google/redirect/', GoogleOAuthRedirect.as_view(), name='google_oauth_redirect'),
 ]

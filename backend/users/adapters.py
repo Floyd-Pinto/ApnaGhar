@@ -13,9 +13,12 @@ class CustomAccountAdapter(DefaultAccountAdapter):
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def get_connect_redirect_url(self, request, socialaccount):
-        """Redirect to frontend after social login"""
-        frontend_url = os.getenv('FRONTEND_URL', 'https://apnaghar-five.vercel.app')
-        return f"{frontend_url}/dashboard"
+        """
+        Redirect to our custom endpoint that will generate JWT tokens
+        and then redirect to frontend with tokens
+        """
+        backend_url = os.getenv('BACKEND_URL', 'https://apnaghar-2emb.onrender.com')
+        return f"{backend_url}/api/auth/google/redirect/"
     
     def pre_social_login(self, request, socialaccount):
         """

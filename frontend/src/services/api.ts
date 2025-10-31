@@ -193,7 +193,8 @@ export const authAPI = {
 
   // Get Google OAuth URL
   getGoogleAuthUrl: (): string => {
-    return joinURL(API_BASE_URL, 'api/auth/google/');
+    // Use allauth's Google login URL instead of dj-rest-auth
+    return joinURL(API_BASE_URL, 'accounts/google/login/');
   },
 };
 
