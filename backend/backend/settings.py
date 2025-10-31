@@ -238,6 +238,10 @@ SOCIALACCOUNT_PROVIDERS = {
 # OAuth Callback URLs
 SOCIALACCOUNT_CALLBACK_URL = os.getenv('BACKEND_URL', 'https://apnaghar-2emb.onrender.com') + '/api/auth/google/callback/'
 
+# Redirect URLs after login
+LOGIN_REDIRECT_URL = '/api/auth/google/redirect/'
+ACCOUNT_EMAIL_VERIFICATION = 'optional'
+
 # After social login, redirect to frontend
 ACCOUNT_ADAPTER = 'users.adapters.CustomAccountAdapter'
 SOCIALACCOUNT_ADAPTER = 'users.adapters.CustomSocialAccountAdapter'

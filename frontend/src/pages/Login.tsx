@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -7,6 +7,8 @@ import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { authAPI } from '../services/api';
+import { openOAuthPopup } from '../lib/oauth';
+import { useToast } from '../hooks/use-toast';
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -17,8 +19,10 @@ const LoginPage: React.FC = () => {
   const [generalError, setGeneralError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, refreshToken } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   // If already logged in, redirect to intended page or dashboard
   if (isAuthenticated) {
@@ -33,51 +37,63 @@ const LoginPage: React.FC = () => {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     setErrors({});
     setGeneralError('');
-    setIsLoading(true);
 
     try {
       await login(formData);
-      // Navigation will be handled by the Navigate component above
-    } catch (err: any) {
-      console.error('Login error:', err);
-      
-      // Parse backend validation errors
-      if (err.response && err.response.data) {
-        const backendErrors = err.response.data;
-        
-        // Check if it's a field-specific error object
-        if (typeof backendErrors === 'object' && !Array.isArray(backendErrors)) {
-          const parsedErrors: Record<string, string[]> = {};
-          
-          Object.keys(backendErrors).forEach(field => {
-            if (Array.isArray(backendErrors[field])) {
-              parsedErrors[field] = backendErrors[field];
-            } else if (typeof backendErrors[field] === 'string') {
-              parsedErrors[field] = [backendErrors[field]];
-            }
-          });
-          
-          // Check if we have field-specific errors or a general error message
-          if (Object.keys(parsedErrors).length > 0 && !backendErrors.detail) {
-            setErrors(parsedErrors);
-          } else {
-            setGeneralError(backendErrors.detail || backendErrors.message || 'Login failed');
-          }
-        } else if (typeof backendErrors === 'string') {
-          setGeneralError(backendErrors);
-        } else {
-          setGeneralError('Login failed');
-        }
+      // Redirect is handled by the Navigate component above
+    } catch (error: any) {
+      if (error.message && typeof error.message === 'object') {
+        setErrors(error.message);
       } else {
-        setGeneralError(err.message || 'Login failed');
+        setGeneralError(error.message || 'Login failed. Please try again.');
       }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    const googleAuthUrl = authAPI.getGoogleAuthUrl();
+    
+    openOAuthPopup(
+      googleAuthUrl,
+      async (data) => {
+        // Store tokens
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('refresh_token', data.refresh);
+
+        toast({
+          title: "Success!",
+          description: "Signed in with Google successfully",
+        });
+
+        try {
+          // Refresh user state
+          await refreshToken();
+          // Navigate to dashboard
+          navigate('/dashboard');
+        } catch (error) {
+          console.error('Failed to fetch user profile:', error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load user profile. Please try again.",
+          });
+        }
+      },
+      (error) => {
+        toast({
+          variant: "destructive",
+          title: "OAuth Failed",
+          description: error,
+        });
+      }
+    );
   };
 
   return (
@@ -149,11 +165,11 @@ const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          <Button
+                    <Button
             type="button"
             variant="outline"
-            className="w-full"
-            onClick={() => window.location.href = authAPI.getGoogleAuthUrl()}
+            className="w-full flex items-center justify-center gap-3 py-6 text-base border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+            onClick={handleGoogleLogin}
           >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
