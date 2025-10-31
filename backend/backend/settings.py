@@ -241,16 +241,20 @@ SOCIALACCOUNT_CALLBACK_URL = os.getenv('BACKEND_URL', 'https://apnaghar-2emb.onr
 # Redirect URLs after login
 LOGIN_REDIRECT_URL = '/api/auth/google/redirect/'
 LOGIN_URL = '/login/'
-ACCOUNT_EMAIL_VERIFICATION = 'optional'
-ACCOUNT_EMAIL_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_USERNAME_REQUIRED = False
+
+# Account settings
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Don't verify email
+ACCOUNT_EMAIL_REQUIRED = True  # But we need email from Google
+ACCOUNT_LOGIN_METHODS = {'email'}  # Use email for login
+ACCOUNT_USERNAME_REQUIRED = False  # Don't require username
+ACCOUNT_UNIQUE_EMAIL = True  # Email must be unique
 
 # Social account settings
-SOCIALACCOUNT_AUTO_SIGNUP = True
-SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
-SOCIALACCOUNT_EMAIL_REQUIRED = False
-SOCIALACCOUNT_QUERY_EMAIL = True
+SOCIALACCOUNT_AUTO_SIGNUP = True  # Automatically create account
+SOCIALACCOUNT_EMAIL_VERIFICATION = ACCOUNT_EMAIL_VERIFICATION  # Same as account
+SOCIALACCOUNT_EMAIL_REQUIRED = True  # We need email from Google
+SOCIALACCOUNT_QUERY_EMAIL = True  # Ask for email permission
+SOCIALACCOUNT_STORE_TOKENS = True  # Store OAuth tokens
 
 # After social login, redirect to frontend
 ACCOUNT_ADAPTER = 'users.adapters.CustomAccountAdapter'
