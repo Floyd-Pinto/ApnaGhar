@@ -126,8 +126,12 @@ class GoogleOAuthRedirect(APIView):
     This is called by the custom adapter after social account is connected
     """
     permission_classes = (AllowAny,)
+    authentication_classes = []  # Disable JWT auth for this endpoint, rely on session
     
     def get(self, request):
+        print(f"GoogleOAuthRedirect called. User authenticated: {request.user.is_authenticated}")
+        print(f"User: {request.user}")
+        
         # This endpoint is hit after allauth processes the OAuth callback
         # and the user is logged in via Django session
         if request.user.is_authenticated:
@@ -138,8 +142,10 @@ class GoogleOAuthRedirect(APIView):
             frontend_url = os.getenv('FRONTEND_URL', 'https://apnaghar-five.vercel.app')
             redirect_url = f"{frontend_url}/auth/callback?access={str(refresh.access_token)}&refresh={str(refresh)}&user_id={request.user.id}"
             
+            print(f"Redirecting to: {redirect_url}")
             return redirect(redirect_url)
         else:
-            # OAuth failed
+            # OAuth failed - user not authenticated
+            print("User not authenticated, redirecting to login with error")
             frontend_url = os.getenv('FRONTEND_URL', 'https://apnaghar-five.vercel.app')
             return redirect(f"{frontend_url}/login?error=oauth_failed")

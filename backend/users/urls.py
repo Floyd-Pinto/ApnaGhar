@@ -10,5 +10,7 @@ urlpatterns = [
     path('profile/', UserProfileView.as_view(), name='user_profile'),
     
     # OAuth callback - called after allauth processes Google OAuth
+    # Support both with and without trailing slash
     path('google/redirect/', GoogleOAuthRedirect.as_view(), name='google_oauth_redirect'),
+    path('google/redirect', GoogleOAuthRedirect.as_view(), name='google_oauth_redirect_no_slash'),
 ]
