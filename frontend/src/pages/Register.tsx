@@ -8,8 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 import { authAPI } from '../services/api';
-import { openOAuthPopup } from '../lib/oauth';
-import { useToast } from '../hooks/use-toast';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -25,9 +23,8 @@ const RegisterPage: React.FC = () => {
   const [generalError, setGeneralError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { register, isAuthenticated, refreshToken } = useAuth();
+  const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   // If already logged in, redirect to dashboard
   if (isAuthenticated) {
@@ -100,42 +97,8 @@ const RegisterPage: React.FC = () => {
   };
 
   const handleGoogleSignup = () => {
-    const googleAuthUrl = authAPI.getGoogleAuthUrl();
-    
-    openOAuthPopup(
-      googleAuthUrl,
-      async (data) => {
-        // Store tokens
-        localStorage.setItem('access_token', data.access);
-        localStorage.setItem('refresh_token', data.refresh);
-
-        toast({
-          title: "Success!",
-          description: "Signed up with Google successfully",
-        });
-
-        try {
-          // Refresh user state
-          await refreshToken();
-          // Navigate to dashboard
-          navigate('/dashboard');
-        } catch (error) {
-          console.error('Failed to fetch user profile:', error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load user profile. Please try again.",
-          });
-        }
-      },
-      (error) => {
-        toast({
-          variant: "destructive",
-          title: "OAuth Failed",
-          description: error,
-        });
-      }
-    );
+    // Redirect directly to Google OAuth (no popup)
+    window.location.href = authAPI.getGoogleAuthUrl();
   };
 
   return (
