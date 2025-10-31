@@ -186,9 +186,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
     "http://172.20.10.9:8080",
-    "https://apnaghar-five.vercel.app/",  # Replace with your actual frontend URL
+    "https://apnaghar-five.vercel.app",  # Frontend on Vercel
     "https://your-frontend-name.netlify.app",  # If using Netlify
-    "https://apnaghar-2emb.onrender.com/",  # If using Render
+    "https://apnaghar-2emb.onrender.com",  # Backend on Render
 ]
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -213,7 +213,7 @@ AUTHENTICATION_BACKENDS = [
 # Allauth settings
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
-ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
+ACCOUNT_LOGIN_METHODS = {'username', 'email'}  # Replaces deprecated ACCOUNT_AUTHENTICATION_METHOD
 ACCOUNT_USERNAME_REQUIRED = False
 SOCIALACCOUNT_AUTO_SIGNUP = True
 
