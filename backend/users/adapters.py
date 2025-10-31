@@ -12,6 +12,14 @@ class CustomAccountAdapter(DefaultAccountAdapter):
 
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
+    def get_login_redirect_url(self, request):
+        """
+        Redirect to our custom endpoint that will generate JWT tokens
+        and then redirect to frontend with tokens
+        """
+        backend_url = os.getenv('BACKEND_URL', 'https://apnaghar-2emb.onrender.com')
+        return f"{backend_url}/api/auth/google/redirect/"
+    
     def get_connect_redirect_url(self, request, socialaccount):
         """
         Redirect to our custom endpoint that will generate JWT tokens
