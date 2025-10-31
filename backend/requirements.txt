@@ -22,3 +22,8 @@ gunicorn==23.0.0
 
 # Development Tools
 django-extensions==3.2.3
+
+# OAuth and Social Authentication
+django-allauth==65.4.0
+dj-rest-auth==7.0.0
+requests==2.32.3

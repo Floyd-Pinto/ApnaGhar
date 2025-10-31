@@ -190,6 +190,11 @@ export const authAPI = {
 
     return response.json();
   },
+
+  // Get Google OAuth URL
+  getGoogleAuthUrl: (): string => {
+    return joinURL(API_BASE_URL, 'api/auth/google/');
+  },
 };
 
 // Generic API wrapper with auto token refresh
