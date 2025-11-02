@@ -49,12 +49,19 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
             if not email_address.verified:
                 email_address.verified = True
                 email_address.save()
+    
+    def populate_user(self, request, sociallogin, data):
+        """
+        Populate user instance with data from social login
+        Set default role for new users
+        """
+        user = super().populate_user(request, sociallogin, data)
         
         # Set default role for new users
-        user = sociallogin.user
-        if not user.id:  # New user
-            if not hasattr(user, 'role') or not user.role:
-                user.role = 'buyer'
+        if not user.id and (not hasattr(user, 'role') or not user.role):
+            user.role = 'buyer'
+        
+        return user
     
     def save_user(self, request, sociallogin, form=None):
         """
@@ -77,8 +84,11 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def get_login_redirect_url(self, request):
         """
         Redirect after successful social login
-        Redirect to custom endpoint that generates JWT tokens
+        IMPORTANT: At this point, the user MUST be authenticated
         """
+        print(f"Adapter get_login_redirect_url - User authenticated: {request.user.is_authenticated}")
+        print(f"Adapter - User: {request.user}")
+        
         backend_url = os.getenv('BACKEND_URL', 'https://apnaghar-2emb.onrender.com')
         return f"{backend_url}/api/auth/google/redirect/"
     

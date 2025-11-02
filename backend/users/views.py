@@ -129,9 +129,13 @@ class GoogleOAuthRedirect(APIView):
     
     def get(self, request):
         # This endpoint is hit after allauth processes the OAuth callback
-        # and the user is logged in via Django session
         print(f"GoogleOAuthRedirect called - User authenticated: {request.user.is_authenticated}")
         print(f"User: {request.user}")
+        print(f"Session keys: {list(request.session.keys())}")
+        
+        # Check if there's a socialaccount in the session (allauth stores this)
+        socialaccount_data = request.session.get('socialaccount_sociallogin')
+        print(f"Social account data in session: {socialaccount_data is not None}")
         
         if request.user.is_authenticated:
             try:
@@ -148,10 +152,14 @@ class GoogleOAuthRedirect(APIView):
                 return redirect(redirect_url)
             except Exception as e:
                 print(f"Error generating tokens: {e}")
+                import traceback
+                traceback.print_exc()
                 frontend_url = os.getenv('FRONTEND_URL', 'https://apnaghar-five.vercel.app')
                 return redirect(f"{frontend_url}/login?error=token_generation_failed")
         else:
             # OAuth failed - user not authenticated
             print("OAuth redirect called but user not authenticated")
+            print(f"Session ID: {request.session.session_key}")
+            print(f"Session data: {dict(request.session)}")
             frontend_url = os.getenv('FRONTEND_URL', 'https://apnaghar-five.vercel.app')
             return redirect(f"{frontend_url}/login?error=oauth_failed")
