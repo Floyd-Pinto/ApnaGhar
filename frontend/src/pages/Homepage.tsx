@@ -39,126 +39,136 @@ const Homepage = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-background to-muted py-20 lg:py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5" />
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Text Content */}
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <Badge className="verified-badge w-fit">
-                  <Shield className="h-3 w-3" />
-                  Blockchain Verified Platform
-                </Badge>
-                <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-                  Real Estate,{' '}
-                  <span className="gradient-text">Redefined with Trust</span>
-                </h1>
-                <p className="text-xl text-muted-foreground max-w-xl">
-                  Track your property investment with blockchain-verified updates 
-                  and invest with absolute confidence in India's most transparent real estate platform.
-                </p>
-              </div>
-              
-              {/* Dual CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button asChild size="lg" className="btn-hero">
-                  <Link to="/projects">
-                    <Eye className="h-5 w-5 mr-2" />
-                    Explore Verified Projects
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                  <Link to="/dashboard">
-                    <TrendingUp className="h-5 w-5 mr-2" />
-                    Access Your Dashboard
-                  </Link>
+      {/* Hero Section - 99acres Style */}
+      <section className="relative bg-gradient-to-br from-primary/5 via-background to-accent/5 py-12 lg:py-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center space-y-6">
+            {/* Heading */}
+            <div className="space-y-3">
+              <h1 className="text-3xl lg:text-5xl font-extrabold text-foreground leading-tight">
+                Find Your Dream Property with{' '}
+                <span className="text-primary">Blockchain Verification</span>
+              </h1>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                India's most transparent real estate platform with verified properties, 
+                real-time tracking, and guaranteed authenticity
+              </p>
+            </div>
+
+            {/* Search Box - 99acres Style */}
+            <div className="bg-white dark:bg-card shadow-elevated rounded-lg p-6 mt-8">
+              <div className="flex flex-col md:flex-row gap-3">
+                {/* Search Input */}
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder="Search by city, locality, builder or project..."
+                    className="w-full px-4 py-3 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  />
+                </div>
+
+                {/* Property Type Dropdown */}
+                <div className="w-full md:w-48">
+                  <select className="w-full px-4 py-3 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-background">
+                    <option>All Residential</option>
+                    <option>Apartment</option>
+                    <option>Villa</option>
+                    <option>Plot</option>
+                  </select>
+                </div>
+
+                {/* Search Button */}
+                <Button className="bg-primary hover:bg-primary-hover h-12 px-8 text-base font-semibold">
+                  <Eye className="h-5 w-5 mr-2" />
+                  Search
                 </Button>
               </div>
 
-              {/* Trust Indicators */}
-              <div className="grid grid-cols-3 gap-4 pt-8">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">50+</div>
-                  <div className="text-sm text-muted-foreground">Verified Projects</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">₹500Cr+</div>
-                  <div className="text-sm text-muted-foreground">Assets Tracked</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">10K+</div>
-                  <div className="text-sm text-muted-foreground">Investors</div>
-                </div>
+              {/* Quick Links */}
+              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
+                <span className="text-sm text-muted-foreground mr-2">Popular:</span>
+                {['Mumbai', 'Bangalore', 'Pune', 'Delhi NCR', 'Hyderabad'].map((city) => (
+                  <button
+                    key={city}
+                    className="px-3 py-1 text-sm font-medium text-primary hover:bg-primary/10 rounded transition-colors"
+                  >
+                    {city}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Hero Image */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl transform rotate-3" />
-              <img 
-                src={heroImage} 
-                alt="ApnaGhar Platform Dashboard"
-                className="relative w-full rounded-2xl shadow-floating"
-              />
+            {/* Trust Indicators */}
+            <div className="grid grid-cols-3 gap-6 pt-8">
+              <div className="text-center">
+                <div className="text-3xl font-extrabold text-primary">50+</div>
+                <div className="text-sm text-muted-foreground mt-1">Verified Projects</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-extrabold text-primary">₹500Cr+</div>
+                <div className="text-sm text-muted-foreground mt-1">Property Value</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-extrabold text-primary">10K+</div>
+                <div className="text-sm text-muted-foreground mt-1">Happy Investors</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* The ApnaGhar Difference Section */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-16 bg-white dark:bg-card">
         <div className="container mx-auto px-4">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground">
-              The ApnaGhar Difference
+          <div className="text-center space-y-3 mb-12">
+            <h2 className="text-3xl font-extrabold text-foreground">
+              Why Choose ApnaGhar?
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              We're not just another property listing site. We're your trusted investment tracking dashboard.
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              India's first blockchain-verified real estate platform with complete transparency
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Real-Time Verified Tracking */}
-            <div className="card-elevated p-8 text-center group hover:shadow-floating transition-all duration-300">
-              <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                <Eye className="h-8 w-8 text-white" />
+            <div className="border border-border rounded-lg p-6 hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <Eye className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-4">
-                Real-Time Verified Tracking
+              <h3 className="text-lg font-bold text-foreground mb-2">
+                Real-Time Tracking
               </h3>
-              <p className="text-muted-foreground">
-                Watch your investment grow with live construction updates, 
-                geo-tagged photos, and blockchain-verified progress reports.
+              <p className="text-sm text-muted-foreground">
+                Live construction updates with geo-tagged photos and blockchain-verified 
+                progress reports for complete transparency.
               </p>
             </div>
 
             {/* Blockchain-Secured Contracts */}
-            <div className="card-elevated p-8 text-center group hover:shadow-floating transition-all duration-300">
-              <div className="w-16 h-16 bg-gradient-accent rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                <Shield className="h-8 w-8 text-accent-foreground" />
+            <div className="border border-border rounded-lg p-6 hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-4">
+                <Shield className="h-6 w-6 text-success" />
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-4">
-                Blockchain-Secured Contracts
+              <h3 className="text-lg font-bold text-foreground mb-2">
+                Blockchain Verified
               </h3>
-              <p className="text-muted-foreground">
-                Every transaction and update is recorded on the blockchain, 
-                ensuring complete transparency and fraud prevention.
+              <p className="text-sm text-muted-foreground">
+                Every transaction recorded on blockchain for complete transparency 
+                and fraud prevention. Your investment is secure.
               </p>
             </div>
 
             {/* AI-Powered Assistance */}
-            <div className="card-elevated p-8 text-center group hover:shadow-floating transition-all duration-300">
-              <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                <Bot className="h-8 w-8 text-white" />
+            <div className="border border-border rounded-lg p-6 hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+                <Bot className="h-6 w-6 text-accent" />
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-4">
-                AI-Powered Assistance
+              <h3 className="text-lg font-bold text-foreground mb-2">
+                AI-Powered Insights
               </h3>
-              <p className="text-muted-foreground">
-                Get intelligent insights, market analysis, and personalized 
-                investment recommendations from our AI assistant.
+              <p className="text-sm text-muted-foreground">
+                Get intelligent market analysis, investment recommendations, 
+                and personalized property suggestions from our AI.
               </p>
             </div>
           </div>
@@ -166,34 +176,47 @@ const Homepage = () => {
       </section>
 
       {/* Featured Projects Section */}
-      <section className="py-20">
+      <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-12">
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-                Featured Verified Projects
+              <h2 className="text-2xl font-extrabold text-foreground">
+                Featured Verified Properties
               </h2>
-              <p className="text-xl text-muted-foreground">
-                Discover high-potential properties with complete transparency
+              <p className="text-sm text-muted-foreground mt-1">
+                Handpicked properties with blockchain verification
               </p>
             </div>
-            <Button asChild variant="outline" className="hidden md:flex">
+            <Button asChild variant="link" className="hidden md:flex text-primary font-semibold">
               <Link to="/projects">
-                View All Projects
+                View All Properties →
               </Link>
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
             {featuredProperties.map((property) => (
               <PropertyCard key={property.id} {...property} />
             ))}
+            {/* Add one more placeholder */}
+            <PropertyCard 
+              id="3"
+              title="Luxury Heights"
+              location="Andheri East, Mumbai"
+              price="₹3.2 Cr"
+              pricePerShare="₹32,000"
+              image={propertyExample1}
+              verified={true}
+              lastUpdated="1 day ago"
+              roi="10"
+              completionStatus="80"
+            />
           </div>
 
           <div className="text-center md:hidden">
-            <Button asChild className="w-full sm:w-auto">
+            <Button asChild className="w-full sm:w-auto bg-primary hover:bg-primary-hover">
               <Link to="/projects">
-                View All Projects
+                View All Properties
               </Link>
             </Button>
           </div>
@@ -201,27 +224,27 @@ const Homepage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary to-primary-hover text-primary-foreground">
+      <section className="py-16 bg-primary text-white">
         <div className="container mx-auto px-4 text-center">
-          <div className="max-w-3xl mx-auto space-y-8">
-            <h2 className="text-3xl lg:text-4xl font-bold">
-              Ready to Transform Your Real Estate Investment?
+          <div className="max-w-3xl mx-auto space-y-6">
+            <h2 className="text-3xl font-extrabold">
+              Start Your Real Estate Journey Today
             </h2>
-            <p className="text-xl opacity-90">
-              Join thousands of smart investors who trust ApnaGhar for transparent, 
-              secure, and profitable real estate investments.
+            <p className="text-lg opacity-95">
+              Join 10,000+ investors who trust ApnaGhar for verified, transparent, 
+              and secure real estate investments
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" variant="secondary">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+              <Button asChild size="lg" className="bg-white text-primary hover:bg-gray-100 font-semibold">
                 <Link to="/projects">
-                  <Zap className="h-5 w-5 mr-2" />
-                  Start Investing Today
+                  <Eye className="h-5 w-5 mr-2" />
+                  Browse Properties
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary">
-                <Link to="/dashboard">
-                  <Clock className="h-5 w-5 mr-2" />
-                  Schedule a Demo
+              <Button asChild size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white hover:text-primary font-semibold">
+                <Link to="/register">
+                  <TrendingUp className="h-5 w-5 mr-2" />
+                  Register Now
                 </Link>
               </Button>
             </div>

@@ -191,6 +191,42 @@ export const authAPI = {
     return response.json();
   },
 
+  // Change password
+  changePassword: async (oldPassword: string, newPassword: string, newPasswordConfirm: string): Promise<{ message: string }> => {
+    const response = await fetch(joinURL(API_BASE_URL, 'api/auth/change-password/'), {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        old_password: oldPassword,
+        new_password: newPassword,
+        new_password_confirm: newPasswordConfirm,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.old_password?.[0] || error.new_password?.[0] || error.new_password_confirm?.[0] || 'Failed to change password');
+    }
+
+    return response.json();
+  },
+
+  // Update username
+  updateUsername: async (username: string): Promise<{ message: string; username: string }> => {
+    const response = await fetch(joinURL(API_BASE_URL, 'api/auth/update-username/'), {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ username }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.username?.[0] || 'Failed to update username');
+    }
+
+    return response.json();
+  },
+
   // Get Google OAuth URL
   getGoogleAuthUrl: (): string => {
     // Use allauth's Google login URL instead of dj-rest-auth

@@ -30,82 +30,100 @@ const PropertyCard = ({
   completionStatus
 }: PropertyCardProps) => {
   return (
-    <div className="card-elevated p-0 overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
-      <div className="relative">
+    <div className="property-card hover-lift">
+      {/* Image Container */}
+      <div className="relative h-52 overflow-hidden">
         <img 
           src={image} 
           alt={title}
-          className="w-full h-48 object-cover"
+          className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
         />
         
-        {verified && (
-          <div className="absolute top-4 left-4">
-            <Badge className="verified-badge">
-              <Shield className="h-3 w-3" />
-              ApnaGhar Verified
-            </Badge>
-          </div>
-        )}
+        {/* Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         
-        {completionStatus && (
-          <div className="absolute top-4 right-4">
-            <Badge variant="secondary" className="bg-background/90 text-foreground">
-              {completionStatus}% Complete
-            </Badge>
-          </div>
-        )}
-      </div>
-
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-3">
-          <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
-            {title}
-          </h3>
-          {roi && (
-            <Badge variant="outline" className="text-success border-success/30 bg-success/5">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {roi}% ROI
-            </Badge>
+        {/* Top Badges */}
+        <div className="absolute top-3 left-3 flex gap-2">
+          {verified && (
+            <span className="verified-badge shadow-sm">
+              <Shield className="h-3 w-3" />
+              Verified
+            </span>
+          )}
+          {roi && parseInt(roi) > 12 && (
+            <span className="premium-badge shadow-sm">
+              <TrendingUp className="h-3 w-3" />
+              High ROI
+            </span>
           )}
         </div>
+
+        {/* Bottom Price Overlay */}
+        <div className="absolute bottom-3 left-3 right-3">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="text-white/80 text-xs font-medium mb-0.5">Starting from</div>
+              <div className="text-white text-2xl font-bold">{price}</div>
+            </div>
+            {completionStatus && (
+              <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded">
+                <div className="text-xs font-medium text-muted-foreground">Progress</div>
+                <div className="text-sm font-bold text-foreground">{completionStatus}%</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {/* Title */}
+        <h3 className="font-bold text-lg text-foreground mb-1.5 line-clamp-1 hover:text-primary transition-colors cursor-pointer">
+          {title}
+        </h3>
         
-        <div className="flex items-center text-muted-foreground mb-4">
-          <MapPin className="h-4 w-4 mr-1" />
-          <span className="text-sm">{location}</span>
+        {/* Location */}
+        <div className="flex items-center text-muted-foreground mb-3">
+          <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+          <span className="text-sm line-clamp-1">{location}</span>
         </div>
 
-        <div className="space-y-2 mb-4">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Total Price</span>
-            <span className="font-semibold text-foreground">{price}</span>
-          </div>
-          
+        {/* Stats Row */}
+        <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border">
           {pricePerShare && (
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Per Share</span>
-              <span className="font-medium text-primary">{pricePerShare}</span>
+            <div className="flex-1">
+              <div className="text-xs text-muted-foreground mb-0.5">Per Share</div>
+              <div className="text-sm font-semibold text-foreground">{pricePerShare}</div>
+            </div>
+          )}
+          {roi && (
+            <div className="flex-1">
+              <div className="text-xs text-muted-foreground mb-0.5">Expected ROI</div>
+              <div className="text-sm font-semibold text-success">{roi}%</div>
             </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between mb-4 text-xs text-muted-foreground">
-          <div className="flex items-center">
-            <Clock className="h-3 w-3 mr-1" />
-            Last updated: {lastUpdated}
-          </div>
+        {/* Last Updated */}
+        <div className="flex items-center text-xs text-muted-foreground mb-3">
+          <Clock className="h-3 w-3 mr-1" />
+          <span>Updated {lastUpdated}</span>
         </div>
 
+        {/* Action Buttons */}
         <div className="flex gap-2">
-          <Button asChild className="flex-1" size="sm">
+          <Button asChild className="flex-1 bg-primary hover:bg-primary-hover" size="sm">
             <Link to={`/projects/${id}`}>
               View Details
             </Link>
           </Button>
-          {pricePerShare && (
-            <Button variant="outline" size="sm" className="btn-accent flex-1">
-              Invest Now
-            </Button>
-          )}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="btn-contact flex-1 border-success text-success hover:bg-success hover:text-white"
+          >
+            Contact Builder
+          </Button>
         </div>
       </div>
     </div>

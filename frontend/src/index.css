@@ -1,160 +1,153 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ApnaGhar Design System - FinTech Dashboard Aesthetic */
+/* ApnaGhar Design System - 99acres Inspired Real Estate Platform */
 
 @layer base {
   :root {
-    /* Core Brand Colors */
-    --background: 210 20% 98%;
-    --foreground: 215 28% 17%;
+    /* Core Brand Colors - 99acres inspired */
+    --background: 0 0% 98%;
+    --foreground: 220 13% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 28% 17%;
+    --card-foreground: 220 13% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 28% 17%;
+    --popover-foreground: 220 13% 13%;
 
-    /* Primary - Trustworthy Blue */
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 98%;
-    --primary-hover: 217 91% 55%;
+    /* Primary - Red/Orange (99acres style) */
+    --primary: 13 90% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 13 90% 45%;
 
-    /* Secondary - Light Professional Gray */
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 215 28% 17%;
+    /* Secondary - Professional Gray */
+    --secondary: 220 9% 46%;
+    --secondary-foreground: 0 0% 100%;
 
     /* Muted - Subtle Backgrounds */
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 13% 95%;
+    --muted-foreground: 220 9% 46%;
 
-    /* Accent - Gold/Amber for Verification */
-    --accent: 43 96% 56%;
-    --accent-foreground: 0 0% 0%;
-    --accent-glow: 43 96% 56%;
+    /* Accent - Gold for Premium/Featured */
+    --accent: 45 93% 47%;
+    --accent-foreground: 0 0% 100%;
+    --accent-glow: 45 93% 47%;
 
     /* Status Colors */
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
-    --warning: 43 96% 56%;
-    --warning-foreground: 0 0% 0%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
     /* UI Elements */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 60%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 13 90% 50%;
 
     /* Dashboard Specific */
-    --dashboard-sidebar: 217 33% 17%;
-    --dashboard-sidebar-foreground: 210 40% 98%;
+    --dashboard-sidebar: 220 13% 13%;
+    --dashboard-sidebar-foreground: 0 0% 98%;
     --dashboard-card: 0 0% 100%;
-    --dashboard-border: 214 32% 91%;
+    --dashboard-border: 220 13% 91%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 70%));
-    --gradient-accent: linear-gradient(135deg, hsl(43 96% 56%), hsl(43 96% 66%));
-    --gradient-hero: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 70%) 50%, hsl(43 96% 66%) 100%);
+    /* 99acres Style Elements */
+    --featured-bg: 255 237 213;
+    --premium-border: 45 93% 47%;
+    --verified-bg: 142 71% 96%;
+    --verified-border: 142 71% 45%;
 
-    /* Shadows */
-    --shadow-card: 0 2px 10px hsl(215 28% 17% / 0.1);
-    --shadow-elevated: 0 8px 30px hsl(215 28% 17% / 0.15);
-    --shadow-floating: 0 20px 60px hsl(215 28% 17% / 0.2);
+    /* Shadows - Subtle and professional */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-elevated: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-floating: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
 
-    /* Animation Timing */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-    --radius: 0.75rem;
+    --radius: 0.375rem;
 
     --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
+    --sidebar-foreground: 220 13% 13%;
+    --sidebar-primary: 13 90% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 13% 95%;
+    --sidebar-accent-foreground: 220 13% 13%;
     --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 13 90% 50%;
   }
 
   .dark {
-    /* Dark theme - Darker backgrounds with proper contrast */
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    /* Dark theme - 99acres inspired dark mode */
+    --background: 220 13% 9%;
+    --foreground: 0 0% 98%;
 
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 13% 12%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 13% 12%;
+    --popover-foreground: 0 0% 98%;
 
-    /* Primary - Bright blue for dark mode */
-    --primary: 217 91% 65%;
-    --primary-foreground: 222 47% 11%;
-    --primary-hover: 217 91% 70%;
+    /* Primary - Brighter red for dark mode */
+    --primary: 13 90% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 13 90% 60%;
 
-    /* Secondary - Darker gray */
-    --secondary: 217 32% 17%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary - Lighter gray */
+    --secondary: 220 9% 30%;
+    --secondary-foreground: 0 0% 98%;
 
     /* Muted - Subtle dark backgrounds */
-    --muted: 217 32% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 13% 16%;
+    --muted-foreground: 220 9% 65%;
 
-    /* Accent - Gold/Amber remains vibrant */
-    --accent: 43 96% 60%;
-    --accent-foreground: 222 47% 11%;
-    --accent-glow: 43 96% 60%;
+    /* Accent - Gold remains vibrant */
+    --accent: 45 93% 52%;
+    --accent-foreground: 0 0% 100%;
+    --accent-glow: 45 93% 52%;
 
     /* Status Colors */
     --success: 142 71% 50%;
-    --success-foreground: 222 47% 11%;
-    --warning: 43 96% 60%;
-    --warning-foreground: 222 47% 11%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 100%;
     --destructive: 0 84% 65%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
     /* UI Elements */
-    --border: 217 32% 17%;
-    --input: 217 32% 17%;
-    --ring: 217 91% 65%;
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
+    --ring: 13 90% 55%;
 
     /* Dashboard Specific */
-    --dashboard-sidebar: 222 47% 11%;
-    --dashboard-sidebar-foreground: 210 40% 98%;
-    --dashboard-card: 222 47% 11%;
-    --dashboard-border: 217 32% 17%;
+    --dashboard-sidebar: 220 13% 9%;
+    --dashboard-sidebar-foreground: 0 0% 98%;
+    --dashboard-card: 220 13% 12%;
+    --dashboard-border: 220 13% 20%;
 
-    /* Dark Mode Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 65%), hsl(217 91% 75%));
-    --gradient-accent: linear-gradient(135deg, hsl(43 96% 60%), hsl(43 96% 70%));
-    --gradient-hero: linear-gradient(135deg, hsl(217 91% 65%) 0%, hsl(217 91% 75%) 50%, hsl(43 96% 70%) 100%);
+    /* Dark Mode Featured/Premium */
+    --featured-bg: 45 93% 15%;
+    --premium-border: 45 93% 52%;
+    --verified-bg: 142 71% 15%;
+    --verified-border: 142 71% 50%;
 
     /* Dark Shadows */
-    --shadow-card: 0 2px 10px hsl(222 47% 5% / 0.5);
-    --shadow-elevated: 0 8px 30px hsl(222 47% 5% / 0.7);
-    --shadow-floating: 0 20px 60px hsl(222 47% 5% / 0.8);
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.4), 0 1px 2px -1px hsl(0 0% 0% / 0.4);
+    --shadow-elevated: 0 4px 6px -1px hsl(0 0% 0% / 0.5), 0 2px 4px -2px hsl(0 0% 0% / 0.5);
+    --shadow-floating: 0 10px 15px -3px hsl(0 0% 0% / 0.6), 0 4px 6px -4px hsl(0 0% 0% / 0.6);
 
     /* Sidebar */
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 65%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 217 32% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 32% 17%;
-    --sidebar-ring: 217 91% 65%;
+    --sidebar-background: 220 13% 9%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 13 90% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 13% 16%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 13% 20%;
+    --sidebar-ring: 13 90% 55%;
   }
 }
 
@@ -169,56 +162,94 @@
 }
 
 @layer components {
-  /* Button Variants */
+  /* Button Variants - 99acres style */
   .btn-hero {
-    @apply bg-gradient-to-r from-primary to-primary-hover text-primary-foreground font-semibold px-8 py-4 rounded-lg transition-all duration-300 hover:shadow-elevated hover:scale-105;
+    @apply bg-primary hover:bg-primary-hover text-primary-foreground font-semibold px-6 py-3 rounded transition-all duration-200 shadow-sm hover:shadow-md;
   }
   
   .btn-accent {
-    @apply bg-accent text-accent-foreground font-semibold px-6 py-3 rounded-lg transition-all duration-300 hover:shadow-card;
+    @apply bg-accent hover:brightness-110 text-accent-foreground font-semibold px-6 py-3 rounded transition-all duration-200;
   }
 
-  /* Card Variants */
+  /* Card Variants - Clean 99acres style */
   .card-elevated {
-    @apply bg-card border-border rounded-xl shadow-card transition-all duration-300 hover:shadow-elevated;
+    @apply bg-card border border-border rounded shadow-sm hover:shadow-md transition-shadow duration-200;
   }
 
   .card-dashboard {
-    @apply bg-dashboard-card border border-dashboard-border rounded-xl p-6 shadow-card;
+    @apply bg-dashboard-card border border-dashboard-border rounded p-6 shadow-sm;
   }
 
-  /* Verification Badge */
+  /* Property Card - 99acres inspired */
+  .property-card {
+    @apply bg-card border border-border rounded overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer;
+  }
+
+  .property-card-featured {
+    @apply property-card border-2 border-accent relative;
+  }
+
+  .property-card-featured::before {
+    content: 'FEATURED';
+    @apply absolute top-0 right-0 bg-accent text-accent-foreground text-xs font-bold px-3 py-1 rounded-bl;
+  }
+
+  /* Verification Badge - 99acres style */
   .verified-badge {
-    @apply inline-flex items-center gap-1 bg-accent text-accent-foreground text-xs font-semibold px-2 py-1 rounded-full;
+    @apply inline-flex items-center gap-1 bg-success/10 text-success text-xs font-semibold px-2.5 py-0.5 rounded border border-success/20;
+  }
+
+  .premium-badge {
+    @apply inline-flex items-center gap-1 bg-accent/10 text-accent text-xs font-bold px-2.5 py-0.5 rounded border border-accent/30;
+  }
+
+  /* Tags */
+  .tag-new {
+    @apply inline-block bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded-sm;
+  }
+
+  .tag-verified {
+    @apply inline-block bg-success text-success-foreground text-xs font-semibold px-2 py-1 rounded-sm;
+  }
+
+  /* Price Display */
+  .price-display {
+    @apply text-2xl font-bold text-foreground;
+  }
+
+  .price-label {
+    @apply text-sm text-muted-foreground uppercase tracking-wide;
+  }
+
+  /* Stats */
+  .stat-value {
+    @apply text-xl font-bold text-foreground;
+  }
+
+  .stat-label {
+    @apply text-sm text-muted-foreground;
+  }
+
+  /* Info Pills */
+  .info-pill {
+    @apply inline-flex items-center gap-1 bg-muted text-muted-foreground text-xs font-medium px-3 py-1 rounded-full;
   }
 
   /* Gradient Text */
   .gradient-text {
-    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
   }
 
-  /* Animation Classes */
-  .fade-in {
-    @apply animate-in fade-in-0 duration-500;
+  /* Section Headers */
+  .section-header {
+    @apply text-2xl font-bold text-foreground mb-4;
   }
 
-  .slide-up {
-    @apply animate-in slide-in-from-bottom-4 duration-500;
+  .section-subheader {
+    @apply text-muted-foreground mb-6;
   }
 
-  .scale-in {
-    @apply animate-in zoom-in-95 duration-300;
-  }
-
-  /* Gradient backgrounds */
-  .bg-gradient-primary {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-hover)));
-  }
-
-  .bg-gradient-accent {
-    background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-glow)));
-  }
-
+  /* Shadows */
   .shadow-card {
     box-shadow: var(--shadow-card);
   }
@@ -229,5 +260,25 @@
 
   .shadow-floating {
     box-shadow: var(--shadow-floating);
+  }
+
+  /* Hover Effects */
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-1;
+  }
+
+  /* Dividers */
+  .divider {
+    @apply border-t border-border my-4;
+  }
+
+  /* Contact Button - 99acres style */
+  .btn-contact {
+    @apply bg-success hover:bg-success/90 text-success-foreground font-semibold px-6 py-2.5 rounded transition-colors duration-200;
+  }
+
+  /* Search Bar */
+  .search-bar {
+    @apply w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
   }
 }

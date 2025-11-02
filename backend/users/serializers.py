@@ -120,3 +120,46 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         if value and len(value) > 500:
             raise serializers.ValidationError("Bio must not exceed 500 characters.")
         return value
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """Serializer for changing user password"""
+    old_password = serializers.CharField(required=True, write_only=True)
+    new_password = serializers.CharField(required=True, write_only=True, validators=[validate_password])
+    new_password_confirm = serializers.CharField(required=True, write_only=True)
+    
+    def validate_old_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Old password is incorrect.")
+        return value
+    
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['new_password_confirm']:
+            raise serializers.ValidationError({
+                "new_password_confirm": "New passwords don't match."
+            })
+        return attrs
+    
+    def save(self):
+        user = self.context['request'].user
+        user.set_password(self.validated_data['new_password'])
+        user.save()
+        return user
+
+
+class UpdateUsernameSerializer(serializers.Serializer):
+    """Serializer for updating username"""
+    username = serializers.CharField(required=True, min_length=3, max_length=150)
+    
+    def validate_username(self, value):
+        user = self.context['request'].user
+        if User.objects.filter(username=value).exclude(id=user.id).exists():
+            raise serializers.ValidationError("This username is already taken.")
+        return value
+    
+    def save(self):
+        user = self.context['request'].user
+        user.username = self.validated_data['username']
+        user.save()
+        return user

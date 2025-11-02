@@ -9,7 +9,10 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 import os
-from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer, UserProfileUpdateSerializer
+from .serializers import (
+    LoginSerializer, RegisterSerializer, UserProfileSerializer, 
+    UserProfileUpdateSerializer, ChangePasswordSerializer, UpdateUsernameSerializer
+)
 
 User = get_user_model()
 
@@ -122,6 +125,39 @@ class UserProfileView(APIView):
     def patch(self, request):
         """Partially update user profile information"""
         return self.put(request)
+
+
+class ChangePasswordView(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def post(self, request):
+        """Change user password"""
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Password changed successfully"
+            }, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UpdateUsernameView(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def post(self, request):
+        """Update username"""
+        serializer = UpdateUsernameSerializer(data=request.data, context={'request': request})
+        
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({
+                "message": "Username updated successfully",
+                "username": user.username
+            }, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class GoogleOAuthRedirect(View):
