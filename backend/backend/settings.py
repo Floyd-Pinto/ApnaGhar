@@ -220,17 +220,27 @@ SOCIALACCOUNT_AUTO_SIGNUP = True
 # Google OAuth settings
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
+        'APP': {
+            'client_id': os.getenv('GOOGLE_CLIENT_ID'),
+            'secret': os.getenv('GOOGLE_CLIENT_SECRET'),
+        },
         'SCOPE': [
             'profile',
             'email',
         ],
         'AUTH_PARAMS': {
             'access_type': 'online',
-        }
-        # Note: OAuth credentials are configured in Django Admin > Social Applications
-        # Do not use 'APP' config here to avoid conflicts
+            'prompt': 'consent',
+        },
     }
 }
+
+# Allauth Social Login Settings
+SOCIALACCOUNT_LOGIN_ON_GET = True  # Allow login via GET request
+SOCIALACCOUNT_AUTO_SIGNUP = True  # Automatically create user on social login
+ACCOUNT_UNIQUE_EMAIL = True  # Ensure emails are unique
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True  # Use email for authentication
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True  # Auto-connect social accounts with same email
 
 # After social login, redirect to frontend
 ACCOUNT_ADAPTER = 'users.adapters.CustomAccountAdapter'
