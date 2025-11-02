@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
+from django.views import View
+from django.contrib.auth import get_user_model
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -8,6 +10,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 import os
 from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer, UserProfileUpdateSerializer
+
+User = get_user_model()
 
 # Create your views here.
 
@@ -120,12 +124,11 @@ class UserProfileView(APIView):
         return self.put(request)
 
 
-class GoogleOAuthRedirect(APIView):
+class GoogleOAuthRedirect(View):
     """
     After successful Google OAuth, generate JWT tokens and redirect to frontend
-    This is called by the custom adapter after social account is connected
+    This is a Django View (not DRF APIView) to properly use session authentication
     """
-    permission_classes = (AllowAny,)
     
     def get(self, request):
         # This endpoint is hit after allauth processes the OAuth callback
@@ -133,20 +136,33 @@ class GoogleOAuthRedirect(APIView):
         print(f"User: {request.user}")
         print(f"Session keys: {list(request.session.keys())}")
         
-        # Check if there's a socialaccount in the session (allauth stores this)
-        socialaccount_data = request.session.get('socialaccount_sociallogin')
-        print(f"Social account data in session: {socialaccount_data is not None}")
+        # Check if there's auth data in session
+        auth_user_id = request.session.get('_auth_user_id')
+        print(f"Auth user ID in session: {auth_user_id}")
         
+        # If user is not authenticated but we have a user ID in session,
+        # manually get the user (this handles the case where middleware hasn't loaded user yet)
+        user = None
         if request.user.is_authenticated:
+            user = request.user
+            print(f"User from request.user: {user.email}")
+        elif auth_user_id:
+            try:
+                user = User.objects.get(id=auth_user_id)
+                print(f"User loaded from session ID: {user.email}")
+            except User.DoesNotExist:
+                print(f"User with ID {auth_user_id} not found")
+        
+        if user:
             try:
                 # Generate JWT tokens for the authenticated user
-                refresh = RefreshToken.for_user(request.user)
+                refresh = RefreshToken.for_user(user)
                 
-                print(f"Generated tokens for user: {request.user.email}")
+                print(f"Generated tokens for user: {user.email}")
                 
                 # Redirect to frontend with tokens
                 frontend_url = os.getenv('FRONTEND_URL', 'https://apnaghar-five.vercel.app')
-                redirect_url = f"{frontend_url}/auth/callback?access={str(refresh.access_token)}&refresh={str(refresh)}&user_id={request.user.id}"
+                redirect_url = f"{frontend_url}/auth/callback?access={str(refresh.access_token)}&refresh={str(refresh)}&user_id={user.id}"
                 
                 print(f"Redirecting to: {redirect_url}")
                 return redirect(redirect_url)
