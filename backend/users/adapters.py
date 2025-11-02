@@ -20,6 +20,15 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         backend_url = os.getenv('BACKEND_URL', 'https://apnaghar-2emb.onrender.com')
         return f"{backend_url}/api/auth/google/redirect/"
     
+    def get_login_redirect_url(self, request):
+        """
+        This is called after successful social login (not connect).
+        Redirect to our custom endpoint that will generate JWT tokens
+        and then redirect to frontend with tokens
+        """
+        backend_url = os.getenv('BACKEND_URL', 'https://apnaghar-2emb.onrender.com')
+        return f"{backend_url}/api/auth/google/redirect/"
+    
     def pre_social_login(self, request, socialaccount):
         """
         Handle user data before social login.

@@ -235,12 +235,12 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-# OAuth Callback URLs
-SOCIALACCOUNT_CALLBACK_URL = os.getenv('BACKEND_URL', 'https://apnaghar-2emb.onrender.com') + '/api/auth/google/callback/'
-
 # After social login, redirect to frontend
 ACCOUNT_ADAPTER = 'users.adapters.CustomAccountAdapter'
 SOCIALACCOUNT_ADAPTER = 'users.adapters.CustomSocialAccountAdapter'
+
+# Login redirect URL - overridden by adapters
+LOGIN_REDIRECT_URL = '/api/auth/google/redirect/'
 
 # dj-rest-auth configuration to use JWT
 REST_AUTH = {
