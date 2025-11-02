@@ -226,12 +226,9 @@ SOCIALACCOUNT_PROVIDERS = {
         ],
         'AUTH_PARAMS': {
             'access_type': 'online',
-        },
-        'APP': {
-            'client_id': os.getenv('GOOGLE_CLIENT_ID'),
-            'secret': os.getenv('GOOGLE_CLIENT_SECRET'),
-            'key': ''
         }
+        # Note: OAuth credentials are configured in Django Admin > Social Applications
+        # Do not use 'APP' config here to avoid conflicts
     }
 }
 
