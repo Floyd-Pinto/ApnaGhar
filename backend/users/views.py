@@ -11,7 +11,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 import os
 from .serializers import (
     LoginSerializer, RegisterSerializer, UserProfileSerializer, 
-    UserProfileUpdateSerializer, ChangePasswordSerializer, UpdateUsernameSerializer
+    UserProfileUpdateSerializer, ChangePasswordSerializer, UpdateUsernameSerializer,
+    SetInitialPasswordSerializer
 )
 
 User = get_user_model()
@@ -155,6 +156,22 @@ class UpdateUsernameView(APIView):
             return Response({
                 "message": "Username updated successfully",
                 "username": user.username
+            }, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SetInitialPasswordView(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def post(self, request):
+        """Set initial password for OAuth users who don't have a password"""
+        serializer = SetInitialPasswordSerializer(data=request.data, context={'request': request})
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Password set successfully"
             }, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

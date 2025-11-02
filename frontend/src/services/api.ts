@@ -227,6 +227,25 @@ export const authAPI = {
     return response.json();
   },
 
+  // Set initial password (for OAuth users)
+  setInitialPassword: async (newPassword: string, newPasswordConfirm: string): Promise<{ message: string }> => {
+    const response = await fetch(joinURL(API_BASE_URL, 'api/auth/set-initial-password/'), {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        new_password: newPassword,
+        new_password_confirm: newPasswordConfirm,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.new_password?.[0] || error.new_password_confirm?.[0] || error.non_field_errors?.[0] || 'Failed to set password');
+    }
+
+    return response.json();
+  },
+
   // Get Google OAuth URL
   getGoogleAuthUrl: (): string => {
     // Use allauth's Google login URL instead of dj-rest-auth

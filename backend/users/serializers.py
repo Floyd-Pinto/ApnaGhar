@@ -85,6 +85,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for user profile information"""
+    has_usable_password = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -94,9 +95,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'theme_preference', 'language', 'timezone',
             'email_notifications', 'push_notifications', 'marketing_emails',
             'profile_visibility', 'show_activity_status',
-            'date_joined', 'is_active', 'is_staff'
+            'date_joined', 'is_active', 'is_staff', 'has_usable_password'
         )
-        read_only_fields = ('id', 'username', 'role', 'date_joined', 'is_active', 'is_staff')
+        read_only_fields = ('id', 'username', 'role', 'date_joined', 'is_active', 'is_staff', 'has_usable_password')
+    
+    def get_has_usable_password(self, obj):
+        """Check if user has a usable password set"""
+        return obj.has_usable_password()
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
@@ -161,5 +166,32 @@ class UpdateUsernameSerializer(serializers.Serializer):
     def save(self):
         user = self.context['request'].user
         user.username = self.validated_data['username']
+        user.save()
+        return user
+
+
+class SetInitialPasswordSerializer(serializers.Serializer):
+    """Serializer for setting initial password (for OAuth users who don't have password)"""
+    new_password = serializers.CharField(required=True, write_only=True, validators=[validate_password])
+    new_password_confirm = serializers.CharField(required=True, write_only=True)
+    
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['new_password_confirm']:
+            raise serializers.ValidationError({
+                "new_password_confirm": "Password fields didn't match."
+            })
+        
+        # Check if user already has a password
+        user = self.context['request'].user
+        if user.has_usable_password():
+            raise serializers.ValidationError(
+                "You already have a password set. Use 'Change Password' instead."
+            )
+        
+        return attrs
+    
+    def save(self):
+        user = self.context['request'].user
+        user.set_password(self.validated_data['new_password'])
         user.save()
         return user

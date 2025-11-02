@@ -156,6 +156,12 @@ const ProfilePage: React.FC = () => {
       const response = await authAPI.updateProfile(preferencesForm);
       setUserProfile(response.user);
       setSuccess('Preferences updated successfully!');
+      
+      // Update theme context if theme preference changed
+      const { setTheme } = await import('../contexts/ThemeContext').then(m => ({ setTheme: m.useTheme }));
+      if (preferencesForm.theme_preference !== userProfile?.theme_preference) {
+        window.location.reload(); // Reload to apply theme
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update preferences');
     }
@@ -171,6 +177,28 @@ const ProfilePage: React.FC = () => {
       setSuccess('Privacy settings updated successfully!');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update privacy settings');
+    }
+  };
+
+  const handleSetInitialPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setError('');
+      setSuccess('');
+      await authAPI.setInitialPassword(
+        passwordForm.new_password,
+        passwordForm.new_password_confirm
+      );
+      setSuccess('Password set successfully! You can now use it to login.');
+      setPasswordForm({
+        old_password: '',
+        new_password: '',
+        new_password_confirm: '',
+      });
+      // Refresh profile to update has_usable_password
+      await fetchUserProfile();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to set password');
     }
   };
 
@@ -446,50 +474,91 @@ const ProfilePage: React.FC = () => {
               <TabsContent value="security">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Change Password</CardTitle>
-                    <CardDescription>Update your password to keep your account secure</CardDescription>
+                    <CardTitle>
+                      {userProfile?.has_usable_password ? 'Change Password' : 'Set Your Password'}
+                    </CardTitle>
+                    <CardDescription>
+                      {userProfile?.has_usable_password 
+                        ? 'Update your password to keep your account secure'
+                        : 'Set a password to secure your account. You signed in with Google, so you can now create a password for direct login.'
+                      }
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <form onSubmit={handleChangePassword} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="old_password">Current Password *</Label>
-                        <Input
-                          id="old_password"
-                          type="password"
-                          value={passwordForm.old_password}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, old_password: e.target.value })}
-                          required
-                        />
-                      </div>
+                    {userProfile?.has_usable_password ? (
+                      // Change Password Form (for users who already have a password)
+                      <form onSubmit={handleChangePassword} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="old_password">Current Password *</Label>
+                          <Input
+                            id="old_password"
+                            type="password"
+                            value={passwordForm.old_password}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, old_password: e.target.value })}
+                            required
+                          />
+                        </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="new_password">New Password *</Label>
-                        <Input
-                          id="new_password"
-                          type="password"
-                          value={passwordForm.new_password}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
-                          required
-                          minLength={8}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Must be at least 8 characters long
-                        </p>
-                      </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="new_password">New Password *</Label>
+                          <Input
+                            id="new_password"
+                            type="password"
+                            value={passwordForm.new_password}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                            required
+                            minLength={8}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Must be at least 8 characters long
+                          </p>
+                        </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="new_password_confirm">Confirm New Password *</Label>
-                        <Input
-                          id="new_password_confirm"
-                          type="password"
-                          value={passwordForm.new_password_confirm}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, new_password_confirm: e.target.value })}
-                          required
-                        />
-                      </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="new_password_confirm">Confirm New Password *</Label>
+                          <Input
+                            id="new_password_confirm"
+                            type="password"
+                            value={passwordForm.new_password_confirm}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, new_password_confirm: e.target.value })}
+                            required
+                          />
+                        </div>
 
-                      <Button type="submit">Change Password</Button>
-                    </form>
+                        <Button type="submit">Change Password</Button>
+                      </form>
+                    ) : (
+                      // Set Initial Password Form (for OAuth users without a password)
+                      <form onSubmit={handleSetInitialPassword} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="new_password">New Password *</Label>
+                          <Input
+                            id="new_password"
+                            type="password"
+                            value={passwordForm.new_password}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                            required
+                            minLength={8}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Must be at least 8 characters long
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="new_password_confirm">Confirm New Password *</Label>
+                          <Input
+                            id="new_password_confirm"
+                            type="password"
+                            value={passwordForm.new_password_confirm}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, new_password_confirm: e.target.value })}
+                            required
+                          />
+                        </div>
+
+                        <Button type="submit">Set Password</Button>
+                      </form>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
