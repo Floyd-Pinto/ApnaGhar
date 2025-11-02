@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { authAPI } from '../services/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -17,6 +18,7 @@ import { User, Settings, Edit3, Mail, Calendar, MapPin, Phone, Key, UserCog, Bel
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();
+  const { setTheme } = useTheme();
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -70,6 +72,8 @@ const ProfilePage: React.FC = () => {
   const fetchUserProfile = async () => {
     try {
       const profile = await authAPI.getProfile();
+      console.log('Profile data:', profile);
+      console.log('has_usable_password:', profile.has_usable_password);
       setUserProfile(profile);
       setProfileForm({
         first_name: profile.first_name || '',
@@ -157,10 +161,9 @@ const ProfilePage: React.FC = () => {
       setUserProfile(response.user);
       setSuccess('Preferences updated successfully!');
       
-      // Update theme context if theme preference changed
-      const { setTheme } = await import('../contexts/ThemeContext').then(m => ({ setTheme: m.useTheme }));
+      // Apply theme immediately using theme context
       if (preferencesForm.theme_preference !== userProfile?.theme_preference) {
-        window.location.reload(); // Reload to apply theme
+        setTheme(preferencesForm.theme_preference);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update preferences');
@@ -485,6 +488,10 @@ const ProfilePage: React.FC = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
+                    {/* Debug info - remove later */}
+                    <div className="mb-4 p-2 bg-gray-100 text-xs">
+                      Debug: has_usable_password = {String(userProfile?.has_usable_password)}
+                    </div>
                     {userProfile?.has_usable_password ? (
                       // Change Password Form (for users who already have a password)
                       <form onSubmit={handleChangePassword} className="space-y-4">

@@ -30,6 +30,7 @@ export interface User {
   date_joined?: string;
   is_active?: boolean;
   is_staff?: boolean;
+  has_usable_password?: boolean;
 }
 
 export interface ProfileUpdateRequest {
