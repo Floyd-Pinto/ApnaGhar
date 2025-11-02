@@ -210,12 +210,12 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-# Allauth settings
+# Allauth Account Settings
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = 'optional'
-ACCOUNT_LOGIN_METHODS = {'username', 'email'}  # Replaces deprecated ACCOUNT_AUTHENTICATION_METHOD
-ACCOUNT_USERNAME_REQUIRED = False
-SOCIALACCOUNT_AUTO_SIGNUP = True
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # No email verification required
+ACCOUNT_LOGIN_METHODS = {'username', 'email'}
+ACCOUNT_USERNAME_REQUIRED = False  # Don't require username for social login
+ACCOUNT_UNIQUE_EMAIL = True  # Ensure emails are unique
 
 # Google OAuth settings
 SOCIALACCOUNT_PROVIDERS = {
@@ -238,9 +238,9 @@ SOCIALACCOUNT_PROVIDERS = {
 # Allauth Social Login Settings
 SOCIALACCOUNT_LOGIN_ON_GET = True  # Allow login via GET request
 SOCIALACCOUNT_AUTO_SIGNUP = True  # Automatically create user on social login
-ACCOUNT_UNIQUE_EMAIL = True  # Ensure emails are unique
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True  # Use email for authentication
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True  # Auto-connect social accounts with same email
+SOCIALACCOUNT_QUERY_EMAIL = True  # Query for email if not provided by provider
 
 # After social login, redirect to frontend
 ACCOUNT_ADAPTER = 'users.adapters.CustomAccountAdapter'

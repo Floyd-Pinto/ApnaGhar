@@ -130,16 +130,28 @@ class GoogleOAuthRedirect(APIView):
     def get(self, request):
         # This endpoint is hit after allauth processes the OAuth callback
         # and the user is logged in via Django session
+        print(f"GoogleOAuthRedirect called - User authenticated: {request.user.is_authenticated}")
+        print(f"User: {request.user}")
+        
         if request.user.is_authenticated:
-            # Generate JWT tokens for the authenticated user
-            refresh = RefreshToken.for_user(request.user)
-            
-            # Redirect to frontend with tokens
-            frontend_url = os.getenv('FRONTEND_URL', 'https://apnaghar-five.vercel.app')
-            redirect_url = f"{frontend_url}/auth/callback?access={str(refresh.access_token)}&refresh={str(refresh)}&user_id={request.user.id}"
-            
-            return redirect(redirect_url)
+            try:
+                # Generate JWT tokens for the authenticated user
+                refresh = RefreshToken.for_user(request.user)
+                
+                print(f"Generated tokens for user: {request.user.email}")
+                
+                # Redirect to frontend with tokens
+                frontend_url = os.getenv('FRONTEND_URL', 'https://apnaghar-five.vercel.app')
+                redirect_url = f"{frontend_url}/auth/callback?access={str(refresh.access_token)}&refresh={str(refresh)}&user_id={request.user.id}"
+                
+                print(f"Redirecting to: {redirect_url}")
+                return redirect(redirect_url)
+            except Exception as e:
+                print(f"Error generating tokens: {e}")
+                frontend_url = os.getenv('FRONTEND_URL', 'https://apnaghar-five.vercel.app')
+                return redirect(f"{frontend_url}/login?error=token_generation_failed")
         else:
-            # OAuth failed
+            # OAuth failed - user not authenticated
+            print("OAuth redirect called but user not authenticated")
             frontend_url = os.getenv('FRONTEND_URL', 'https://apnaghar-five.vercel.app')
             return redirect(f"{frontend_url}/login?error=oauth_failed")
