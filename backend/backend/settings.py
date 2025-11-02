@@ -246,8 +246,10 @@ SOCIALACCOUNT_QUERY_EMAIL = True  # Query for email if not provided by provider
 ACCOUNT_ADAPTER = 'users.adapters.CustomAccountAdapter'
 SOCIALACCOUNT_ADAPTER = 'users.adapters.CustomSocialAccountAdapter'
 
-# Login redirect URL - overridden by adapters
+# Login redirect URL
 LOGIN_REDIRECT_URL = '/api/auth/google/redirect/'
+# This is used by allauth after successful login
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # dj-rest-auth configuration to use JWT
 REST_AUTH = {
