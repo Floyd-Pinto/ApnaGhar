@@ -26,9 +26,12 @@ const OAuthCallback: React.FC = () => {
         localStorage.setItem('refresh_token', refresh);
 
         try {
-          // Use refreshToken to update user state
-          await refreshToken();
-          navigate('/dashboard');
+          // Fetch user profile directly (tokens are already fresh from OAuth)
+          const profile = await authAPI.getProfile();
+          console.log('OAuth login successful, user profile:', profile);
+          
+          // Trigger a page reload to update AuthContext with new tokens
+          window.location.href = '/dashboard';
         } catch (error) {
           console.error('Failed to fetch user profile:', error);
           navigate('/login?error=profile_fetch_failed');
