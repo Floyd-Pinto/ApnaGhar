@@ -66,9 +66,15 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def save_user(self, request, sociallogin, form=None):
         """
         Save user and ensure email is verified for social logins
+        Also ensure OAuth users have unusable password
         """
         user = super().save_user(request, sociallogin, form)
         email = user.email
+        
+        # Set unusable password for social login users (OAuth users)
+        # This ensures they must login via OAuth and can later set their own password
+        user.set_unusable_password()
+        user.save()
         
         # Ensure email is verified for social login users
         email_address, created = EmailAddress.objects.get_or_create(

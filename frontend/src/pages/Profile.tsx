@@ -72,8 +72,6 @@ const ProfilePage: React.FC = () => {
   const fetchUserProfile = async () => {
     try {
       const profile = await authAPI.getProfile();
-      console.log('Profile data:', profile);
-      console.log('has_usable_password:', profile.has_usable_password);
       setUserProfile(profile);
       setProfileForm({
         first_name: profile.first_name || '',
@@ -488,10 +486,6 @@ const ProfilePage: React.FC = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {/* Debug info - remove later */}
-                    <div className="mb-4 p-2 bg-gray-100 text-xs">
-                      Debug: has_usable_password = {String(userProfile?.has_usable_password)}
-                    </div>
                     {userProfile?.has_usable_password ? (
                       // Change Password Form (for users who already have a password)
                       <form onSubmit={handleChangePassword} className="space-y-4">
