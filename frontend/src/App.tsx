@@ -10,6 +10,7 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Homepage from "./pages/Homepage";
 import ExploreProjects from "./pages/ExploreProjects";
+import ProjectOverview from "./pages/ProjectOverview";
 import Projects from "./pages/Projects";
 import PropertyDetails from "./pages/PropertyDetails";
 import Dashboard from "./pages/Dashboard";
@@ -48,14 +49,7 @@ const Layout = () => {
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/projects/:id" 
-            element={
-              <ProtectedRoute>
-                <PropertyDetails />
-              </ProtectedRoute>
-            } 
-          />
+          <Route path="/projects/:id" element={<ProjectOverview />} />
           <Route 
             path="/dashboard" 
             element={
