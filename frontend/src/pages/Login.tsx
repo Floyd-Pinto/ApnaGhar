@@ -17,12 +17,13 @@ const LoginPage: React.FC = () => {
   const [generalError, setGeneralError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const location = useLocation();
 
-  // If already logged in, redirect to intended page or dashboard
+  // If already logged in, redirect to role-specific dashboard
   if (isAuthenticated) {
-    const from = location.state?.from?.pathname || '/dashboard';
+    const dashboardPath = user?.role === 'builder' ? '/dashboard/builder' : '/dashboard/buyer';
+    const from = location.state?.from?.pathname || dashboardPath;
     return <Navigate to={from} replace />;
   }
 

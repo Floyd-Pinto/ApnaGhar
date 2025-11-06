@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
-import { User, Settings, Edit3, Mail, Calendar, MapPin, Phone, Key, UserCog, Bell, Shield, Eye } from 'lucide-react';
+import { User, Settings, Edit3, Mail, Calendar, MapPin, Phone, Key, UserCog, Bell, Shield, Eye, Building2 } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();
@@ -422,6 +422,64 @@ const ProfilePage: React.FC = () => {
                     <CardDescription>Manage your account credentials</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    {/* Role Selector */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Account Type</Label>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Switch between buyer and builder roles. The page will reload automatically.
+                        </p>
+                      </div>
+                      <div className="flex gap-4">
+                        <Button
+                          variant={userProfile?.role === 'buyer' ? 'default' : 'outline'}
+                          className="flex-1"
+                          onClick={async () => {
+                            if (userProfile?.role !== 'buyer') {
+                              try {
+                                setError('');
+                                setSuccess('');
+                                await authAPI.updateRole('buyer');
+                                setSuccess('Switching to Buyer account...');
+                                setTimeout(() => {
+                                  window.location.href = '/dashboard/buyer';
+                                }, 1000);
+                              } catch (err) {
+                                setError('Failed to switch role');
+                              }
+                            }
+                          }}
+                        >
+                          <UserCog className="h-4 w-4 mr-2" />
+                          Buyer
+                        </Button>
+                        <Button
+                          variant={userProfile?.role === 'builder' ? 'default' : 'outline'}
+                          className="flex-1"
+                          onClick={async () => {
+                            if (userProfile?.role !== 'builder') {
+                              try {
+                                setError('');
+                                setSuccess('');
+                                await authAPI.updateRole('builder');
+                                setSuccess('Switching to Builder account...');
+                                setTimeout(() => {
+                                  window.location.href = '/dashboard/builder';
+                                }, 1000);
+                              } catch (err) {
+                                setError('Failed to switch role');
+                              }
+                            }
+                          }}
+                        >
+                          <Building2 className="h-4 w-4 mr-2" />
+                          Builder
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Separator />
+
                     <form onSubmit={handleUpdateUsername} className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="username">Username</Label>
