@@ -260,15 +260,21 @@ export default function ExploreProjects() {
                   </div>
 
                   <div className="flex flex-wrap gap-1">
-                    {project.amenities.slice(0, 3).map((amenity, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {amenity}
-                      </Badge>
-                    ))}
-                    {project.amenities.length > 3 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{project.amenities.length - 3} more
-                      </Badge>
+                    {project.amenities && project.amenities.length > 0 ? (
+                      <>
+                        {project.amenities.slice(0, 3).map((amenity, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {amenity}
+                          </Badge>
+                        ))}
+                        {project.amenities.length > 3 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{project.amenities.length - 3} more
+                          </Badge>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No amenities listed</span>
                     )}
                   </div>
                 </CardContent>
