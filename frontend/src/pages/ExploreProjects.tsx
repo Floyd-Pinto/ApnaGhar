@@ -18,7 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, MapPin, Home, Building2, CheckCircle2 } from "lucide-react";
+import {
+  Loader2,
+  MapPin,
+  Home,
+  Building2,
+  CheckCircle2,
+  SlidersHorizontal,
+  X,
+  Heart,
+} from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -39,6 +48,8 @@ interface Project {
   verification_score: string;
   amenities: string[];
   expected_completion: string;
+  views_count: number;
+  interested_count: number;
 }
 
 export default function ExploreProjects() {
@@ -47,10 +58,14 @@ export default function ExploreProjects() {
   const [searchQuery, setSearchQuery] = useState("");
   const [cityFilter, setCityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     fetchProjects();
-  }, [cityFilter, statusFilter]);
+  }, [cityFilter, statusFilter, sortBy]);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -61,6 +76,14 @@ export default function ExploreProjects() {
       if (cityFilter !== "all") params.append("city", cityFilter);
       if (statusFilter !== "all") params.append("status", statusFilter);
       if (searchQuery) params.append("search", searchQuery);
+      if (priceMin) params.append("min_price", priceMin);
+      if (priceMax) params.append("max_price", priceMax);
+      
+      // Apply sorting
+      if (sortBy === "price_low") params.append("ordering", "starting_price");
+      else if (sortBy === "price_high") params.append("ordering", "-starting_price");
+      else if (sortBy === "newest") params.append("ordering", "-created_at");
+      else if (sortBy === "popular") params.append("ordering", "-views_count");
       
       if (params.toString()) url += `?${params.toString()}`;
 
@@ -132,6 +155,18 @@ export default function ExploreProjects() {
                 <Button type="submit">Search</Button>
               </div>
 
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold">Filters</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  {showFilters ? "Hide" : "Show"} Advanced
+                </Button>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">City</label>
@@ -165,20 +200,67 @@ export default function ExploreProjects() {
                   </Select>
                 </div>
 
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setCityFilter("all");
-                      setStatusFilter("all");
-                    }}
-                    className="w-full"
-                  >
-                    Reset Filters
-                  </Button>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Sort By</label>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Newest First</SelectItem>
+                      <SelectItem value="popular">Most Popular</SelectItem>
+                      <SelectItem value="price_low">Price: Low to High</SelectItem>
+                      <SelectItem value="price_high">Price: High to Low</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
+
+              {/* Advanced Filters */}
+              {showFilters && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Min Price (₹)
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 5000000"
+                      value={priceMin}
+                      onChange={(e) => setPriceMin(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Max Price (₹)
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 10000000"
+                      value={priceMax}
+                      onChange={(e) => setPriceMax(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCityFilter("all");
+                    setStatusFilter("all");
+                    setPriceMin("");
+                    setPriceMax("");
+                    setSortBy("newest");
+                  }}
+                  className="flex-1"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Reset All Filters
+                </Button>
               </div>
             </form>
           </CardContent>
@@ -277,10 +359,28 @@ export default function ExploreProjects() {
                       <span className="text-xs text-muted-foreground">No amenities listed</span>
                     )}
                   </div>
+
+                  {/* View Count */}
+                  {project.views_count > 0 && (
+                    <div className="text-xs text-muted-foreground mt-2">
+                      {project.views_count} views
+                    </div>
+                  )}
                 </CardContent>
 
-                <CardFooter>
-                  <Link to={`/projects/${project.id}`} className="w-full">
+                <CardFooter className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      // TODO: Implement save/favorite functionality
+                      console.log("Saved project:", project.id);
+                    }}
+                  >
+                    <Heart className="h-4 w-4" />
+                  </Button>
+                  <Link to={`/projects/${project.id}`} className="flex-1">
                     <Button className="w-full">View Details</Button>
                   </Link>
                 </CardFooter>

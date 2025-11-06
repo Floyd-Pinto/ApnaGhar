@@ -14,6 +14,8 @@ import ProjectOverview from "./pages/ProjectOverview";
 import Projects from "./pages/Projects";
 import PropertyDetails from "./pages/PropertyDetails";
 import Dashboard from "./pages/Dashboard";
+import BuyerDashboard from "./pages/BuyerDashboard";
+import BuilderDashboard from "./pages/BuilderDashboard";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import LoginPage from "./pages/Login";
@@ -55,6 +57,22 @@ const Layout = () => {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard/buyer" 
+            element={
+              <ProtectedRoute>
+                <BuyerDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard/builder" 
+            element={
+              <ProtectedRoute>
+                <BuilderDashboard />
               </ProtectedRoute>
             } 
           />

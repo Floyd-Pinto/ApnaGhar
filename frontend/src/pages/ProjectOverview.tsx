@@ -26,6 +26,7 @@ import {
   Mail,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import ProjectReviews from "@/components/ProjectReviews";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -72,6 +73,20 @@ interface Milestone {
   images: string[];
 }
 
+interface Review {
+  id: string;
+  user_name: string;
+  rating: number;
+  title: string;
+  comment: string;
+  location_rating: number | null;
+  amenities_rating: number | null;
+  value_rating: number | null;
+  helpful_count: number;
+  verified_buyer: boolean;
+  created_at: string;
+}
+
 interface Project {
   id: string;
   name: string;
@@ -101,6 +116,7 @@ interface Project {
   verification_score: string;
   properties: Property[];
   milestones: Milestone[];
+  reviews: Review[];
   average_rating: string;
 }
 
@@ -283,12 +299,15 @@ export default function ProjectOverview() {
 
             {/* Tabs */}
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="properties">
                   Properties ({project.properties?.length || 0})
                 </TabsTrigger>
                 <TabsTrigger value="amenities">Amenities</TabsTrigger>
+                <TabsTrigger value="reviews">
+                  Reviews ({project.reviews?.length || 0})
+                </TabsTrigger>
                 <TabsTrigger value="location">Location</TabsTrigger>
               </TabsList>
 
@@ -470,6 +489,15 @@ export default function ProjectOverview() {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="reviews">
+                <ProjectReviews
+                  projectId={project.id}
+                  reviews={project.reviews || []}
+                  averageRating={project.average_rating}
+                  onReviewAdded={fetchProjectDetails}
+                />
               </TabsContent>
 
               <TabsContent value="location">

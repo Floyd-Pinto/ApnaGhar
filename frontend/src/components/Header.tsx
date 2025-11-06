@@ -57,7 +57,7 @@ const Header = () => {
             {isAuthenticated && (
               <>
                 <Link 
-                  to="/dashboard" 
+                  to={user?.role === 'builder' ? '/dashboard/builder' : '/dashboard/buyer'} 
                   className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
                 >
                   My Dashboard
@@ -121,7 +121,10 @@ const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/dashboard" className="flex items-center space-x-2 cursor-pointer">
+                    <Link 
+                      to={user?.role === 'builder' ? '/dashboard/builder' : '/dashboard/buyer'} 
+                      className="flex items-center space-x-2 cursor-pointer"
+                    >
                       <Shield className="h-4 w-4" />
                       <span>My Dashboard</span>
                     </Link>
