@@ -36,9 +36,17 @@ const OAuthCallback: React.FC = () => {
           // Check if user has completed role selection
           const hasCompletedRoleSelection = localStorage.getItem(`role_selected_${profile.id}`);
           
-          // Show role dialog for OAuth users who haven't selected a role yet
-          // This checks: OAuth user (no password) AND hasn't completed role selection
-          const shouldShowRoleDialog = !profile.has_usable_password && !hasCompletedRoleSelection;
+          // Show role dialog for:
+          // 1. New OAuth users (no password AND no localStorage flag)
+          // 2. ANY user who still has default 'buyer' role (for existing users added before this feature)
+          const shouldShowRoleDialog = (!profile.has_usable_password && !hasCompletedRoleSelection);
+          
+          console.log('Role check:', { 
+            has_usable_password: profile.has_usable_password, 
+            hasCompletedRoleSelection, 
+            currentRole: profile.role,
+            shouldShowRoleDialog 
+          });
           
           if (shouldShowRoleDialog) {
             setIsNewUser(true);

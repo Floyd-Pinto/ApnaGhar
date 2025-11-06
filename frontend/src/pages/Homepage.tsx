@@ -45,6 +45,7 @@ const Homepage = () => {
   });
 
   useEffect(() => {
+    console.log('Homepage - isAuthenticated:', isAuthenticated);
     fetchFeaturedProjects();
     fetchStats();
   }, [isAuthenticated]); // Re-fetch when auth status changes
@@ -55,11 +56,18 @@ const Homepage = () => {
       // For authenticated users, show more projects based on views
       const ordering = isAuthenticated ? '-views_count' : 'popular';
       const pageSize = isAuthenticated ? '6' : '3';
+      const url = `${API_BASE_URL}/api/projects/projects/?ordering=${ordering}&page_size=${pageSize}`;
+      console.log('Fetching projects:', { isAuthenticated, ordering, pageSize, url });
       
-      const response = await fetch(`${API_BASE_URL}/api/projects/projects/?ordering=${ordering}&page_size=${pageSize}`);
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setFeaturedProjects(data);
+        console.log('API response:', data);
+        
+        // DRF pagination returns {count, next, previous, results}
+        const projects = data.results || data;
+        console.log(`Setting ${projects.length} projects`);
+        setFeaturedProjects(projects);
       }
     } catch (error) {
       console.error('Error fetching featured projects:', error);
@@ -297,8 +305,8 @@ const Homepage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
             {loading ? (
-              // Loading skeleton
-              [...Array(6)].map((_, i) => (
+              // Loading skeleton - show 3 for guests, 6 for authenticated
+              [...Array(isAuthenticated ? 6 : 3)].map((_, i) => (
                 <div key={i} className="bg-card rounded-lg p-4 animate-pulse">
                   <div className="bg-muted h-48 rounded mb-4"></div>
                   <div className="bg-muted h-6 rounded mb-2"></div>
