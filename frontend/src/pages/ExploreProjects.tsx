@@ -111,7 +111,10 @@ export default function ExploreProjects() {
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch projects");
       const data = await response.json();
-      setProjects(data);
+      
+      // Handle paginated response from DRF
+      const projectsList = data.results || data;
+      setProjects(projectsList);
     } catch (error) {
       console.error("Error fetching projects:", error);
     } finally {
