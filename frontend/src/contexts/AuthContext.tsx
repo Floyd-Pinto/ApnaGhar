@@ -9,6 +9,8 @@ interface AuthContextType {
   register: (userData: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
+  updateRole: (role: 'buyer' | 'builder') => Promise<void>;
+  refreshUserProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -131,6 +133,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateRole = async (role: 'buyer' | 'builder') => {
+    try {
+      await authAPI.updateRole(role);
+      // Refresh user profile to get updated role
+      await refreshUserProfile();
+    } catch (error) {
+      console.error('Error updating role:', error);
+      throw error;
+    }
+  };
+
+  const refreshUserProfile = async () => {
+    try {
+      const userData = await authAPI.getProfile();
+      setUser(userData);
+    } catch (error) {
+      console.error('Error refreshing user profile:', error);
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -139,6 +162,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     refreshToken: refreshTokens,
+    updateRole,
+    refreshUserProfile,
   };
 
   return (

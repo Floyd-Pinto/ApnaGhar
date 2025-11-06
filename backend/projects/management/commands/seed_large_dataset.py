@@ -18,22 +18,29 @@ class Command(BaseCommand):
             action='store_true',
             help='If set, delete existing seeded data without prompting'
         )
+        parser.add_argument(
+            '--total',
+            type=int,
+            default=50,
+            help='Total number of projects to create across all cities (default: 50)'
+        )
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.WARNING('Starting large dataset seed...'))
         
-        # Check if already seeded
+        # Check if already seeded (use --total to control target)
         force = options.get('force')
-        if Project.objects.count() >= 200:
-            current = Project.objects.count()
+        total_target = options.get('total') or 0
+        existing = Project.objects.count()
+        if existing >= total_target and total_target > 0:
             if force:
-                self.stdout.write(self.style.WARNING(f'Database has {current} projects — --force provided, deleting existing seeded data...'))
+                self.stdout.write(self.style.WARNING(f'Database has {existing} projects — --force provided, deleting existing seeded data...'))
                 Property.objects.all().delete()
                 ConstructionMilestone.objects.all().delete()
                 Project.objects.all().delete()
                 Developer.objects.all().delete()
             else:
-                self.stdout.write(self.style.WARNING(f'Database already has {current} projects.'))
+                self.stdout.write(self.style.WARNING(f'Database already has {existing} projects which is >= target ({total_target}).'))
                 response = input('Delete existing data and re-seed? (yes/no): ')
                 if response.lower() != 'yes':
                     return
@@ -48,16 +55,27 @@ class Command(BaseCommand):
         developers = self.create_developers()
         
         # City configurations
+        # Base city list (counts will be computed from the --total argument)
         cities = [
-            ('Mumbai', 'Maharashtra', (19.0760, 72.8777), 60),
-            ('Pune', 'Maharashtra', (18.5204, 73.8567), 40),
-            ('Bangalore', 'Karnataka', (12.9716, 77.5946), 50),
-            ('Delhi', 'Delhi', (28.7041, 77.1025), 30),
-            ('Hyderabad', 'Telangana', (17.3850, 78.4867), 30),
+            ('Mumbai', 'Maharashtra', (19.0760, 72.8777)),
+            ('Pune', 'Maharashtra', (18.5204, 73.8567)),
+            ('Bangalore', 'Karnataka', (12.9716, 77.5946)),
+            ('Delhi', 'Delhi', (28.7041, 77.1025)),
+            ('Hyderabad', 'Telangana', (17.3850, 78.4867)),
         ]
-        
+
+        # Distribute total_target across cities evenly
         total_created = 0
-        for city, state, coords, count in cities:
+        total_target = total_target or 50
+        num_cities = len(cities)
+        base = total_target // num_cities
+        remainder = total_target % num_cities
+        city_counts = [base + (1 if idx < remainder else 0) for idx in range(num_cities)]
+
+        for idx, (city, state, coords) in enumerate(cities):
+            count = city_counts[idx]
+            if count <= 0:
+                continue
             self.stdout.write(f'\nSeeding {count} projects for {city}...')
             created = self.seed_city_projects(city, state, coords, count, developers)
             total_created += created

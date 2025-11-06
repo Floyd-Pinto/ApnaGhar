@@ -50,6 +50,8 @@ interface Project {
   expected_completion: string;
   views_count: number;
   interested_count: number;
+  average_rating: number;
+  total_reviews: number;
 }
 
 export default function ExploreProjects() {
@@ -63,9 +65,28 @@ export default function ExploreProjects() {
   const [sortBy, setSortBy] = useState("newest");
   const [showFilters, setShowFilters] = useState(false);
 
+  // Read URL params on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    const typeParam = urlParams.get('type');
+    const cityParam = urlParams.get('city');
+    
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+    if (cityParam) {
+      setCityFilter(cityParam);
+    }
+    // Property type from homepage maps to search query or city
+    if (typeParam && typeParam !== 'all') {
+      // You could add a project_type filter if needed
+    }
+  }, []);
+
   useEffect(() => {
     fetchProjects();
-  }, [cityFilter, statusFilter, sortBy]);
+  }, [cityFilter, statusFilter, sortBy, searchQuery]);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -83,7 +104,7 @@ export default function ExploreProjects() {
       if (sortBy === "price_low") params.append("ordering", "starting_price");
       else if (sortBy === "price_high") params.append("ordering", "-starting_price");
       else if (sortBy === "newest") params.append("ordering", "-created_at");
-      else if (sortBy === "popular") params.append("ordering", "-views_count");
+      else if (sortBy === "popular") params.append("ordering", "popular"); // Changed to use average rating
       
       if (params.toString()) url += `?${params.toString()}`;
 

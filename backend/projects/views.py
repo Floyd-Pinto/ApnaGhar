@@ -38,7 +38,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'project_type', 'city', 'developer', 'verified']
     search_fields = ['name', 'description', 'city', 'address']
-    ordering_fields = ['starting_price', 'created_at', 'expected_completion', 'verification_score']
+    ordering_fields = ['starting_price', 'created_at', 'expected_completion', 'verification_score', 'views_count']
     ordering = ['-created_at']
     
     def get_serializer_class(self):
@@ -49,7 +49,14 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return ProjectDetailSerializer
     
     def get_queryset(self):
+        from django.db.models import Avg, Count
         queryset = super().get_queryset()
+        
+        # Annotate with average rating and review count for ordering
+        queryset = queryset.annotate(
+            avg_rating=Avg('reviews__rating'),
+            review_count=Count('reviews')
+        )
         
         # Filter by price range
         min_price = self.request.query_params.get('min_price')
@@ -64,6 +71,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if property_types:
             types_list = property_types.split(',')
             queryset = queryset.filter(properties__property_type__in=types_list).distinct()
+        
+        # Handle custom ordering by average rating (for "popular" filter)
+        ordering = self.request.query_params.get('ordering', '')
+        if ordering == 'popular' or ordering == '-popular':
+            # Order by highest average rating first, then by review count
+            queryset = queryset.order_by('-avg_rating', '-review_count', '-views_count')
         
         return queryset
     

@@ -3,7 +3,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     LoginView, RegisterView, LogoutView, UserProfileView, 
     GoogleOAuthRedirect, ChangePasswordView, UpdateUsernameView,
-    SetInitialPasswordView
+    SetInitialPasswordView, UpdateRoleView
 )
 
 urlpatterns = [
@@ -15,6 +15,7 @@ urlpatterns = [
     path('change-password/', ChangePasswordView.as_view(), name='change_password'),
     path('set-initial-password/', SetInitialPasswordView.as_view(), name='set_initial_password'),
     path('update-username/', UpdateUsernameView.as_view(), name='update_username'),
+    path('update-role/', UpdateRoleView.as_view(), name='update_role'),
     
     # OAuth callback - called after allauth processes Google OAuth
     path('google/redirect/', GoogleOAuthRedirect.as_view(), name='google_oauth_redirect'),

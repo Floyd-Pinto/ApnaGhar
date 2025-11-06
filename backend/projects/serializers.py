@@ -28,6 +28,8 @@ class ProjectListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for project listings"""
     developer_name = serializers.CharField(source='developer.company_name', read_only=True)
     developer_verified = serializers.BooleanField(source='developer.verified', read_only=True)
+    average_rating = serializers.SerializerMethodField()
+    total_reviews = serializers.SerializerMethodField()
     
     class Meta:
         model = Project
@@ -36,8 +38,18 @@ class ProjectListSerializer(serializers.ModelSerializer):
             'city', 'state', 'status', 'project_type', 'starting_price',
             'total_units', 'available_units', 'cover_image', 'verified',
             'verification_score', 'launch_date', 'expected_completion',
+            'average_rating', 'total_reviews', 'views_count', 'interested_count',
             'created_at'
         ]
+    
+    def get_average_rating(self, obj):
+        reviews = obj.reviews.all()
+        if reviews:
+            return round(sum(r.rating for r in reviews) / len(reviews), 2)
+        return 0
+    
+    def get_total_reviews(self, obj):
+        return obj.reviews.count()
 
 
 class MilestoneSerializer(serializers.ModelSerializer):

@@ -195,3 +195,19 @@ class SetInitialPasswordSerializer(serializers.Serializer):
         user.set_password(self.validated_data['new_password'])
         user.save()
         return user
+
+
+class UpdateRoleSerializer(serializers.Serializer):
+    """Serializer for updating user role (buyer or builder)"""
+    role = serializers.ChoiceField(choices=[('buyer', 'Buyer'), ('builder', 'Builder')], required=True)
+    
+    def validate_role(self, value):
+        if value not in ['buyer', 'builder']:
+            raise serializers.ValidationError("Role must be either 'buyer' or 'builder'.")
+        return value
+    
+    def save(self):
+        user = self.context['request'].user
+        user.role = self.validated_data['role']
+        user.save()
+        return user

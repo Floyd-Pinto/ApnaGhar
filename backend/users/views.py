@@ -12,7 +12,7 @@ import os
 from .serializers import (
     LoginSerializer, RegisterSerializer, UserProfileSerializer, 
     UserProfileUpdateSerializer, ChangePasswordSerializer, UpdateUsernameSerializer,
-    SetInitialPasswordSerializer
+    SetInitialPasswordSerializer, UpdateRoleSerializer
 )
 
 User = get_user_model()
@@ -172,6 +172,23 @@ class SetInitialPasswordView(APIView):
             serializer.save()
             return Response({
                 "message": "Password set successfully"
+            }, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UpdateRoleView(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def post(self, request):
+        """Update user role (buyer or builder)"""
+        serializer = UpdateRoleSerializer(data=request.data, context={'request': request})
+        
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({
+                "message": "Role updated successfully",
+                "role": user.role
             }, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

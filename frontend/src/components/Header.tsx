@@ -48,29 +48,30 @@ const Header = () => {
             >
               Home
             </Link>
-            <Link 
-              to="/explore-projects" 
-              className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
-            >
-              Explore Projects
-            </Link>
             {isAuthenticated && (
               <>
+                <Link 
+                  to="/explore-projects" 
+                  className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
+                >
+                  Explore Projects
+                </Link>
                 <Link 
                   to={user?.role === 'builder' ? '/dashboard/builder' : '/dashboard/buyer'} 
                   className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
                 >
                   My Dashboard
                 </Link>
+                {user?.role === 'builder' && (
+                  <Link 
+                    to="/projects" 
+                    className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
+                  >
+                    Post Property
+                  </Link>
+                )}
               </>
             )}
-            <Link 
-              to="/projects" 
-              className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
-            >
-              Post Property
-              <span className="ml-1 text-xs bg-accent text-accent-foreground px-1.5 py-0.5 rounded font-bold">FREE</span>
-            </Link>
           </nav>
 
           {/* Auth Section */}

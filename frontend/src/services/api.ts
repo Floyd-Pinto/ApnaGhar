@@ -247,6 +247,22 @@ export const authAPI = {
     return response.json();
   },
 
+  // Update user role
+  updateRole: async (role: 'buyer' | 'builder'): Promise<{ message: string; role: string }> => {
+    const response = await fetch(joinURL(API_BASE_URL, 'api/auth/update-role/'), {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ role }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.role?.[0] || error.non_field_errors?.[0] || 'Failed to update role');
+    }
+
+    return response.json();
+  },
+
   // Get Google OAuth URL
   getGoogleAuthUrl: (): string => {
     // Use allauth's Google login URL instead of dj-rest-auth
