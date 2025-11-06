@@ -1,30 +1,28 @@
-# Django Framework
-Django==5.2.6
-
-# Django REST Framework
-djangorestframework==3.15.2
-
-# JWT Authentication
-djangorestframework-simplejwt==5.3.1
-
-# CORS Headers
-django-cors-headers==4.6.0
-
-# Environment Variables
-python-dotenv==1.0.1
-
-# Database
-psycopg2-binary==2.9.10
-dj-database-url==2.3.0
-
-# Production Server
-gunicorn==23.0.0
-
-# Development Tools
-django-extensions==3.2.3
-
-# OAuth and Social Authentication
-django-allauth==65.4.0
-dj-rest-auth==7.0.0
-requests==2.32.3
+asgiref==3.9.1
+certifi==2025.10.5
+cffi==2.0.0
+charset-normalizer==3.4.4
 cryptography==44.0.0
+dj-database-url==2.3.0
+dj-rest-auth==7.0.0
+Django==5.2.6
+django-allauth==65.4.0
+django-cors-headers==4.6.0
+django-environ==0.12.0
+django-extensions==3.2.3
+django-filter==25.2
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.3.1
+dotenv==0.9.9
+gunicorn==23.0.0
+idna==3.11
+packaging==25.0
+psycopg2-binary==2.9.10
+pycparser==2.23
+PyJWT==2.10.1
+python-dotenv==1.0.1
+requests==2.32.3
+sqlparse==0.5.3
+typing_extensions==4.15.0
+urllib3==2.5.0
+whitenoise==6.11.0

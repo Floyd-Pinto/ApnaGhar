@@ -37,6 +37,9 @@ frontend/.env
 *.swp
 *.swo
 
+# GitHub
+.github/
+
 # Logs
 logs/
 *.log

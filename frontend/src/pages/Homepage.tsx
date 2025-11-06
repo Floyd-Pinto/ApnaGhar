@@ -78,10 +78,12 @@ const Homepage = () => {
                 </div>
 
                 {/* Search Button */}
-                <Button className="bg-primary hover:bg-primary-hover h-12 px-8 text-base font-semibold">
-                  <Eye className="h-5 w-5 mr-2" />
-                  Search
-                </Button>
+                <Link to="/explore-projects">
+                  <Button className="bg-primary hover:bg-primary-hover h-12 px-8 text-base font-semibold">
+                    <Eye className="h-5 w-5 mr-2" />
+                    Search
+                  </Button>
+                </Link>
               </div>
 
               {/* Quick Links */}

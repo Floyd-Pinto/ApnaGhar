@@ -49,13 +49,22 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'django_filters',  # Required for DRF filtering
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'dj_rest_auth',
     'dj_rest_auth.registration',
+    # ApnaGhar Apps
     'users',
+    'projects',
+    'documents',
+    'payments',
+    'blockchain',
+    'investments',
+    'support',
+    'analytics',
 ]
 
 SITE_ID = 1

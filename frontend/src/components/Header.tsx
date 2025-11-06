@@ -49,10 +49,10 @@ const Header = () => {
               Home
             </Link>
             <Link 
-              to="/projects" 
+              to="/explore-projects" 
               className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
             >
-              Buy
+              Explore Projects
             </Link>
             {isAuthenticated && (
               <>

@@ -9,6 +9,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Homepage from "./pages/Homepage";
+import ExploreProjects from "./pages/ExploreProjects";
 import Projects from "./pages/Projects";
 import PropertyDetails from "./pages/PropertyDetails";
 import Dashboard from "./pages/Dashboard";
@@ -33,6 +34,7 @@ const Layout = () => {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Homepage />} />
+          <Route path="/explore-projects" element={<ExploreProjects />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/auth/callback" element={<OAuthCallback />} />
