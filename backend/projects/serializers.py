@@ -79,7 +79,9 @@ class MilestoneSerializer(serializers.ModelSerializer):
         if not sha256:
             return None
         try:
-            url, opts = cloudinary.utils.cloudinary_url(sha256, resource_type=resource_type, secure=True)
+            # Use full path with folder as public_id
+            public_id = f"estate_platform/milestones/{sha256}"
+            url, opts = cloudinary.utils.cloudinary_url(public_id, resource_type=resource_type, secure=True)
             return url
         except Exception:
             # Fallback to None if URL build fails
@@ -235,7 +237,9 @@ class UnitProgressSerializer(serializers.ModelSerializer):
         if not sha256:
             return None
         try:
-            url, opts = cloudinary.utils.cloudinary_url(sha256, resource_type=resource_type, secure=True)
+            # Use full path with folder as public_id
+            public_id = f"estate_platform/units/{sha256}"
+            url, opts = cloudinary.utils.cloudinary_url(public_id, resource_type=resource_type, secure=True)
             return url
         except Exception:
             return None

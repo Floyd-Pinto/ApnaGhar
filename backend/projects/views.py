@@ -197,9 +197,11 @@ class PropertyViewSet(viewsets.ModelViewSet):
                 sha256 = hashlib.sha256(img_bytes).hexdigest()
                 
                 # Check if resource already exists in Cloudinary (dedupe)
+                # Use full path with folder for the public_id
+                public_id = f"estate_platform/units/{sha256}"
                 exists = False
                 try:
-                    cloudinary.api.resource(sha256, resource_type='image')
+                    cloudinary.api.resource(public_id, resource_type='image')
                     exists = True
                 except cloudinary.exceptions.NotFound:
                     exists = False
@@ -212,9 +214,8 @@ class PropertyViewSet(viewsets.ModelViewSet):
                     res = cloudinary.uploader.upload(
                         io.BytesIO(img_bytes), 
                         resource_type='image',
-                        public_id=sha256,
-                        overwrite=False,
-                        folder='estate_platform/units'
+                        public_id=public_id,
+                        overwrite=False
                     )
                 
                 entry = {
@@ -234,9 +235,11 @@ class PropertyViewSet(viewsets.ModelViewSet):
                 sha256 = hashlib.sha256(vid_bytes).hexdigest()
                 
                 # Check if resource already exists in Cloudinary (dedupe)
+                # Use full path with folder for the public_id
+                public_id = f"estate_platform/units/{sha256}"
                 exists = False
                 try:
-                    cloudinary.api.resource(sha256, resource_type='video')
+                    cloudinary.api.resource(public_id, resource_type='video')
                     exists = True
                 except cloudinary.exceptions.NotFound:
                     exists = False
@@ -248,9 +251,8 @@ class PropertyViewSet(viewsets.ModelViewSet):
                     res = cloudinary.uploader.upload(
                         io.BytesIO(vid_bytes), 
                         resource_type='video',
-                        public_id=sha256,
-                        overwrite=False,
-                        folder='estate_platform/units'
+                        public_id=public_id,
+                        overwrite=False
                     )
                 
                 entry = {
@@ -379,11 +381,13 @@ class MilestoneViewSet(viewsets.ModelViewSet):
                     logger.info(f"Processing image: {img.name}, SHA256: {sha256}")
                     
                     # Check if resource already exists in Cloudinary (dedupe)
+                    # Use full path with folder for the public_id
+                    public_id = f"estate_platform/milestones/{sha256}"
                     exists = False
                     try:
-                        cloudinary.api.resource(sha256, resource_type='image')
+                        cloudinary.api.resource(public_id, resource_type='image')
                         exists = True
-                        logger.info(f"Image already exists in Cloudinary: {sha256}")
+                        logger.info(f"Image already exists in Cloudinary: {public_id}")
                     except cloudinary.exceptions.NotFound:
                         exists = False
                     except Exception as e:
@@ -392,13 +396,12 @@ class MilestoneViewSet(viewsets.ModelViewSet):
                     
                     # Upload only if doesn't exist
                     if not exists:
-                        logger.info(f"Uploading new image to Cloudinary: {sha256}")
+                        logger.info(f"Uploading new image to Cloudinary: {public_id}")
                         res = cloudinary.uploader.upload(
                             io.BytesIO(img_bytes), 
                             resource_type='image',
-                            public_id=sha256,
-                            overwrite=False,
-                            folder='estate_platform/milestones'
+                            public_id=public_id,
+                            overwrite=False
                         )
                         logger.info(f"Upload successful: {res.get('public_id')}")
                     
@@ -421,11 +424,13 @@ class MilestoneViewSet(viewsets.ModelViewSet):
                     logger.info(f"Processing video: {vid.name}, SHA256: {sha256}")
                     
                     # Check if resource already exists in Cloudinary (dedupe)
+                    # Use full path with folder for the public_id
+                    public_id = f"estate_platform/milestones/{sha256}"
                     exists = False
                     try:
-                        cloudinary.api.resource(sha256, resource_type='video')
+                        cloudinary.api.resource(public_id, resource_type='video')
                         exists = True
-                        logger.info(f"Video already exists in Cloudinary: {sha256}")
+                        logger.info(f"Video already exists in Cloudinary: {public_id}")
                     except cloudinary.exceptions.NotFound:
                         exists = False
                     except Exception as e:
@@ -434,13 +439,12 @@ class MilestoneViewSet(viewsets.ModelViewSet):
                     
                     # Upload only if doesn't exist
                     if not exists:
-                        logger.info(f"Uploading new video to Cloudinary: {sha256}")
+                        logger.info(f"Uploading new video to Cloudinary: {public_id}")
                         res = cloudinary.uploader.upload(
                             io.BytesIO(vid_bytes), 
                             resource_type='video',
-                            public_id=sha256,
-                            overwrite=False,
-                            folder='estate_platform/milestones'
+                            public_id=public_id,
+                            overwrite=False
                         )
                         logger.info(f"Upload successful: {res.get('public_id')}")
                     

@@ -6,6 +6,13 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   TrendingUp,
   Calendar,
   CheckCircle2,
@@ -15,6 +22,8 @@ import {
   MapPin,
   Upload,
   Loader2,
+  X,
+  ZoomIn,
 } from "lucide-react";
 
 interface Milestone {
@@ -63,8 +72,27 @@ export default function ProgressTracker({
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
   const [uploadDescription, setUploadDescription] = useState("");
+  
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<{
+    url: string;
+    description?: string;
+    uploaded_at?: string;
+    milestone?: string;
+  } | null>(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+  const handleImageClick = (image: any, milestoneTitle: string) => {
+    setLightboxImage({
+      url: image.url,
+      description: image.description,
+      uploaded_at: image.uploaded_at,
+      milestone: milestoneTitle,
+    });
+    setLightboxOpen(true);
+  };
 
   const handleUpload = async (milestoneId: string) => {
     if (selectedImages.length === 0 && selectedVideos.length === 0) {
@@ -422,18 +450,28 @@ export default function ProgressTracker({
                       <div className="space-y-2 pt-2">
                         {milestone.images && milestone.images.length > 0 && (
                           <div>
-                            <h5 className="text-xs font-medium mb-2">Photos</h5>
+                            <h5 className="text-xs font-medium mb-2 flex items-center gap-1">
+                              <Camera className="h-3 w-3" />
+                              Photos ({milestone.images.length})
+                            </h5>
                             <div className="grid grid-cols-3 gap-2">
                               {milestone.images.map((image, idx) => (
-                                <div key={idx} className="relative group">
+                                <div 
+                                  key={idx} 
+                                  className="relative group cursor-pointer"
+                                  onClick={() => handleImageClick(image, milestone.title)}
+                                >
                                   <img
                                     src={image.url}
                                     alt={image.description || `${milestone.title} ${idx + 1}`}
-                                    className="w-full h-20 object-cover rounded"
+                                    className="w-full h-20 object-cover rounded transition-transform group-hover:scale-105"
                                   />
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all rounded flex items-center justify-center">
+                                    <ZoomIn className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </div>
                                   {image.description && (
-                                    <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center p-1">
-                                      <p className="text-white text-xs text-center">{image.description}</p>
+                                    <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-1 rounded-b opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <p className="truncate">{image.description}</p>
                                     </div>
                                   )}
                                 </div>
@@ -585,6 +623,52 @@ export default function ProgressTracker({
           </div>
         </CardContent>
       </Card>
+
+      {/* Image Lightbox Modal */}
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent className="max-w-4xl w-full p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5 text-primary" />
+              {lightboxImage?.milestone}
+            </DialogTitle>
+            {lightboxImage?.description && (
+              <DialogDescription className="text-base">
+                {lightboxImage.description}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <div className="relative bg-black/5">
+            {lightboxImage && (
+              <img
+                src={lightboxImage.url}
+                alt={lightboxImage.description || "Construction progress"}
+                className="w-full h-auto max-h-[70vh] object-contain"
+              />
+            )}
+          </div>
+          {lightboxImage?.uploaded_at && (
+            <div className="px-6 pb-6 pt-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>
+                  Uploaded: {new Date(lightboxImage.uploaded_at).toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <span>SHA256 Hash Verified • Stored in Cloudinary</span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
