@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Shield, LogOut, User, Settings, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,6 +16,12 @@ import {
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const location = useLocation();
+
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
 
   const handleLogout = async () => {
     try {
@@ -41,37 +47,51 @@ const Header = () => {
           </Link>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
-            <Link 
-              to="/" 
-              className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
-            >
-              Home
-            </Link>
-            {isAuthenticated && (
-              <>
-                <Link 
-                  to="/explore-projects" 
-                  className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
-                >
-                  Explore Projects
-                </Link>
-                <Link 
-                  to={user?.role === 'builder' ? '/dashboard/builder' : '/dashboard/buyer'} 
-                  className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
-                >
-                  My Dashboard
-                </Link>
-                {user?.role === 'builder' && (
-                  <Link 
-                    to="/projects" 
-                    className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
-                  >
-                    Post Property
+          <nav className="hidden md:flex items-center">
+            {/* base and active classes */}
+            {/** We keep spacing with px on links and add small vertical separators between the three main items. */}
+            {(() => {
+              const base = 'px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-muted rounded transition-colors';
+              const active = 'text-orange-500 font-semibold border-b-2 border-orange-400';
+              return (
+                <>
+                  <Link to="/" className={`${base} ${isActive('/') ? active : ''}`}>
+                    Home
                   </Link>
-                )}
-              </>
-            )}
+
+                  {isAuthenticated && (
+                    <>
+                      {/* small orange vertical separator between Home and Explore Projects */}
+                      <span className="hidden md:inline-block w-px h-5 bg-orange-400 mx-2" aria-hidden />
+
+                      <Link to="/explore-projects" className={`${base} ${isActive('/explore-projects') ? active : ''}`}>
+                        Explore Projects
+                      </Link>
+
+                      {/* separator between Explore Projects and My Dashboard */}
+                      <span className="hidden md:inline-block w-px h-5 bg-orange-400 mx-2" aria-hidden />
+
+                      <Link
+                        to={user?.role === 'builder' ? '/dashboard/builder' : '/dashboard/buyer'}
+                        className={`${base} ${isActive('/dashboard') ? active : ''}`}
+                      >
+                        My Dashboard
+                      </Link>
+
+                      {/* if builder, keep a subtle separator then Post Property */}
+                      {user?.role === 'builder' && (
+                        <>
+                          <span className="hidden md:inline-block w-px h-5 bg-slate-200 mx-2" aria-hidden />
+                          <Link to="/projects" className={`${base} ${isActive('/projects') ? active : ''}`}>
+                            Post Property
+                          </Link>
+                        </>
+                      )}
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </nav>
 
           {/* Auth Section */}
