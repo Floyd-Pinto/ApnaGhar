@@ -221,12 +221,22 @@ export default function ProjectOverview() {
       );
 
       if (response.ok) {
-        setIsSaved(!isSaved);
+        const newSavedState = !isSaved;
+        setIsSaved(newSavedState);
         toast({
-          title: isSaved ? "Project removed" : "Project saved",
-          description: isSaved
-            ? "Removed from your saved projects"
-            : "Added to your saved projects",
+          title: newSavedState ? "Project saved" : "Project removed",
+          description: newSavedState
+            ? "Added to your saved projects"
+            : "Removed from your saved projects",
+        });
+        
+        // Refetch to confirm state
+        await checkIfSaved();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update saved projects",
+          variant: "destructive",
         });
       }
     } catch (error) {

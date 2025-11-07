@@ -74,7 +74,9 @@ class MilestoneSerializer(serializers.ModelSerializer):
 
 
 class PropertySerializer(serializers.ModelSerializer):
-    """Serializer for Property units"""
+    """Serializer for Property units with nested project details"""
+    project = serializers.SerializerMethodField()
+    
     class Meta:
         model = Property
         fields = [
@@ -85,6 +87,23 @@ class PropertySerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_project(self, obj):
+        """Return nested project details"""
+        return {
+            'id': str(obj.project.id),
+            'name': obj.project.name,
+            'city': obj.project.city,
+            'state': obj.project.state,
+            'address': obj.project.address,
+            'cover_image': obj.project.cover_image,
+            'amenities': obj.project.amenities,
+            'expected_completion': obj.project.expected_completion.isoformat() if obj.project.expected_completion else None,
+            'developer': {
+                'company_name': obj.project.developer.company_name,
+                'verified': obj.project.developer.verified,
+            }
+        }
 
 
 class ReviewSerializer(serializers.ModelSerializer):
