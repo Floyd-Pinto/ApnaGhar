@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Developer, Project, Property, ConstructionMilestone, Review
 from django.contrib.auth import get_user_model
+import cloudinary.utils
 
 User = get_user_model()
 
@@ -55,6 +56,8 @@ class ProjectListSerializer(serializers.ModelSerializer):
 class MilestoneSerializer(serializers.ModelSerializer):
     """Serializer for Construction Milestones"""
     verified_by_name = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
+    videos = serializers.SerializerMethodField()
     
     class Meta:
         model = ConstructionMilestone
@@ -71,6 +74,43 @@ class MilestoneSerializer(serializers.ModelSerializer):
         if obj.verified_by:
             return f"{obj.verified_by.first_name} {obj.verified_by.last_name}".strip() or obj.verified_by.email
         return None
+
+    def _build_media_url(self, sha256: str, resource_type: str):
+        if not sha256:
+            return None
+        try:
+            url, opts = cloudinary.utils.cloudinary_url(sha256, resource_type=resource_type, secure=True)
+            return url
+        except Exception:
+            # Fallback to None if URL build fails
+            return None
+
+    def get_images(self, obj):
+        # obj.images is a list of dicts stored in DB; each dict should contain 'sha256', 'uploaded_at', 'description'
+        out = []
+        for entry in obj.images or []:
+            sha = entry.get('sha256') if isinstance(entry, dict) else None
+            url = self._build_media_url(sha, 'image') if sha else None
+            out.append({
+                'sha256': sha,
+                'url': url,
+                'uploaded_at': entry.get('uploaded_at'),
+                'description': entry.get('description', '')
+            })
+        return out
+
+    def get_videos(self, obj):
+        out = []
+        for entry in obj.videos or []:
+            sha = entry.get('sha256') if isinstance(entry, dict) else None
+            url = self._build_media_url(sha, 'video') if sha else None
+            out.append({
+                'sha256': sha,
+                'url': url,
+                'uploaded_at': entry.get('uploaded_at'),
+                'description': entry.get('description', '')
+            })
+        return out
 
 
 class PropertySerializer(serializers.ModelSerializer):
@@ -184,3 +224,51 @@ class ProjectCreateUpdateSerializer(serializers.ModelSerializer):
         elif not instance and Project.objects.filter(slug=value).exists():
             raise serializers.ValidationError("Project with this slug already exists.")
         return value
+
+
+class UnitProgressSerializer(serializers.ModelSerializer):
+    """Serializer to expose unit-specific progress data (photos/videos/updates)"""
+    unit_photos = serializers.SerializerMethodField()
+    unit_videos = serializers.SerializerMethodField()
+
+    def _build_media_url(self, sha256: str, resource_type: str):
+        if not sha256:
+            return None
+        try:
+            url, opts = cloudinary.utils.cloudinary_url(sha256, resource_type=resource_type, secure=True)
+            return url
+        except Exception:
+            return None
+
+    def get_unit_photos(self, obj):
+        out = []
+        for entry in obj.unit_photos or []:
+            sha = entry.get('sha256') if isinstance(entry, dict) else None
+            url = self._build_media_url(sha, 'image') if sha else None
+            out.append({
+                'sha256': sha,
+                'url': url,
+                'uploaded_at': entry.get('uploaded_at'),
+                'description': entry.get('description', '')
+            })
+        return out
+
+    def get_unit_videos(self, obj):
+        out = []
+        for entry in obj.unit_videos or []:
+            sha = entry.get('sha256') if isinstance(entry, dict) else None
+            url = self._build_media_url(sha, 'video') if sha else None
+            out.append({
+                'sha256': sha,
+                'url': url,
+                'uploaded_at': entry.get('uploaded_at'),
+                'description': entry.get('description', '')
+            })
+        return out
+    class Meta:
+        model = Property
+        fields = [
+            'id', 'project', 'unit_number', 'unit_progress_percentage',
+            'unit_progress_updates', 'unit_photos', 'unit_videos', 'qr_code_data'
+        ]
+        read_only_fields = ['id']

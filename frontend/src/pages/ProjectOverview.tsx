@@ -73,7 +73,18 @@ interface Milestone {
   target_date: string;
   completion_date: string;
   verified: boolean;
-  images: string[];
+  images: Array<{
+    sha256?: string;
+    url: string;
+    uploaded_at?: string;
+    description?: string;
+  }>;
+  videos: Array<{
+    sha256?: string;
+    url: string;
+    uploaded_at?: string;
+    description?: string;
+  }>;
 }
 
 interface Review {
@@ -595,6 +606,7 @@ export default function ProjectOverview() {
                 <ProgressTracker
                   milestones={project.milestones || []}
                   projectName={project.name}
+                  projectId={project.id}
                   overallProgress={
                     project.milestones && project.milestones.length > 0
                       ? project.milestones.reduce(
@@ -603,6 +615,7 @@ export default function ProjectOverview() {
                         ) / project.milestones.length
                       : 0
                   }
+                  onMilestoneUpdate={fetchProjectDetails}
                 />
               </TabsContent>
 

@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   TrendingUp,
   Calendar,
@@ -10,6 +13,8 @@ import {
   QrCode,
   Camera,
   MapPin,
+  Upload,
+  Loader2,
 } from "lucide-react";
 
 interface Milestone {
@@ -23,20 +28,116 @@ interface Milestone {
   start_date?: string;
   completion_date?: string;
   verified: boolean;
-  images: string[];
+  images: Array<{
+    sha256?: string;
+    url: string;
+    uploaded_at?: string;
+    description?: string;
+  }>;
+  videos: Array<{
+    sha256?: string;
+    url: string;
+    uploaded_at?: string;
+    description?: string;
+  }>;
 }
 
 interface ProgressTrackerProps {
   milestones: Milestone[];
   projectName: string;
+  projectId?: string;
   overallProgress?: number;
+  onMilestoneUpdate?: () => void;
 }
 
 export default function ProgressTracker({
   milestones,
   projectName,
+  projectId,
   overallProgress = 0,
+  onMilestoneUpdate,
 }: ProgressTrackerProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [uploadingMilestoneId, setUploadingMilestoneId] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
+  const [uploadDescription, setUploadDescription] = useState("");
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+  const handleUpload = async (milestoneId: string) => {
+    if (selectedImages.length === 0 && selectedVideos.length === 0) {
+      toast({
+        title: "No files selected",
+        description: "Please select at least one image or video",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingMilestoneId(milestoneId);
+    try {
+      const token = localStorage.getItem("access_token");
+      const formData = new FormData();
+      
+      selectedImages.forEach((file) => formData.append("images", file));
+      selectedVideos.forEach((file) => formData.append("videos", file));
+      if (uploadDescription) formData.append("description", uploadDescription);
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/projects/milestones/${milestoneId}/upload_media/`,
+        {
+          method: "POST",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        let errorMessage = "Upload failed";
+        const contentType = response.headers.get("content-type");
+        
+        if (contentType && contentType.includes("application/json")) {
+          const error = await response.json();
+          errorMessage = error.detail || error.message || "Upload failed";
+        } else {
+          const text = await response.text();
+          console.error("Non-JSON response:", text);
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      toast({
+        title: "Upload successful",
+        description: "Media has been uploaded to milestone",
+      });
+
+      // Reset form
+      setSelectedImages([]);
+      setSelectedVideos([]);
+      setUploadDescription("");
+      
+      // Notify parent to refresh data
+      if (onMilestoneUpdate) {
+        onMilestoneUpdate();
+      }
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Upload failed",
+        description: error.message || String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingMilestoneId(null);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
@@ -77,6 +178,19 @@ export default function ProgressTracker({
 
   return (
     <div className="space-y-6">
+      {/* Debug Info - Remove after testing */}
+      {process.env.NODE_ENV === 'development' && (
+        <Card className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950">
+          <CardContent className="pt-4">
+            <p className="text-xs font-mono">
+              <strong>Debug Info:</strong> User Role: {user?.role || 'Not logged in'} | 
+              Milestones: {milestones.length} | 
+              Project ID: {projectId || 'N/A'}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header Card */}
       <Card>
         <CardHeader>
@@ -104,32 +218,47 @@ export default function ProgressTracker({
             <Progress value={calculatedProgress} className="h-3" />
           </div>
 
-          {/* Cloudinary Integration Placeholder */}
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 rounded-lg p-6 border-2 border-dashed border-primary/30">
+          {/* Cloudinary Media Integration - Active */}
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 rounded-lg p-6 border-2 border-primary/30">
             <div className="text-center space-y-3">
               <div className="flex items-center justify-center gap-2">
                 <Camera className="h-8 w-8 text-primary" />
                 <QrCode className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="font-semibold text-lg">Cloudinary Media & QR Verification</h3>
+              <h3 className="font-semibold text-lg">Cloudinary Media & Hash Verification</h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Coming Soon: Real-time photo/video updates from construction site via Cloudinary
-                integration with QR code verification for authenticity
+                {user?.role === "builder" 
+                  ? "Upload photos and videos to each milestone below. Files are stored securely in Cloudinary with SHA256 hash verification."
+                  : "View real-time construction photos and videos uploaded by the builder, verified with SHA256 hashing."}
               </p>
               <div className="flex items-center justify-center gap-4 pt-2">
                 <div className="text-center">
-                  <Camera className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Live Photos</span>
+                  <Camera className="h-6 w-6 mx-auto mb-1 text-primary" />
+                  <span className="text-xs text-muted-foreground">Photos</span>
                 </div>
                 <div className="text-center">
-                  <QrCode className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">QR Verify</span>
+                  <QrCode className="h-6 w-6 mx-auto mb-1 text-primary" />
+                  <span className="text-xs text-muted-foreground">Hash Verified</span>
                 </div>
                 <div className="text-center">
-                  <MapPin className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Geo-tagged</span>
+                  <MapPin className="h-6 w-6 mx-auto mb-1 text-primary" />
+                  <span className="text-xs text-muted-foreground">Cloudinary</span>
                 </div>
               </div>
+              {user?.role === "builder" && (
+                <div className="mt-4 p-3 bg-primary/10 rounded-lg">
+                  <p className="text-sm font-medium text-primary">
+                    👋 Hey Builder! {milestones.length > 0 
+                      ? `Scroll down to upload media to ${milestones.length} milestone(s)` 
+                      : "Create milestones in the admin panel first, then upload media here"}
+                  </p>
+                </div>
+              )}
+              {!user && (
+                <div className="mt-3 text-xs text-muted-foreground bg-yellow-50 dark:bg-yellow-950 rounded p-2">
+                  � Login as a buyer to view construction progress
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -144,9 +273,74 @@ export default function ProgressTracker({
         <CardContent>
           <div className="space-y-4">
             {milestones.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No milestones available yet</p>
+              <div className="space-y-4">
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No milestones created yet</p>
+                  {user?.role === "builder" && (
+                    <p className="text-xs mt-2">Create milestones in the admin panel to start tracking progress</p>
+                  )}
+                </div>
+                
+                {/* General Upload Section for builders when no milestones exist */}
+                {user?.role === "builder" && (
+                  <div className="border-2 border-dashed border-primary/30 rounded-lg p-6 bg-muted/30">
+                    <h4 className="font-semibold mb-4 flex items-center gap-2">
+                      <Upload className="h-5 w-5 text-primary" />
+                      Upload Project Progress Media
+                    </h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm mb-1 block font-medium">Description</label>
+                        <input
+                          value={uploadDescription}
+                          onChange={(e) => setUploadDescription(e.target.value)}
+                          className="w-full rounded border p-2 bg-background"
+                          placeholder="e.g., Foundation work completed"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm mb-1 block font-medium">Upload Images</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => setSelectedImages(Array.from(e.target.files || []))}
+                          className="w-full"
+                        />
+                        {selectedImages.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            ✓ {selectedImages.length} image(s) selected
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="text-sm mb-1 block font-medium">Upload Videos</label>
+                        <input
+                          type="file"
+                          accept="video/*"
+                          multiple
+                          onChange={(e) => setSelectedVideos(Array.from(e.target.files || []))}
+                          className="w-full"
+                        />
+                        {selectedVideos.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            ✓ {selectedVideos.length} video(s) selected
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="bg-blue-50 dark:bg-blue-950 rounded p-3 text-sm">
+                        <p className="text-muted-foreground">
+                          <strong>Note:</strong> To upload media, you need to create milestones first in the admin panel.
+                          Milestones help organize construction progress into phases.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               milestones.map((milestone, index) => (
@@ -222,17 +416,133 @@ export default function ProgressTracker({
                       )}
                     </div>
 
-                    {/* Images Placeholder */}
-                    {milestone.images && milestone.images.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2 pt-2">
-                        {milestone.images.map((image, idx) => (
-                          <img
-                            key={idx}
-                            src={image}
-                            alt={`${milestone.title} ${idx + 1}`}
-                            className="w-full h-20 object-cover rounded"
-                          />
-                        ))}
+                    {/* Images and Videos */}
+                    {((milestone.images && milestone.images.length > 0) || 
+                      (milestone.videos && milestone.videos.length > 0)) && (
+                      <div className="space-y-2 pt-2">
+                        {milestone.images && milestone.images.length > 0 && (
+                          <div>
+                            <h5 className="text-xs font-medium mb-2">Photos</h5>
+                            <div className="grid grid-cols-3 gap-2">
+                              {milestone.images.map((image, idx) => (
+                                <div key={idx} className="relative group">
+                                  <img
+                                    src={image.url}
+                                    alt={image.description || `${milestone.title} ${idx + 1}`}
+                                    className="w-full h-20 object-cover rounded"
+                                  />
+                                  {image.description && (
+                                    <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center p-1">
+                                      <p className="text-white text-xs text-center">{image.description}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {milestone.videos && milestone.videos.length > 0 && (
+                          <div>
+                            <h5 className="text-xs font-medium mb-2">Videos</h5>
+                            <div className="space-y-2">
+                              {milestone.videos.map((video, idx) => (
+                                <video
+                                  key={idx}
+                                  controls
+                                  className="w-full h-40 bg-black rounded"
+                                >
+                                  <source src={video.url} />
+                                  Your browser does not support the video tag.
+                                </video>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Builder Upload Form - Always show for builders */}
+                    {user?.role === "builder" && (
+                      <div className="mt-4 p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border-2 border-primary/20">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Upload className="h-5 w-5 text-primary" />
+                          <h5 className="text-sm font-semibold">Upload Media (Builder Only)</h5>
+                        </div>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-xs mb-1 block font-medium">Description</label>
+                            <input
+                              value={uploadDescription}
+                              onChange={(e) => setUploadDescription(e.target.value)}
+                              className="w-full text-sm rounded border p-2 bg-background"
+                              placeholder="e.g., Completed foundation work"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs mb-1 block font-medium">Images</label>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={(e) => setSelectedImages(Array.from(e.target.files || []))}
+                              className="w-full text-xs p-1 bg-background border rounded"
+                            />
+                            {selectedImages.length > 0 && (
+                              <p className="text-xs text-primary font-medium mt-1">
+                                ✓ {selectedImages.length} image(s) selected
+                              </p>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="text-xs mb-1 block font-medium">Videos</label>
+                            <input
+                              type="file"
+                              accept="video/*"
+                              multiple
+                              onChange={(e) => setSelectedVideos(Array.from(e.target.files || []))}
+                              className="w-full text-xs p-1 bg-background border rounded"
+                            />
+                            {selectedVideos.length > 0 && (
+                              <p className="text-xs text-primary font-medium mt-1">
+                                ✓ {selectedVideos.length} video(s) selected
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleUpload(milestone.id)}
+                              disabled={uploadingMilestoneId === milestone.id}
+                              className="flex-1"
+                            >
+                              {uploadingMilestoneId === milestone.id ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                  Uploading...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="h-3 w-3 mr-2" />
+                                  Upload to Cloudinary
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedImages([]);
+                                setSelectedVideos([]);
+                                setUploadDescription("");
+                              }}
+                            >
+                              Clear
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -243,23 +553,34 @@ export default function ProgressTracker({
         </CardContent>
       </Card>
 
-      {/* QR Code Verification Info */}
+      {/* Hash Verification Info */}
       <Card className="border-primary/30">
         <CardContent className="pt-6">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-primary/10 rounded-lg">
-              <QrCode className="h-6 w-6 text-primary" />
+              <CheckCircle2 className="h-6 w-6 text-primary" />
             </div>
             <div className="flex-1">
-              <h4 className="font-semibold mb-1">QR Code Verification (Coming Soon)</h4>
+              <h4 className="font-semibold mb-1">SHA256 Hash Verification</h4>
               <p className="text-sm text-muted-foreground mb-3">
-                Each milestone update will include QR codes that you can scan on-site to verify the
-                authenticity of progress photos and construction updates.
+                All uploaded media is verified using SHA256 cryptographic hashing. This ensures content integrity
+                and prevents tampering. Each file's unique hash is stored in the database while the actual media
+                is securely stored in Cloudinary.
               </p>
-              <Button variant="outline" size="sm" disabled>
-                <QrCode className="h-4 w-4 mr-2" />
-                Scan QR Code
-              </Button>
+              <div className="flex gap-2 text-xs">
+                <Badge variant="outline" className="gap-1">
+                  <Camera className="h-3 w-3" />
+                  Cloudinary Storage
+                </Badge>
+                <Badge variant="outline" className="gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Hash Verified
+                </Badge>
+                <Badge variant="outline" className="gap-1">
+                  <Upload className="h-3 w-3" />
+                  Deduplicated
+                </Badge>
+              </div>
             </div>
           </div>
         </CardContent>

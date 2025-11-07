@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/services/api";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -79,11 +80,21 @@ export default function PropertyUnitDetails() {
   
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
+  const [progressLoading, setProgressLoading] = useState(false);
+  const [progressData, setProgressData] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [uploadPhase, setUploadPhase] = useState("");
+  const [uploadProgressPercent, setUploadProgressPercent] = useState<number | undefined>(undefined);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [booking, setBooking] = useState(false);
 
   useEffect(() => {
     fetchPropertyDetails();
+    // fetch progress separately (will be permission-protected)
+    fetchProgress();
   }, [propertyId]);
 
   const fetchPropertyDetails = async () => {
@@ -121,6 +132,30 @@ export default function PropertyUnitDetails() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProgress = async () => {
+    if (!propertyId) return;
+    setProgressLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const headers: HeadersInit = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const res = await fetch(`${API_BASE_URL}/api/projects/properties/${propertyId}/progress/`, { headers });
+      if (res.status === 403) {
+        // not allowed to view progress; ignore silently
+        setProgressData(null);
+        return;
+      }
+      if (!res.ok) throw new Error("Failed to fetch progress");
+      const data = await res.json();
+      setProgressData(data);
+    } catch (err) {
+      console.error("Error fetching progress:", err);
+    } finally {
+      setProgressLoading(false);
     }
   };
 
@@ -397,6 +432,132 @@ export default function PropertyUnitDetails() {
               </CardContent>
             </Card>
 
+            {/* Upload form for builders */}
+            {user?.role === "builder" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Upload Progress (Builders)</CardTitle>
+                  <CardDescription>Only builders can upload photos/videos for this unit.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm mb-1 block">Description</label>
+                      <input
+                        value={uploadDescription}
+                        onChange={(e) => setUploadDescription(e.target.value)}
+                        className="w-full input rounded border p-2"
+                        placeholder="Short description (e.g., Tiling completed)"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm mb-1 block">Phase</label>
+                      <input
+                        value={uploadPhase}
+                        onChange={(e) => setUploadPhase(e.target.value)}
+                        className="w-full input rounded border p-2"
+                        placeholder="Phase name (e.g., Tiling)"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm mb-1 block">Progress (%)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={uploadProgressPercent ?? ''}
+                        onChange={(e) => setUploadProgressPercent(e.target.value ? parseInt(e.target.value) : undefined)}
+                        className="w-32 input rounded border p-2"
+                        placeholder="40"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm mb-1 block">Images (multiple)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => setSelectedImages(Array.from(e.target.files || []))}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm mb-1 block">Videos (multiple)</label>
+                      <input
+                        type="file"
+                        accept="video/*"
+                        multiple
+                        onChange={(e) => setSelectedVideos(Array.from(e.target.files || []))}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={async () => {
+                          // Upload handler
+                          if (!propertyId) return;
+                          setUploading(true);
+                          try {
+                            const token = localStorage.getItem("access_token");
+                            const fd = new FormData();
+                            selectedImages.forEach((f) => fd.append("images", f));
+                            selectedVideos.forEach((f) => fd.append("videos", f));
+                            if (uploadDescription) fd.append("description", uploadDescription);
+                            if (uploadPhase) fd.append("phase", uploadPhase);
+                            if (uploadProgressPercent !== undefined) fd.append("progress_percentage", String(uploadProgressPercent));
+
+                            const res = await fetch(`${API_BASE_URL}/api/projects/properties/${propertyId}/upload_media/`, {
+                              method: "POST",
+                              headers: {
+                                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                              },
+                              body: fd,
+                            });
+
+                            if (!res.ok) {
+                              const err = await res.json();
+                              throw new Error(err.detail || 'Upload failed');
+                            }
+
+                            const data = await res.json();
+                            toast({ title: "Upload successful", description: "Progress uploaded" });
+                            // Refresh progress
+                            fetchProgress();
+                            // Reset form
+                            setSelectedImages([]);
+                            setSelectedVideos([]);
+                            setUploadDescription("");
+                            setUploadPhase("");
+                            setUploadProgressPercent(undefined);
+                          } catch (err: any) {
+                            console.error("Upload error:", err);
+                            toast({ title: "Upload failed", description: err.message || String(err), variant: "destructive" });
+                          } finally {
+                            setUploading(false);
+                          }
+                        }}
+                        disabled={uploading}
+                      >
+                        {uploading ? "Uploading..." : "Upload"}
+                      </Button>
+                      <Button variant="outline" onClick={() => {
+                        setSelectedImages([]);
+                        setSelectedVideos([]);
+                        setUploadDescription("");
+                        setUploadPhase("");
+                        setUploadProgressPercent(undefined);
+                      }}>Clear</Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Project Amenities */}
             {property.project.amenities && property.project.amenities.length > 0 && (
               <Card>
@@ -418,6 +579,77 @@ export default function PropertyUnitDetails() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Unit Progress (photos/videos/updates) */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Unit Progress</CardTitle>
+                <CardDescription>Photos, videos and progress updates</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {progressLoading ? (
+                  <div className="text-center py-6">Loading progress...</div>
+                ) : progressData ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-muted-foreground">Progress</div>
+                        <div className="font-semibold text-lg">{progressData.unit_progress_percentage}%</div>
+                      </div>
+                    </div>
+
+                    {/* Photos */}
+                    {progressData.unit_photos && progressData.unit_photos.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2">Photos</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {progressData.unit_photos.map((p: any, idx: number) => (
+                            <img key={idx} src={p.url} alt={p.description || `photo-${idx}`} className="w-full h-32 object-cover rounded" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Videos */}
+                    {progressData.unit_videos && progressData.unit_videos.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2">Videos</h4>
+                        <div className="space-y-2">
+                          {progressData.unit_videos.map((v: any, idx: number) => (
+                            <video key={idx} controls className="w-full h-48 bg-black rounded">
+                              <source src={v.url} />
+                              Your browser does not support the video tag.
+                            </video>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Updates */}
+                    {progressData.unit_progress_updates && progressData.unit_progress_updates.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2">Updates</h4>
+                        <div className="space-y-2">
+                          {progressData.unit_progress_updates.map((u: any, idx: number) => (
+                            <div key={idx} className="p-3 bg-muted rounded">
+                              <div className="text-sm text-muted-foreground">{u.date ? new Date(u.date).toLocaleString() : ''} • {u.phase}</div>
+                              <div className="mt-1">{u.description}</div>
+                              <div className="text-xs text-muted-foreground mt-1">Progress: {u.progress}%</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {!progressData.unit_photos?.length && !progressData.unit_videos?.length && (!progressData.unit_progress_updates || progressData.unit_progress_updates.length === 0) && (
+                      <div className="text-sm text-muted-foreground">No progress updates yet.</div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">Progress is private or not available.</div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Sidebar */}
