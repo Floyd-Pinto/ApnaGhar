@@ -2,11 +2,13 @@ asgiref==3.9.1
 certifi==2025.10.5
 cffi==2.0.0
 charset-normalizer==3.4.4
+cloudinary==1.41.0
 cryptography==44.0.0
 dj-database-url==2.3.0
 dj-rest-auth==7.0.0
 Django==5.2.6
 django-allauth==65.4.0
+django-cloudinary-storage==0.3.0
 django-cors-headers==4.6.0
 django-environ==0.12.0
 django-extensions==3.2.3
@@ -17,10 +19,12 @@ dotenv==0.9.9
 gunicorn==23.0.0
 idna==3.11
 packaging==25.0
+Pillow==11.0.0
 psycopg2-binary==2.9.10
 pycparser==2.23
 PyJWT==2.10.1
 python-dotenv==1.0.1
+qrcode==8.0
 requests==2.32.3
 sqlparse==0.5.3
 typing_extensions==4.15.0

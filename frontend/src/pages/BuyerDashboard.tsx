@@ -105,6 +105,28 @@ export default function BuyerDashboard() {
     }
   };
 
+  const clearRecentlyViewed = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch(
+        `${API_BASE_URL}/api/projects/user/projects/clear_recently_viewed/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      if (response.ok) {
+        setRecentlyViewed([]);
+      }
+    } catch (error) {
+      console.error("Error clearing recently viewed:", error);
+    }
+  };
+
   const formatPrice = (price: string) => {
     const priceNum = parseFloat(price);
     if (priceNum >= 10000000) {
@@ -348,10 +370,23 @@ export default function BuyerDashboard() {
           <TabsContent value="viewed" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Recently Viewed</CardTitle>
-                <CardDescription>
-                  Projects you've recently looked at
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Recently Viewed</CardTitle>
+                    <CardDescription>
+                      Projects you've recently looked at
+                    </CardDescription>
+                  </div>
+                  {recentlyViewed.length > 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={clearRecentlyViewed}
+                    >
+                      Clear History
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {loading ? (

@@ -215,3 +215,15 @@ class UserProjectViewSet(viewsets.ViewSet):
         
         serializer = ProjectListSerializer(ordered_projects, many=True, context={'request': request})
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'])
+    def clear_recently_viewed(self, request):
+        """Clear recently viewed projects history"""
+        user = request.user
+        user.recently_viewed = []
+        user.save(update_fields=['recently_viewed'])
+        
+        return Response(
+            {'message': 'Recently viewed history cleared'},
+            status=status.HTTP_200_OK
+        )

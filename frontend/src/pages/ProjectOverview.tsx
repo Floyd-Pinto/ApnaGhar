@@ -556,13 +556,15 @@ export default function ProjectOverview() {
                             </div>
                           )}
 
-                          {property.status === "available" && (
-                            <Link to={`/property/${property.id}`} className="w-full">
-                              <Button className="w-full" size="sm">
-                                View Details
-                              </Button>
-                            </Link>
-                          )}
+                          <Link to={`/property/${property.id}`} className="w-full">
+                            <Button 
+                              className="w-full" 
+                              size="sm"
+                              variant={property.status === "available" ? "default" : "outline"}
+                            >
+                              View Details
+                            </Button>
+                          </Link>
                         </CardContent>
                       </Card>
                     ))}

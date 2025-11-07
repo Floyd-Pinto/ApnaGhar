@@ -77,6 +77,8 @@ class Project(models.Model):
     cover_image = models.URLField(max_length=500, blank=True, null=True)
     gallery_images = models.JSONField(default=list, blank=True)  # Array of image URLs
     video_url = models.URLField(max_length=500, blank=True, null=True)
+    project_videos = models.JSONField(default=list, blank=True)  # [{"url": "...", "uploaded_at": "...", "description": "..."}]
+    qr_code_data = models.CharField(max_length=255, blank=True, null=True)  # QR code for project-level videos
     
     # Timeline
     launch_date = models.DateField(null=True, blank=True)
@@ -171,6 +173,13 @@ class Property(models.Model):
     # Features
     features = models.JSONField(default=list, blank=True)  # ["Corner Unit", "Park Facing", etc.]
     floor_plan_image = models.URLField(max_length=500, blank=True, null=True)
+    
+    # Unit-specific Progress Tracking
+    unit_progress_percentage = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    unit_progress_updates = models.JSONField(default=list, blank=True)  # [{"phase": "Tiling", "description": "...", "date": "...", "progress": 40}]
+    unit_videos = models.JSONField(default=list, blank=True)  # [{"url": "...", "uploaded_at": "...", "description": "..."}]
+    unit_photos = models.JSONField(default=list, blank=True)  # [{"url": "...", "uploaded_at": "...", "description": "..."}]
+    qr_code_data = models.CharField(max_length=255, blank=True, null=True)  # Unique QR code for this unit
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

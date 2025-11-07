@@ -10,6 +10,7 @@ from .serializers import (
     ProjectCreateUpdateSerializer, PropertySerializer, MilestoneSerializer,
     ReviewSerializer
 )
+from .permissions import IsOwnerOrBuilderOrReadOnly, IsBuilderOrReadOnly
 
 
 class DeveloperViewSet(viewsets.ModelViewSet):
@@ -111,14 +112,24 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
 
 class PropertyViewSet(viewsets.ModelViewSet):
-    """ViewSet for Property units"""
-    queryset = Property.objects.select_related('project', 'buyer')
+    """ViewSet for Property units with privacy controls"""
+    queryset = Property.objects.select_related('project', 'project__developer', 'buyer')
     serializer_class = PropertySerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsOwnerOrBuilderOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['project', 'property_type', 'status', 'floor_number']
     ordering_fields = ['price', 'carpet_area', 'floor_number']
     ordering = ['floor_number', 'unit_number']
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Override retrieve to check permissions for sold properties"""
+        instance = self.get_object()
+        
+        # Check permission
+        self.check_object_permissions(request, instance)
+        
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class MilestoneViewSet(viewsets.ModelViewSet):

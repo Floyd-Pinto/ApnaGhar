@@ -89,7 +89,26 @@ export default function PropertyUnitDetails() {
   const fetchPropertyDetails = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/projects/properties/${propertyId}/`);
+      const token = localStorage.getItem("access_token");
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/projects/properties/${propertyId}/`, { headers });
+      
+      if (response.status === 403) {
+        toast({
+          title: "Access Denied",
+          description: "This property is private. Only the owner and builder can view it.",
+          variant: "destructive",
+        });
+        setTimeout(() => navigate("/explore-projects"), 2000);
+        return;
+      }
+      
       if (!response.ok) throw new Error("Failed to fetch property");
       const data = await response.json();
       setProperty(data);
