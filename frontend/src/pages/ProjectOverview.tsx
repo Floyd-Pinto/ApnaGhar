@@ -24,9 +24,12 @@ import {
   ArrowLeft,
   Phone,
   Mail,
+  Heart,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import ProjectReviews from "@/components/ProjectReviews";
+import ProgressTracker from "@/components/ProgressTracker";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -123,12 +126,17 @@ interface Project {
 export default function ProjectOverview() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const [savingProject, setSavingProject] = useState(false);
 
   useEffect(() => {
     fetchProjectDetails();
+    checkIfSaved();
+    trackProjectView();
   }, [id]);
 
   const fetchProjectDetails = async () => {
@@ -142,6 +150,94 @@ export default function ProjectOverview() {
       console.error("Error fetching project:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkIfSaved = async () => {
+    if (!user) return;
+    
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch(
+        `${API_BASE_URL}/api/projects/user/projects/saved_projects/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.ok) {
+        const savedProjects = await response.json();
+        setIsSaved(savedProjects.some((p: any) => p.id === id));
+      }
+    } catch (error) {
+      console.error("Error checking if saved:", error);
+    }
+  };
+
+  const trackProjectView = async () => {
+    if (!user) return;
+
+    try {
+      const token = localStorage.getItem("access_token");
+      await fetch(
+        `${API_BASE_URL}/api/projects/user/projects/track-view/${id}/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error tracking view:", error);
+    }
+  };
+
+  const handleSaveToggle = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save projects",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSavingProject(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const endpoint = isSaved ? "unsave" : "save";
+      const response = await fetch(
+        `${API_BASE_URL}/api/projects/user/projects/${endpoint}/${id}/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        setIsSaved(!isSaved);
+        toast({
+          title: isSaved ? "Project removed" : "Project saved",
+          description: isSaved
+            ? "Removed from your saved projects"
+            : "Added to your saved projects",
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling save:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update saved projects",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingProject(false);
     }
   };
 
@@ -256,6 +352,20 @@ export default function ProjectOverview() {
                   {project.address}, {project.city}, {project.state} - {project.pincode}
                 </p>
               </div>
+              {user && (
+                <Button
+                  onClick={handleSaveToggle}
+                  disabled={savingProject}
+                  variant={isSaved ? "default" : "secondary"}
+                  size="lg"
+                  className="mt-2"
+                >
+                  <Heart
+                    className={`h-5 w-5 mr-2 ${isSaved ? "fill-current" : ""}`}
+                  />
+                  {isSaved ? "Saved" : "Save Project"}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -299,10 +409,13 @@ export default function ProjectOverview() {
 
             {/* Tabs */}
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="properties">
                   Properties ({project.properties?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger value="progress">
+                  Progress ({project.milestones?.length || 0})
                 </TabsTrigger>
                 <TabsTrigger value="amenities">Amenities</TabsTrigger>
                 <TabsTrigger value="reviews">
@@ -444,9 +557,11 @@ export default function ProjectOverview() {
                           )}
 
                           {property.status === "available" && (
-                            <Button className="w-full" size="sm">
-                              View Details
-                            </Button>
+                            <Link to={`/property/${property.id}`} className="w-full">
+                              <Button className="w-full" size="sm">
+                                View Details
+                              </Button>
+                            </Link>
                           )}
                         </CardContent>
                       </Card>
@@ -462,6 +577,21 @@ export default function ProjectOverview() {
                     </CardContent>
                   </Card>
                 )}
+              </TabsContent>
+
+              <TabsContent value="progress">
+                <ProgressTracker
+                  milestones={project.milestones || []}
+                  projectName={project.name}
+                  overallProgress={
+                    project.milestones && project.milestones.length > 0
+                      ? project.milestones.reduce(
+                          (sum, m) => sum + parseFloat(m.progress_percentage),
+                          0
+                        ) / project.milestones.length
+                      : 0
+                  }
+                />
               </TabsContent>
 
               <TabsContent value="amenities">

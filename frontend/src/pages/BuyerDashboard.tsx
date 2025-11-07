@@ -18,6 +18,7 @@ import {
   MapPin,
   Building2,
   Eye,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -33,10 +34,76 @@ interface SavedProject {
   verified: boolean;
 }
 
+interface PurchasedProperty {
+  id: string;
+  unit_number: string;
+  property_type: string;
+  price: string;
+  status: string;
+  project: {
+    id: string;
+    name: string;
+    city: string;
+    cover_image: string;
+    expected_completion: string;
+  };
+}
+
 export default function BuyerDashboard() {
   const { user } = useAuth();
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<SavedProject[]>([]);
+  const [purchasedProperties, setPurchasedProperties] = useState<PurchasedProperty[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+
+      // Fetch purchased properties
+      const propertiesRes = await fetch(
+        `${API_BASE_URL}/api/projects/user/properties/my_properties/`,
+        { headers }
+      );
+      if (propertiesRes.ok) {
+        const propertiesData = await propertiesRes.json();
+        setPurchasedProperties(propertiesData);
+      }
+
+      // Fetch saved projects
+      const savedRes = await fetch(
+        `${API_BASE_URL}/api/projects/user/projects/saved_projects/`,
+        { headers }
+      );
+      if (savedRes.ok) {
+        const savedData = await savedRes.json();
+        setSavedProjects(savedData);
+      }
+
+      // Fetch recently viewed projects
+      const viewedRes = await fetch(
+        `${API_BASE_URL}/api/projects/user/projects/recently_viewed/`,
+        { headers }
+      );
+      if (viewedRes.ok) {
+        const viewedData = await viewedRes.json();
+        setRecentlyViewed(viewedData);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatPrice = (price: string) => {
     const priceNum = parseFloat(price);
@@ -46,30 +113,53 @@ export default function BuyerDashboard() {
     return `₹${(priceNum / 100000).toFixed(2)} L`;
   };
 
+  const getPropertyTypeDisplay = (type: string) => {
+    const typeMap: { [key: string]: string } = {
+      "1bhk": "1 BHK",
+      "2bhk": "2 BHK",
+      "3bhk": "3 BHK",
+      "4bhk": "4 BHK",
+      "5bhk+": "5+ BHK",
+      "studio": "Studio",
+      "penthouse": "Penthouse",
+      "villa": "Villa",
+      "plot": "Plot",
+    };
+    return typeMap[type] || type;
+  };
+
   const stats = [
     {
+      title: "My Properties",
+      value: loading ? "..." : purchasedProperties.length.toString(),
+      icon: Building2,
+      description: "Properties you own",
+    },
+    {
       title: "Saved Projects",
-      value: "0",
+      value: loading ? "..." : savedProjects.length.toString(),
       icon: Heart,
       description: "Projects you've favorited",
     },
     {
-      title: "Site Visits",
-      value: "0",
-      icon: Calendar,
-      description: "Scheduled visits",
+      title: "Recently Viewed",
+      value: loading ? "..." : recentlyViewed.length.toString(),
+      icon: Eye,
+      description: "Projects you viewed",
     },
     {
-      title: "Documents",
-      value: "0",
-      icon: FileText,
-      description: "Downloaded brochures",
-    },
-    {
-      title: "Interests",
-      value: "0",
+      title: "Total Investment",
+      value: loading
+        ? "..."
+        : purchasedProperties.length > 0
+        ? formatPrice(
+            purchasedProperties
+              .reduce((sum, p) => sum + parseFloat(p.price), 0)
+              .toString()
+          )
+        : "₹0",
       icon: TrendingUp,
-      description: "Properties marked interested",
+      description: "Total property value",
     },
   ];
 
@@ -102,8 +192,12 @@ export default function BuyerDashboard() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="saved" className="w-full">
+        <Tabs defaultValue="properties" className="w-full">
           <TabsList>
+            <TabsTrigger value="properties">
+              <Building2 className="h-4 w-4 mr-2" />
+              My Properties
+            </TabsTrigger>
             <TabsTrigger value="saved">
               <Heart className="h-4 w-4 mr-2" />
               Saved Projects
@@ -112,15 +206,79 @@ export default function BuyerDashboard() {
               <Eye className="h-4 w-4 mr-2" />
               Recently Viewed
             </TabsTrigger>
-            <TabsTrigger value="visits">
-              <Calendar className="h-4 w-4 mr-2" />
-              Site Visits
-            </TabsTrigger>
-            <TabsTrigger value="interests">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Interests
-            </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="properties" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>My Properties</CardTitle>
+                <CardDescription>
+                  Properties you've purchased or booked
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                  </div>
+                ) : purchasedProperties.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Building2 className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">
+                      No properties yet
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      Start exploring and book your dream property
+                    </p>
+                    <Link to="/explore-projects">
+                      <Button>Explore Projects</Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {purchasedProperties.map((property) => (
+                      <Card key={property.id} className="overflow-hidden">
+                        <div className="relative">
+                          <img
+                            src={property.project.cover_image}
+                            alt={property.project.name}
+                            className="w-full h-40 object-cover"
+                          />
+                          <Badge className="absolute top-2 right-2 bg-green-600">
+                            {property.status}
+                          </Badge>
+                        </div>
+                        <CardContent className="pt-4">
+                          <h3 className="font-semibold mb-1">
+                            {property.project.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {property.project.city}
+                          </p>
+                          <div className="mb-3">
+                            <span className="text-xs text-muted-foreground">Unit {property.unit_number}</span>
+                            <span className="text-xs text-muted-foreground"> • </span>
+                            <span className="text-xs text-muted-foreground">
+                              {getPropertyTypeDisplay(property.property_type)}
+                            </span>
+                          </div>
+                          <div className="text-lg font-bold text-primary mb-3">
+                            {formatPrice(property.price)}
+                          </div>
+                          <Link to={`/property/${property.id}`}>
+                            <Button variant="outline" className="w-full" size="sm">
+                              View Details
+                            </Button>
+                          </Link>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="saved" className="mt-6">
             <Card>
@@ -131,7 +289,11 @@ export default function BuyerDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {savedProjects.length === 0 ? (
+                {loading ? (
+                  <div className="text-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                  </div>
+                ) : savedProjects.length === 0 ? (
                   <div className="text-center py-12">
                     <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                     <h3 className="text-xl font-semibold mb-2">
@@ -146,7 +308,37 @@ export default function BuyerDashboard() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Projects will be listed here */}
+                    {savedProjects.map((project) => (
+                      <Card key={project.id} className="overflow-hidden">
+                        <div className="relative">
+                          <img
+                            src={project.cover_image}
+                            alt={project.name}
+                            className="w-full h-40 object-cover"
+                          />
+                          {project.verified && (
+                            <Badge className="absolute top-2 left-2 bg-green-600">
+                              Verified
+                            </Badge>
+                          )}
+                        </div>
+                        <CardContent className="pt-4">
+                          <h3 className="font-semibold mb-1">{project.name}</h3>
+                          <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {project.city}
+                          </p>
+                          <div className="text-lg font-bold text-primary mb-3">
+                            {formatPrice(project.starting_price)}
+                          </div>
+                          <Link to={`/projects/${project.id}`}>
+                            <Button variant="outline" className="w-full" size="sm">
+                              View Project
+                            </Button>
+                          </Link>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -162,71 +354,63 @@ export default function BuyerDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12">
-                  <Eye className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">
-                    No viewing history yet
-                  </h3>
-                  <p className="text-muted-foreground mb-6">
-                    Your recently viewed projects will appear here
-                  </p>
-                  <Link to="/explore-projects">
-                    <Button>Start Exploring</Button>
-                  </Link>
-                </div>
+                {loading ? (
+                  <div className="text-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                  </div>
+                ) : recentlyViewed.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Eye className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">
+                      No viewing history yet
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      Your recently viewed projects will appear here
+                    </p>
+                    <Link to="/explore-projects">
+                      <Button>Start Exploring</Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {recentlyViewed.map((project) => (
+                      <Card key={project.id} className="overflow-hidden">
+                        <div className="relative">
+                          <img
+                            src={project.cover_image}
+                            alt={project.name}
+                            className="w-full h-40 object-cover"
+                          />
+                          {project.verified && (
+                            <Badge className="absolute top-2 left-2 bg-green-600">
+                              Verified
+                            </Badge>
+                          )}
+                        </div>
+                        <CardContent className="pt-4">
+                          <h3 className="font-semibold mb-1">{project.name}</h3>
+                          <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {project.city}
+                          </p>
+                          <div className="text-lg font-bold text-primary mb-3">
+                            {formatPrice(project.starting_price)}
+                          </div>
+                          <Link to={`/projects/${project.id}`}>
+                            <Button variant="outline" className="w-full" size="sm">
+                              View Again
+                            </Button>
+                          </Link>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="visits" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Scheduled Site Visits</CardTitle>
-                <CardDescription>
-                  Manage your upcoming property visits
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">
-                    No site visits scheduled
-                  </h3>
-                  <p className="text-muted-foreground mb-6">
-                    Schedule a visit to see properties in person
-                  </p>
-                  <Link to="/explore-projects">
-                    <Button>Find Properties</Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="interests" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Properties You're Interested In</CardTitle>
-                <CardDescription>
-                  Track properties you've expressed interest in
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <TrendingUp className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">
-                    No interested properties
-                  </h3>
-                  <p className="text-muted-foreground mb-6">
-                    Mark properties you're interested in to track them here
-                  </p>
-                  <Link to="/explore-projects">
-                    <Button>Browse Properties</Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
 
         {/* Quick Actions */}

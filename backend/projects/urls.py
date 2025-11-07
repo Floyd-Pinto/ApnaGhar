@@ -4,6 +4,7 @@ from .views import (
     DeveloperViewSet, ProjectViewSet, PropertyViewSet,
     MilestoneViewSet, ReviewViewSet
 )
+from .user_views import UserPropertyViewSet, UserProjectViewSet
 
 router = DefaultRouter()
 router.register(r'developers', DeveloperViewSet, basename='developer')
@@ -11,6 +12,10 @@ router.register(r'projects', ProjectViewSet, basename='project')
 router.register(r'properties', PropertyViewSet, basename='property')
 router.register(r'milestones', MilestoneViewSet, basename='milestone')
 router.register(r'reviews', ReviewViewSet, basename='review')
+
+# User-specific endpoints
+router.register(r'user/properties', UserPropertyViewSet, basename='user-property')
+router.register(r'user/projects', UserProjectViewSet, basename='user-project')
 
 urlpatterns = [
     path('', include(router.urls)),

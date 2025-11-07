@@ -41,6 +41,10 @@ class CustomUser(AbstractUser):
     # Privacy settings
     profile_visibility = models.BooleanField(default=True)
     show_activity_status = models.BooleanField(default=True)
+    
+    # User activity tracking
+    saved_projects = models.JSONField(default=list, blank=True)  # List of project IDs
+    recently_viewed = models.JSONField(default=list, blank=True)  # List of project IDs (ordered by recency)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']

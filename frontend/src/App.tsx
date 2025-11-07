@@ -13,6 +13,7 @@ import ExploreProjects from "./pages/ExploreProjects";
 import ProjectOverview from "./pages/ProjectOverview";
 import Projects from "./pages/Projects";
 import PropertyDetails from "./pages/PropertyDetails";
+import PropertyUnitDetails from "./pages/PropertyUnitDetails";
 import Dashboard from "./pages/Dashboard";
 import BuyerDashboard from "./pages/BuyerDashboard";
 import BuilderDashboard from "./pages/BuilderDashboard";
@@ -52,6 +53,7 @@ const Layout = () => {
             } 
           />
           <Route path="/projects/:id" element={<ProjectOverview />} />
+          <Route path="/property/:propertyId" element={<PropertyUnitDetails />} />
           <Route 
             path="/dashboard" 
             element={
