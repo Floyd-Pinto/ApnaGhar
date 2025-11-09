@@ -8,6 +8,18 @@
 /* ApnaGhar Design System - macOS/iOS Glassmorphism Theme */
 
 @layer base {
+  /* Prevent horizontal scroll on all devices */
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  /* Ensure all containers respect viewport width */
+  * {
+    box-sizing: border-box;
+  }
+
   /* Light Theme - Muted Glassmorphism */
   :root,
   .theme-light {
@@ -16,8 +28,8 @@
     --foreground: 225 47% 15%;
 
     /* Glass backgrounds and borders */
-    --glass-bg: rgba(255, 255, 255, 0.6);
-    --glass-border: rgba(255, 255, 255, 0.45);
+    --glass-bg: rgba(245, 246, 250, 0.85);
+    --glass-border: rgba(225, 230, 240, 0.6);
     --glass-shadow: 0 4px 16px rgba(47, 143, 157, 0.08);
     --glass-backdrop: blur(10px);
 
@@ -40,11 +52,11 @@
     --text-secondary: 218 11% 48%;
 
     /* Card */
-    --card: rgba(255, 255, 255, 0.6);
+    --card: rgba(245, 246, 250, 0.85);
     --card-foreground: 225 47% 15%;
 
     /* Muted */
-    --muted: 225 20% 94%;
+    --muted: 225 20% 92%;
     --muted-foreground: 218 11% 48%;
 
     /* Accent (using primary) */
@@ -60,19 +72,19 @@
     --destructive-foreground: 0 0% 100%;
 
     /* UI Elements */
-    --border: rgba(255, 255, 255, 0.45);
-    --input: rgba(255, 255, 255, 0.6);
+    --border: rgba(225, 230, 240, 0.6);
+    --input: rgba(245, 246, 250, 0.85);
     --ring: 188 54% 40%;
 
     /* Popover */
-    --popover: rgba(255, 255, 255, 0.6);
+    --popover: rgba(245, 246, 250, 0.95);
     --popover-foreground: 225 47% 15%;
 
     /* Dashboard */
-    --dashboard-sidebar: rgba(255, 255, 255, 0.5);
+    --dashboard-sidebar: rgba(245, 246, 250, 0.7);
     --dashboard-sidebar-foreground: 225 47% 15%;
-    --dashboard-card: rgba(255, 255, 255, 0.6);
-    --dashboard-border: rgba(255, 255, 255, 0.45);
+    --dashboard-card: rgba(245, 246, 250, 0.85);
+    --dashboard-border: rgba(225, 230, 240, 0.6);
 
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(47, 143, 157, 0.05);
@@ -83,13 +95,13 @@
     --radius: 1rem;
 
     /* Sidebar */
-    --sidebar-background: rgba(255, 255, 255, 0.5);
+    --sidebar-background: rgba(245, 246, 250, 0.7);
     --sidebar-foreground: 225 47% 15%;
     --sidebar-primary: 188 54% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 20% 94%;
+    --sidebar-accent: 225 20% 90%;
     --sidebar-accent-foreground: 225 47% 15%;
-    --sidebar-border: rgba(255, 255, 255, 0.45);
+    --sidebar-border: rgba(225, 230, 240, 0.6);
     --sidebar-ring: 188 54% 40%;
   }
 
@@ -554,5 +566,217 @@
 
   .dialog-scroll::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary) / 0.6);
+  }
+
+  /* Force all dialogs to center on all screen sizes */
+  [role="dialog"],
+  [data-radix-dialog-content] {
+    position: fixed !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+  }
+
+  /* Mobile Responsive Utilities */
+  @media (max-width: 768px) {
+    /* Prevent horizontal scroll */
+    body {
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ensure all elements respect viewport */
+    * {
+      max-width: 100vw;
+    }
+
+    /* Fix container overflow */
+    .container {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    /* Mobile-friendly touch targets */
+    button, a, input, select, textarea {
+      min-height: 44px;
+    }
+
+    /* Reduce padding on mobile */
+    .glass-card {
+      padding: 1rem;
+      max-width: 100%;
+    }
+
+    /* Stack layouts on mobile */
+    .desktop-flex {
+      flex-direction: column;
+    }
+
+    /* Full width buttons on mobile */
+    .mobile-full-width {
+      width: 100%;
+    }
+
+    /* Better spacing on mobile */
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+      max-width: 100%;
+    }
+
+    /* Prevent grid overflow */
+    .grid {
+      max-width: 100%;
+    }
+
+    /* Fix flex overflow */
+    .flex {
+      flex-wrap: wrap;
+      max-width: 100%;
+    }
+
+    /* Fix images */
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Fix tables */
+    table {
+      max-width: 100%;
+      overflow-x: auto;
+      display: block;
+    }
+
+    /* Dialog adjustments for mobile */
+    [role="dialog"] {
+      position: fixed !important;
+      left: 50% !important;
+      top: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      max-width: 92vw !important;
+      max-height: 85vh !important;
+      margin: 0 !important;
+      padding: 1rem !important;
+    }
+    
+    /* Dialog overlay - ensure full coverage on mobile */
+    [data-radix-dialog-overlay] {
+      position: fixed !important;
+      inset: 0 !important;
+    }
+
+    /* Card adjustments - all cards responsive */
+    .glass-card,
+    [class*="card"],
+    [data-state] {
+      border-radius: 0.75rem;
+      max-width: 100%;
+      width: 100%;
+    }
+
+    /* Card content padding */
+    [class*="CardContent"],
+    [class*="card-content"] {
+      padding: 0.75rem !important;
+    }
+
+    /* Card headers */
+    [class*="CardHeader"],
+    [class*="card-header"] {
+      padding: 0.75rem !important;
+    }
+
+    /* Font size adjustments */
+    h1 {
+      font-size: 1.75rem;
+      line-height: 1.2;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      line-height: 1.3;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      line-height: 1.4;
+    }
+
+    h4 {
+      font-size: 1.125rem;
+    }
+
+    /* Mobile menu specific styles */
+    .mobile-menu-item {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Ensure buttons fit on screen */
+    button {
+      max-width: 100%;
+      word-wrap: break-word;
+    }
+
+    /* Fix long text overflow */
+    p, span, div {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Optimize images for mobile */
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Better touch feedback */
+    button:active,
+    a:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+
+    /* Accordion mobile styling */
+    [data-radix-accordion-content] {
+      overflow-x: hidden;
+    }
+
+    [data-radix-accordion-trigger] {
+      min-height: 48px;
+      padding: 0.75rem 1rem;
+    }
+
+    /* Better card spacing on mobile */
+    .space-y-6 > * + * {
+      margin-top: 1rem;
+    }
+
+    .space-y-4 > * + * {
+      margin-top: 0.75rem;
+    }
+
+    /* Dialog content padding */
+    [data-radix-dialog-content] {
+      padding: 1rem !important;
+    }
+
+    /* Make all cards responsive */
+    .glass-card,
+    [class*="card"] {
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+
+  /* Tablet adjustments */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .glass-card {
+      padding: 1.25rem;
+    }
   }
 }

@@ -62,11 +62,16 @@ class ProjectViewSet(viewsets.ModelViewSet):
         from django.db.models import Avg, Count
         queryset = super().get_queryset()
         
-        # Annotate with average rating and review count for ordering
-        queryset = queryset.annotate(
-            avg_rating=Avg('reviews__rating'),
-            review_count=Count('reviews')
-        )
+        try:
+            # Annotate with average rating and review count for ordering
+            queryset = queryset.annotate(
+                avg_rating=Avg('reviews__rating'),
+                review_count=Count('reviews')
+            )
+        except Exception as e:
+            # If annotation fails, just use base queryset
+            import logging
+            logging.warning(f"Failed to annotate project queryset: {e}")
         
         # Filter by price range
         min_price = self.request.query_params.get('min_price')
@@ -86,7 +91,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
         ordering = self.request.query_params.get('ordering', '')
         if ordering == 'popular' or ordering == '-popular':
             # Order by highest average rating first, then by review count
-            queryset = queryset.order_by('-avg_rating', '-review_count', '-views_count')
+            try:
+                queryset = queryset.order_by('-avg_rating', '-review_count', '-views_count')
+            except Exception:
+                # Fallback to views_count if annotation failed
+                queryset = queryset.order_by('-views_count')
         
         return queryset
     
@@ -140,6 +149,43 @@ class ProjectViewSet(viewsets.ModelViewSet):
         serializer = MilestoneSerializer(milestones, many=True)
         return Response(serializer.data)
     
+    @action(detail=True, methods=['get'])
+    def properties(self, request, pk=None):
+        """Get properties for a project"""
+        project = self.get_object()
+        # Similar permission logic as milestones
+        user = request.user
+        allowed = False
+        if user and user.is_authenticated:
+            # Check if user is a builder (by role)
+            if hasattr(user, 'role') and user.role == 'builder':
+                allowed = True
+            
+            # Check if user is the developer of this project
+            if not allowed:
+                try:
+                    developer = Developer.objects.get(user=user)
+                    if project.developer == developer:
+                        allowed = True
+                except Developer.DoesNotExist:
+                    pass
+
+            # Any authenticated buyer (role='buyer') can view project properties
+            if not allowed and hasattr(user, 'role') and user.role == 'buyer':
+                allowed = True
+
+            # Buyer of any unit in project (fallback)
+            if not allowed:
+                if project.properties.filter(buyer=user).exists():
+                    allowed = True
+
+        if not allowed:
+            return Response({'detail': 'You do not have permission to view properties for this project.'}, status=status.HTTP_403_FORBIDDEN)
+
+        properties = project.properties.all()
+        serializer = PropertySerializer(properties, many=True)
+        return Response(serializer.data)
+    
     @action(detail=True, methods=['post'])
     def mark_interested(self, request, pk=None):
         """Mark user as interested in project"""
@@ -156,16 +202,23 @@ class ProjectViewSet(viewsets.ModelViewSet):
         except Developer.DoesNotExist:
             return Response({'detail': 'Only builders can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
         
-        # Get projects for this developer
-        queryset = self.get_queryset().filter(developer=developer)
+        # Get projects for this developer with optimized query
+        # Use select_related and prefetch_related to avoid N+1 queries
+        queryset = Project.objects.select_related(
+            'developer'
+        ).prefetch_related(
+            'milestones', 
+            'properties',
+            'reviews'
+        ).filter(developer=developer)
         
         # Apply pagination
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = ProjectListSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
         
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = ProjectListSerializer(queryset, many=True)
         return Response(serializer.data)
 
 
@@ -242,8 +295,13 @@ class PropertyViewSet(viewsets.ModelViewSet):
                         public_id=public_id,
                         overwrite=False
                     )
+                    cloudinary_url = res.get('secure_url')
+                else:
+                    # Get URL for existing resource
+                    cloudinary_url = cloudinary.CloudinaryImage(public_id).build_url(secure=True)
                 
                 entry = {
+                    'url': cloudinary_url,
                     'sha256': sha256,
                     'uploaded_at': timezone.now().isoformat(),
                     'description': description or ''
@@ -279,8 +337,13 @@ class PropertyViewSet(viewsets.ModelViewSet):
                         public_id=public_id,
                         overwrite=False
                     )
+                    cloudinary_url = res.get('secure_url')
+                else:
+                    # Get URL for existing resource
+                    cloudinary_url = cloudinary.CloudinaryVideo(public_id).build_url(secure=True)
                 
                 entry = {
+                    'url': cloudinary_url,
                     'sha256': sha256,
                     'uploaded_at': timezone.now().isoformat(),
                     'description': description or ''
@@ -422,8 +485,13 @@ class PropertyViewSet(viewsets.ModelViewSet):
                             public_id=public_id,
                             overwrite=False
                         )
+                        cloudinary_url = res.get('secure_url')
+                    else:
+                        # Get URL for existing resource
+                        cloudinary_url = cloudinary.CloudinaryImage(public_id).build_url(secure=True)
                     
                     entry = {
+                        'url': cloudinary_url,
                         'sha256': sha256,
                         'uploaded_at': timezone.now().isoformat(),
                         'description': description,
@@ -463,8 +531,13 @@ class PropertyViewSet(viewsets.ModelViewSet):
                             public_id=public_id,
                             overwrite=False
                         )
+                        cloudinary_url = res.get('secure_url')
+                    else:
+                        # Get URL for existing resource
+                        cloudinary_url = cloudinary.CloudinaryVideo(public_id).build_url(secure=True)
                     
                     entry = {
+                        'url': cloudinary_url,
                         'sha256': sha256,
                         'uploaded_at': timezone.now().isoformat(),
                         'description': description,
@@ -613,8 +686,13 @@ class MilestoneViewSet(viewsets.ModelViewSet):
                             overwrite=False
                         )
                         logger.info(f"Upload successful: {res.get('public_id')}")
+                        cloudinary_url = res.get('secure_url')
+                    else:
+                        # Get URL for existing resource
+                        cloudinary_url = cloudinary.CloudinaryImage(public_id).build_url(secure=True)
                     
                     entry = {
+                        'url': cloudinary_url,
                         'sha256': sha256,
                         'uploaded_at': timezone.now().isoformat(),
                         'description': description
@@ -656,8 +734,13 @@ class MilestoneViewSet(viewsets.ModelViewSet):
                             overwrite=False
                         )
                         logger.info(f"Upload successful: {res.get('public_id')}")
+                        cloudinary_url = res.get('secure_url')
+                    else:
+                        # Get URL for existing resource
+                        cloudinary_url = cloudinary.CloudinaryVideo(public_id).build_url(secure=True)
                     
                     entry = {
+                        'url': cloudinary_url,
                         'sha256': sha256,
                         'uploaded_at': timezone.now().isoformat(),
                         'description': description
@@ -876,8 +959,13 @@ class MilestoneViewSet(viewsets.ModelViewSet):
                             public_id=public_id,
                             overwrite=False
                         )
+                        cloudinary_url = res.get('secure_url')
+                    else:
+                        # Get URL for existing resource
+                        cloudinary_url = cloudinary.CloudinaryImage(public_id).build_url(secure=True)
                     
                     entry = {
+                        'url': cloudinary_url,
                         'sha256': sha256,
                         'uploaded_at': timezone.now().isoformat(),
                         'description': description,
@@ -917,8 +1005,13 @@ class MilestoneViewSet(viewsets.ModelViewSet):
                             public_id=public_id,
                             overwrite=False
                         )
+                        cloudinary_url = res.get('secure_url')
+                    else:
+                        # Get URL for existing resource
+                        cloudinary_url = cloudinary.CloudinaryVideo(public_id).build_url(secure=True)
                     
                     entry = {
+                        'url': cloudinary_url,
                         'sha256': sha256,
                         'uploaded_at': timezone.now().isoformat(),
                         'description': description,

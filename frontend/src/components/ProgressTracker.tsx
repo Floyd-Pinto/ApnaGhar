@@ -24,7 +24,10 @@ import {
   Loader2,
   X,
   ZoomIn,
+  Smartphone,
 } from "lucide-react";
+import SecureUpload from "@/components/SecureUpload";
+import QRCodeDisplay from "@/components/QRCodeDisplay";
 
 interface Milestone {
   id: string;
@@ -37,6 +40,7 @@ interface Milestone {
   start_date?: string;
   completion_date?: string;
   verified: boolean;
+  qr_code_data?: string | null;
   images: Array<{
     sha256?: string;
     url: string;
@@ -69,6 +73,9 @@ export default function ProgressTracker({
   const { user } = useAuth();
   const { toast } = useToast();
   const [uploadingMilestoneId, setUploadingMilestoneId] = useState<string | null>(null);
+  const [showSecureUploadDialog, setShowSecureUploadDialog] = useState(false);
+  const [showQRDialog, setShowQRDialog] = useState(false);
+  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
   
   // Per-milestone upload state - each milestone has its own description, images, and videos
   const [milestoneUploads, setMilestoneUploads] = useState<Record<string, {
@@ -260,49 +267,66 @@ export default function ProgressTracker({
             <Progress value={calculatedProgress} className="h-3" />
           </div>
 
-          {/* Cloudinary Media Integration - Active */}
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 rounded-lg p-6 border-2 border-primary/30">
-            <div className="text-center space-y-3">
-              <div className="flex items-center justify-center gap-2">
-                <Camera className="h-8 w-8 text-primary" />
-                <QrCode className="h-8 w-8 text-primary" />
+          {/* Progress Summary Stats */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-muted/50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-primary mb-1">
+                {milestones.length}
               </div>
-              <h3 className="font-semibold text-lg">Cloudinary Media & Hash Verification</h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                {user?.role === "builder" 
-                  ? "Upload photos and videos to each milestone below. Files are stored securely in Cloudinary with SHA256 hash verification."
-                  : "View real-time construction photos and videos uploaded by the builder, verified with SHA256 hashing."}
-              </p>
-              <div className="flex items-center justify-center gap-4 pt-2">
-                <div className="text-center">
-                  <Camera className="h-6 w-6 mx-auto mb-1 text-primary" />
-                  <span className="text-xs text-muted-foreground">Photos</span>
-                </div>
-                <div className="text-center">
-                  <QrCode className="h-6 w-6 mx-auto mb-1 text-primary" />
-                  <span className="text-xs text-muted-foreground">Hash Verified</span>
-                </div>
-                <div className="text-center">
-                  <MapPin className="h-6 w-6 mx-auto mb-1 text-primary" />
-                  <span className="text-xs text-muted-foreground">Cloudinary</span>
-                </div>
+              <div className="text-xs text-muted-foreground">Total Milestones</div>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-green-600 mb-1">
+                {milestones.filter(m => m.status === 'completed').length}
               </div>
-              {user?.role === "builder" && (
-                <div className="mt-4 p-3 bg-primary/10 rounded-lg">
-                  <p className="text-sm font-medium text-primary">
-                    👋 Hey Builder! {milestones.length > 0 
-                      ? `Scroll down to upload media to ${milestones.length} milestone(s)` 
-                      : "Create milestones in the admin panel first, then upload media here"}
-                  </p>
-                </div>
-              )}
-              {!user && (
-                <div className="mt-3 text-xs text-muted-foreground bg-yellow-50 dark:bg-yellow-950 rounded p-2">
-                  � Login as a buyer to view construction progress
-                </div>
-              )}
+              <div className="text-xs text-muted-foreground">Completed</div>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-orange-600 mb-1">
+                {milestones.filter(m => m.status === 'in_progress').length}
+              </div>
+              <div className="text-xs text-muted-foreground">In Progress</div>
             </div>
           </div>
+
+          {/* Security & Upload Info */}
+          {user?.role === "builder" && milestones.length > 0 && (
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex items-center gap-2 mt-1">
+                  <QrCode className="h-5 w-5 text-blue-600" />
+                  <Camera className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-sm mb-2 text-blue-900 dark:text-blue-100">
+                    Secure Upload System
+                  </h4>
+                  <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+                    <li>• Scan QR code at construction site to upload updates</li>
+                    <li>• Mobile camera only - gallery uploads blocked</li>
+                    <li>• GPS & timestamp automatically recorded</li>
+                    <li>• Files stored in Cloudinary with SHA256 verification</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {user?.role === "builder" && milestones.length === 0 && (
+            <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-center">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                📝 Create milestones in the admin panel to start tracking construction progress
+              </p>
+            </div>
+          )}
+
+          {!user && (
+            <div className="bg-muted rounded-lg p-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                🔒 Login to view detailed construction progress and updates
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -513,83 +537,52 @@ export default function ProgressTracker({
                       </div>
                     )}
 
-                    {/* Builder Upload Form - Always show for builders */}
-                    {user?.role === "builder" && (
-                      <div className="mt-4 p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border-2 border-primary/20">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Upload className="h-5 w-5 text-primary" />
-                          <h5 className="text-sm font-semibold">Upload Media (Builder Only)</h5>
+                    {/* Builder Secure Upload Section - QR Code Required */}
+                    {user?.role === "builder" && milestone.qr_code_data && (
+                      <div className="mt-4 space-y-3">
+                        {/* Information Box */}
+                        <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                          <div className="flex items-start gap-3">
+                            <Smartphone className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 text-sm">
+                              <p className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                                Secure Upload for Milestone
+                              </p>
+                              <ul className="space-y-1 text-blue-700 dark:text-blue-300 text-xs">
+                                <li>• Scan QR code at construction site</li>
+                                <li>• Mobile device camera only (desktop blocked)</li>
+                                <li>• Gallery uploads blocked for authenticity</li>
+                                <li>• GPS & timestamp automatically recorded</li>
+                              </ul>
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="text-xs mb-1 block font-medium">Description</label>
-                            <input
-                              value={getMilestoneData(milestone.id).description}
-                              onChange={(e) => updateMilestoneData(milestone.id, "description", e.target.value)}
-                              className="w-full text-sm rounded border p-2 bg-background"
-                              placeholder="e.g., Completed foundation work"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="text-xs mb-1 block font-medium">Images</label>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              onChange={(e) => updateMilestoneData(milestone.id, "images", Array.from(e.target.files || []))}
-                              className="w-full text-xs p-1 bg-background border rounded"
-                            />
-                            {getMilestoneData(milestone.id).images.length > 0 && (
-                              <p className="text-xs text-primary font-medium mt-1">
-                                ✓ {getMilestoneData(milestone.id).images.length} image(s) selected
-                              </p>
-                            )}
-                          </div>
 
-                          <div>
-                            <label className="text-xs mb-1 block font-medium">Videos</label>
-                            <input
-                              type="file"
-                              accept="video/*"
-                              multiple
-                              onChange={(e) => updateMilestoneData(milestone.id, "videos", Array.from(e.target.files || []))}
-                              className="w-full text-xs p-1 bg-background border rounded"
-                            />
-                            {getMilestoneData(milestone.id).videos.length > 0 && (
-                              <p className="text-xs text-primary font-medium mt-1">
-                                ✓ {getMilestoneData(milestone.id).videos.length} video(s) selected
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => handleUpload(milestone.id)}
-                              disabled={uploadingMilestoneId === milestone.id}
-                              className="flex-1"
-                            >
-                              {uploadingMilestoneId === milestone.id ? (
-                                <>
-                                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                                  Uploading...
-                                </>
-                              ) : (
-                                <>
-                                  <Upload className="h-3 w-3 mr-2" />
-                                  Upload to Cloudinary
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => clearMilestoneData(milestone.id)}
-                            >
-                              Clear
-                            </Button>
-                          </div>
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedMilestone(milestone);
+                              setShowQRDialog(true);
+                            }}
+                            className="flex-1"
+                          >
+                            <QrCode className="h-4 w-4 mr-2" />
+                            Show QR Code
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setSelectedMilestone(milestone);
+                              setShowSecureUploadDialog(true);
+                            }}
+                            className="flex-1"
+                          >
+                            <Camera className="h-4 w-4 mr-2" />
+                            Upload Update
+                          </Button>
                         </div>
                       </div>
                     )}
@@ -677,6 +670,51 @@ export default function ProgressTracker({
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code Display Dialog */}
+      <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Milestone QR Code</DialogTitle>
+            <DialogDescription>
+              Display this QR code at the construction site for secure uploads
+            </DialogDescription>
+          </DialogHeader>
+          {selectedMilestone && selectedMilestone.qr_code_data && (
+            <QRCodeDisplay
+              entityType="milestone"
+              entityId={selectedMilestone.id}
+              projectName={projectName}
+              title={selectedMilestone.title}
+              qrCodeData={selectedMilestone.qr_code_data}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Secure Upload Dialog */}
+      <Dialog open={showSecureUploadDialog} onOpenChange={setShowSecureUploadDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Secure Milestone Upload</DialogTitle>
+            <DialogDescription>
+              Scan QR code and upload construction updates from your mobile device
+            </DialogDescription>
+          </DialogHeader>
+          <SecureUpload
+            onSuccess={() => {
+              toast({
+                title: "Upload Successful",
+                description: "Milestone media has been uploaded successfully",
+              });
+              setShowSecureUploadDialog(false);
+              if (onMilestoneUpdate) {
+                onMilestoneUpdate();
+              }
+            }}
+          />
         </DialogContent>
       </Dialog>
     </div>

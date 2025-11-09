@@ -27,6 +27,8 @@ import {
   Clock,
   BarChart3,
   Loader2,
+  QrCode,
+  MapPin,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -100,10 +102,10 @@ export default function BuilderDashboard() {
       setLoading(false);
       toast({
         title: "Connection Timeout",
-        description: "Unable to load projects. Please check your connection.",
+        description: "Unable to load projects. Please check your connection and try refreshing the page.",
         variant: "destructive",
       });
-    }, 8000); // 8 second timeout (only 1 API call now)
+    }, 10000); // 10 second timeout
     
     try {
       const token = localStorage.getItem("access_token");
@@ -129,7 +131,27 @@ export default function BuilderDashboard() {
 
       console.log("BuilderDashboard: Response status:", projectsRes.status);
 
-      if (projectsRes.ok) {
+      if (!projectsRes.ok) {
+        const errorData = await projectsRes.json().catch(() => ({ detail: 'Unknown error' }));
+        console.error("BuilderDashboard: API Error:", errorData);
+        
+        if (projectsRes.status === 403) {
+          toast({
+            title: "Access Denied",
+            description: errorData.detail || "Only builders can access this page. Please ensure your account is set up as a builder.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: `Failed to load projects: ${errorData.detail || projectsRes.statusText}`,
+            variant: "destructive",
+          });
+        }
+        setProjects([]);
+        setMilestones([]);
+        setInquiries([]);
+      } else {
         const allProjects = await projectsRes.json();
         console.log("BuilderDashboard: Fetched projects:", allProjects);
         
@@ -164,21 +186,24 @@ export default function BuilderDashboard() {
           // No projects, no inquiries
           setInquiries([]);
         }
-      } else {
-        console.error("Failed to fetch projects:", projectsRes.status, projectsRes.statusText);
-        clearTimeout(timeoutId);
-        toast({
-          title: "Error",
-          description: "Failed to load projects",
-          variant: "destructive",
-        });
       }
-    } catch (error) {
-      console.error("Failed to fetch builder data:", error);
+    } catch (error: any) {
+      console.error("BuilderDashboard: Failed to fetch builder data:", error);
       clearTimeout(timeoutId);
+      
+      let errorMessage = "Failed to load dashboard data. ";
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage += "Cannot connect to server. Please ensure the backend is running on port 8000.";
+      } else if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += "Please try again later.";
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to load dashboard data",
+        title: "Error Loading Dashboard",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -230,6 +255,36 @@ export default function BuilderDashboard() {
     );
   }
 
+  // Check if user has the correct role
+  if (user?.role !== 'builder') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md mx-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-6 w-6 text-destructive" />
+              Access Denied
+            </CardTitle>
+            <CardDescription>
+              This dashboard is only accessible to builders
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Your account role: <strong>{user?.role || 'Not set'}</strong>
+            </p>
+            <p className="text-sm">
+              If you are a builder, please contact support to update your account role.
+            </p>
+            <Link to="/">
+              <Button className="w-full">Go to Home</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="bg-primary text-primary-foreground py-12">
@@ -248,8 +303,8 @@ export default function BuilderDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {stats.map((stat) => (
             <Card key={stat.title}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between mb-2">
+              <CardContent className="pt-6 flex flex-col items-center text-center">
+                <div className="flex flex-col items-center gap-2 mb-3 w-full">
                   <stat.icon className="h-8 w-8 text-primary" />
                   <span className="text-3xl font-bold">{stat.value}</span>
                 </div>
@@ -262,35 +317,37 @@ export default function BuilderDashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue="projects" className="w-full">
-          <TabsList>
-            <TabsTrigger value="projects">
-              <Building2 className="h-4 w-4 mr-2" />
-              My Projects
-            </TabsTrigger>
-            <TabsTrigger value="updates">
-              <Upload className="h-4 w-4 mr-2" />
-              Construction Updates
-            </TabsTrigger>
-            <TabsTrigger value="inquiries">
-              <Users className="h-4 w-4 mr-2" />
-              Inquiries
-            </TabsTrigger>
-            <TabsTrigger value="analytics">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Analytics
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+            <TabsList className="inline-flex md:grid w-auto md:w-full grid-cols-4 min-w-max md:min-w-0">
+              <TabsTrigger value="projects" className="text-xs sm:text-sm whitespace-nowrap">
+                <Building2 className="h-4 w-4 mr-2" />
+                My Projects
+              </TabsTrigger>
+              <TabsTrigger value="updates" className="text-xs sm:text-sm whitespace-nowrap">
+                <Upload className="h-4 w-4 mr-2" />
+                Construction Updates
+              </TabsTrigger>
+              <TabsTrigger value="inquiries" className="text-xs sm:text-sm whitespace-nowrap">
+                <Users className="h-4 w-4 mr-2" />
+                Inquiries
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="text-xs sm:text-sm whitespace-nowrap">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Analytics
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="projects" className="mt-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>My Projects</CardTitle>
-                  <CardDescription>
+              <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+                <div className="w-full sm:w-auto">
+                  <CardTitle className="text-center sm:text-left">My Projects</CardTitle>
+                  <CardDescription className="text-center sm:text-left">
                     Manage your listed projects
                   </CardDescription>
                 </div>
-                <Button onClick={() => setCreateDialogOpen(true)}>
+                <Button onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Project
                 </Button>
@@ -302,21 +359,35 @@ export default function BuilderDashboard() {
                     <h3 className="text-xl font-semibold mb-2">
                       No projects yet
                     </h3>
-                    <p className="text-muted-foreground mb-6">
+                    <p className="text-muted-foreground mb-4">
                       Start by posting your first project
                     </p>
-                    <Button size="lg" onClick={() => setCreateDialogOpen(true)}>
+                    
+                    {/* Debug Info */}
+                    <div className="mb-6 p-4 bg-muted/50 rounded-lg text-left max-w-md mx-auto">
+                      <p className="text-xs font-mono text-muted-foreground">
+                        <strong>Debug Info:</strong><br/>
+                        User Role: {user?.role || 'undefined'}<br/>
+                        User ID: {user?.id || 'undefined'}<br/>
+                        Email: {user?.email || 'undefined'}<br/>
+                        <br/>
+                        Check browser console (F12) for detailed API logs
+                      </p>
+                    </div>
+                    
+                    <Button size="lg" onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto">
                       <Plus className="h-5 w-5 mr-2" />
                       Post New Project
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-4 md:space-y-6 w-full max-w-full overflow-hidden">
                     {projects.map((project) => (
-                      <Card key={project.id} className="overflow-hidden">
-                        <div className="flex">
+                      <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-shadow w-full max-w-full">
+                        <div className="flex flex-col md:flex-row w-full">
+                          {/* Project Image */}
                           {project.cover_image && (
-                            <div className="w-48 h-32 flex-shrink-0">
+                            <div className="w-full md:w-64 h-48 md:h-auto flex-shrink-0">
                               <img
                                 src={project.cover_image}
                                 alt={project.name}
@@ -324,57 +395,82 @@ export default function BuilderDashboard() {
                               />
                             </div>
                           )}
-                          <CardContent className="flex-1 pt-6">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <h3 className="text-xl font-semibold">{project.name}</h3>
-                                  <Badge variant={project.status === "ongoing" ? "default" : "secondary"}>
+                          
+                          {/* Project Content */}
+                          <div className="flex-1 p-4 sm:p-6 w-full max-w-full overflow-hidden">
+                            {/* Header Section */}
+                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold break-words">{project.name}</h3>
+                                  <Badge 
+                                    variant={project.status === "ongoing" ? "default" : "secondary"}
+                                    className="text-xs flex-shrink-0"
+                                  >
                                     {project.status}
                                   </Badge>
-                                  <Badge variant="outline">{project.project_type}</Badge>
+                                  <Badge variant="outline" className="text-xs flex-shrink-0">
+                                    {project.project_type}
+                                  </Badge>
                                 </div>
-                                <p className="text-sm text-muted-foreground mb-3">
+                                <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1 break-words">
+                                  <MapPin className="h-3 w-3 flex-shrink-0" />
                                   {project.city}, {project.state}
                                 </p>
-                                <div className="flex gap-6 text-sm">
-                                  <div className="flex items-center gap-1">
-                                    <Eye className="h-4 w-4 text-primary" />
-                                    <span className="font-medium">{project.views_count}</span>
-                                    <span className="text-muted-foreground">views</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Users className="h-4 w-4 text-primary" />
-                                    <span className="font-medium">{project.interested_count}</span>
-                                    <span className="text-muted-foreground">interested</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Building2 className="h-4 w-4 text-primary" />
-                                    <span className="font-medium">{project.available_units}/{project.total_units}</span>
-                                    <span className="text-muted-foreground">available</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex gap-2">
-                                <Link to={`/projects/${project.id}`}>
-                                  <Button variant="outline" size="sm">
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View
-                                  </Button>
-                                </Link>
-                                <Button variant="outline" size="sm" disabled>
-                                  <Settings className="h-4 w-4 mr-2" />
-                                  Edit
-                                </Button>
-                                <Link to={`/projects/${project.id}?tab=progress`}>
-                                  <Button variant="default" size="sm">
-                                    <Upload className="h-4 w-4 mr-2" />
-                                    Upload Updates
-                                  </Button>
-                                </Link>
                               </div>
                             </div>
-                          </CardContent>
+
+                            {/* Stats Section */}
+                            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6 p-3 sm:p-4 bg-muted/30 rounded-lg">
+                              <div className="text-center">
+                                <div className="flex items-center justify-center gap-1 mb-1">
+                                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                                  <span className="text-sm sm:text-lg font-bold">{project.views_count}</span>
+                                </div>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground">Views</p>
+                              </div>
+                              <div className="text-center border-x">
+                                <div className="flex items-center justify-center gap-1 mb-1">
+                                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                                  <span className="text-sm sm:text-lg font-bold">{project.interested_count}</span>
+                                </div>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground">Interested</p>
+                              </div>
+                              <div className="text-center">
+                                <div className="flex items-center justify-center gap-1 mb-1">
+                                  <Building2 className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                                  <span className="text-sm sm:text-lg font-bold">{project.available_units}/{project.total_units}</span>
+                                </div>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground">Available</p>
+                              </div>
+                            </div>
+
+                            {/* Actions Section */}
+                            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full">
+                              <Link to={`/projects/${project.id}`} className="w-full sm:flex-1 sm:min-w-[120px]">
+                                <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm">
+                                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                  <span className="truncate">View</span>
+                                </Button>
+                              </Link>
+                              <Link to={`/projects/${project.id}/qr-codes`} className="w-full sm:flex-1 sm:min-w-[120px]">
+                                <Button variant="secondary" size="sm" className="w-full text-xs sm:text-sm">
+                                  <QrCode className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                  <span className="truncate">QR Codes</span>
+                                </Button>
+                              </Link>
+                              <Link to={`/projects/${project.id}?tab=progress`} className="w-full sm:flex-1 sm:min-w-[120px]">
+                                <Button variant="default" size="sm" className="w-full text-xs sm:text-sm">
+                                  <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                  <span className="truncate">Upload</span>
+                                </Button>
+                              </Link>
+                              <Button variant="outline" size="sm" disabled className="w-full sm:min-w-[100px] text-xs sm:text-sm">
+                                <Settings className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="truncate">Edit</span>
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       </Card>
                     ))}

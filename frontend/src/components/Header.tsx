@@ -15,12 +15,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -29,7 +29,8 @@ const Header = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const navRef = useRef<HTMLElement>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const navRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     try {
@@ -38,6 +39,16 @@ const Header = () => {
       console.error('Logout error:', error);
     }
   };
+
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const isActivePath = (path: string) => {
     if (path === '/') {
@@ -67,11 +78,15 @@ const Header = () => {
   }, [location.pathname, isAuthenticated]);
 
   return (
-    <header className="frosted-nav sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+    <header className={`fixed top-0 left-0 right-0 z-50 w-full overflow-x-hidden transition-all duration-300 ${
+      isScrolled 
+        ? 'frosted-nav' 
+        : 'bg-background border-b border-border'
+    }`}>
+      <div className="container mx-auto px-4 max-w-full">
+        <div className="flex items-center justify-between gap-4 h-16 max-w-full">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-all duration-300">
+          <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-all duration-300 flex-shrink-0">
             <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
               <Shield className="h-5 w-5 text-white" />
             </div>
@@ -82,24 +97,25 @@ const Header = () => {
           </Link>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-2 relative" ref={navRef}>
-            {/* Sliding indicator */}
-            <div 
-              className="nav-indicator absolute bottom-0 h-0.5 bg-primary transition-all duration-300 ease-out rounded-full"
-              style={{ width: 0, transform: 'translateX(0)' }}
-            />
-            
-            <Link 
-              to="/" 
-              data-active={isActivePath('/') && location.pathname === '/'}
-              className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-300 relative ${
-                isActivePath('/') && location.pathname === '/'
-                  ? 'text-primary'
-                  : 'text-foreground hover:text-primary hover:bg-white/50 dark:hover:bg-white/10'
-              }`}
-            >
-              Home
-            </Link>
+          <nav className="hidden md:flex items-center justify-center flex-1">
+            <div className="flex items-center space-x-2 relative" ref={navRef}>
+              {/* Sliding indicator */}
+              <div 
+                className="nav-indicator absolute bottom-0 h-0.5 bg-primary transition-all duration-300 ease-out rounded-full"
+                style={{ width: 0, transform: 'translateX(0)' }}
+              />
+              
+              <Link 
+                to="/" 
+                data-active={isActivePath('/') && location.pathname === '/'}
+                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-300 relative ${
+                  isActivePath('/') && location.pathname === '/'
+                    ? 'text-primary'
+                    : 'text-foreground hover:text-primary hover:bg-white/50 dark:hover:bg-white/10'
+                }`}
+              >
+                Home
+              </Link>
             {isAuthenticated && (
               <>
                 <Link 
@@ -126,13 +142,14 @@ const Header = () => {
                 </Link>
               </>
             )}
+            </div>
           </nav>
 
           {/* Auth Section */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             {/* Mobile Menu */}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
+            <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <DialogTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -140,24 +157,24 @@ const Header = () => {
                 >
                   <Menu className="h-5 w-5" />
                 </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                <SheetHeader>
-                  <SheetTitle className="flex items-center gap-2">
+              </DialogTrigger>
+              <DialogContent className="w-[92vw] max-w-[400px] p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="mb-4">
+                  <DialogTitle className="flex items-center gap-2 text-center justify-center">
                     <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
                       <Shield className="h-5 w-5 text-white" />
                     </div>
-                    <span className="text-xl font-extrabold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    <span className="text-base sm:text-lg font-extrabold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                       ApnaGhar
                     </span>
-                  </SheetTitle>
-                </SheetHeader>
+                  </DialogTitle>
+                </DialogHeader>
 
-                <div className="mt-8 flex flex-col space-y-4">
+                <div className="flex flex-col space-y-2 w-full max-w-full">
                   <Link
                     to="/"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`px-4 py-3 text-base font-semibold rounded-xl transition-all duration-300 ${
+                    className={`px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-300 w-full ${
                       isActivePath('/') && location.pathname === '/'
                         ? 'text-primary bg-primary/10'
                         : 'text-foreground hover:text-primary hover:bg-white/50 dark:hover:bg-white/10'
@@ -171,7 +188,7 @@ const Header = () => {
                       <Link
                         to="/explore-projects"
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`px-4 py-3 text-base font-semibold rounded-xl transition-all duration-300 ${
+                        className={`px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-300 w-full ${
                           isActivePath('/explore-projects')
                             ? 'text-primary bg-primary/10'
                             : 'text-foreground hover:text-primary hover:bg-white/50 dark:hover:bg-white/10'
@@ -182,7 +199,7 @@ const Header = () => {
                       <Link
                         to={user?.role === 'builder' ? '/dashboard/builder' : '/dashboard/buyer'}
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`px-4 py-3 text-base font-semibold rounded-xl transition-all duration-300 ${
+                        className={`px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-300 w-full ${
                           isActivePath('/dashboard')
                             ? 'text-primary bg-primary/10'
                             : 'text-foreground hover:text-primary hover:bg-white/50 dark:hover:bg-white/10'
@@ -193,22 +210,22 @@ const Header = () => {
                     </>
                   )}
 
-                  <div className="border-t pt-4 mt-4">
+                  <div className="border-t pt-3 mt-3 w-full">
                     {isAuthenticated ? (
-                      <div className="space-y-4">
-                        <div className="px-4 py-2">
-                          <div className="flex items-center space-x-3 mb-4">
-                            <Avatar className="h-10 w-10">
+                      <div className="space-y-2 w-full">
+                        <div className="px-2 sm:px-3 py-2 bg-muted/30 rounded-lg mb-3 w-full">
+                          <div className="flex items-center space-x-2">
+                            <Avatar className="h-8 w-8 flex-shrink-0">
                               <AvatarImage src={user?.avatar} />
-                              <AvatarFallback className="text-sm bg-primary text-white">
+                              <AvatarFallback className="text-xs bg-primary text-white">
                                 {user?.first_name?.[0]}{user?.last_name?.[0]}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <div className="text-sm font-semibold">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs sm:text-sm font-semibold truncate">
                                 {user?.first_name} {user?.last_name}
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-[10px] sm:text-xs text-muted-foreground truncate">
                                 {user?.email}
                               </div>
                             </div>
@@ -218,38 +235,40 @@ const Header = () => {
                         <Link
                           to="/profile"
                           onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center space-x-3 px-4 py-3 text-base rounded-xl hover:bg-white/50 dark:hover:bg-white/10 transition-all"
+                          className="flex items-center space-x-2 px-3 sm:px-4 py-2.5 text-xs sm:text-sm rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-all w-full"
                         >
-                          <User className="h-5 w-5" />
+                          <User className="h-4 w-4 flex-shrink-0" />
                           <span>My Profile</span>
                         </Link>
                         
                         <Link
                           to="/settings"
                           onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center space-x-3 px-4 py-3 text-base rounded-xl hover:bg-white/50 dark:hover:bg-white/10 transition-all"
+                          className="flex items-center space-x-2 px-3 sm:px-4 py-2.5 text-xs sm:text-sm rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-all w-full"
                         >
-                          <Settings className="h-5 w-5" />
+                          <Settings className="h-4 w-4 flex-shrink-0" />
                           <span>Settings</span>
                         </Link>
                         
                         <Button
                           variant="outline"
-                          className="w-full justify-start"
+                          size="sm"
+                          className="w-full justify-start h-10 text-xs sm:text-sm mt-2"
                           onClick={() => {
                             setMobileMenuOpen(false);
                             handleLogout();
                           }}
                         >
-                          <LogOut className="h-5 w-5 mr-3" />
+                          <LogOut className="h-4 w-4 mr-2" />
                           <span>Logout</span>
                         </Button>
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-2 w-full">
                         <Button
                           variant="outline"
-                          className="w-full"
+                          size="sm"
+                          className="w-full h-10 text-xs sm:text-sm"
                           onClick={() => {
                             setMobileMenuOpen(false);
                             setLoginDialogOpen(true);
@@ -259,7 +278,8 @@ const Header = () => {
                         </Button>
                         <Button
                           variant="cta"
-                          className="w-full"
+                          size="sm"
+                          className="w-full h-10 text-xs sm:text-sm"
                           onClick={() => {
                             setMobileMenuOpen(false);
                             setRegisterDialogOpen(true);
@@ -271,8 +291,8 @@ const Header = () => {
                     )}
                   </div>
                 </div>
-              </SheetContent>
-            </Sheet>
+              </DialogContent>
+            </Dialog>
 
             {/* Theme Toggle */}
             <Button
@@ -291,14 +311,14 @@ const Header = () => {
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="flex items-center space-x-2 h-9">
-                    <Avatar className="h-7 w-7">
+                  <Button variant="ghost" className="h-9 w-9 sm:w-auto sm:px-3 p-0 sm:p-2 rounded-xl">
+                    <Avatar className="h-7 w-7 flex-shrink-0">
                       <AvatarImage src={user?.avatar} />
                       <AvatarFallback className="text-xs bg-primary text-white">
                         {user?.first_name?.[0]}{user?.last_name?.[0]}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="hidden sm:inline text-sm font-medium">
+                    <span className="hidden sm:inline text-sm font-medium ml-2">
                       {user?.first_name}
                     </span>
                   </Button>

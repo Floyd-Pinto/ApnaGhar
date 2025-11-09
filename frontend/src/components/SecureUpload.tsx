@@ -259,13 +259,13 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full overflow-hidden">
       {/* Progress Indicator */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 overflow-x-auto pb-2">
         {['scan', 'verify', 'capture', 'upload', 'success'].map((s, idx) => (
-          <div key={s} className="flex items-center">
+          <div key={s} className="flex items-center flex-shrink-0">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm ${
                 step === s
                   ? 'bg-primary text-primary-foreground'
                   : ['verify', 'capture', 'upload', 'success'].indexOf(step) >= idx
@@ -274,12 +274,12 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
               }`}
             >
               {['verify', 'capture', 'upload', 'success'].indexOf(step) > idx ? (
-                <Check className="h-4 w-4" />
+                <Check className="h-3 w-3 sm:h-4 sm:w-4" />
               ) : (
                 idx + 1
               )}
             </div>
-            {idx < 4 && <div className="w-12 h-0.5 bg-muted mx-2" />}
+            {idx < 4 && <div className="w-6 sm:w-12 h-0.5 bg-muted mx-1 sm:mx-2" />}
           </div>
         ))}
       </div>
@@ -352,26 +352,26 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
             </Alert>
 
             {/* Description Input */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Description</label>
+            <div className="w-full">
+              <label className="block text-xs sm:text-sm font-medium mb-2">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 sm:p-3 border rounded-md text-sm max-w-full"
                 rows={3}
                 placeholder="Describe the construction progress..."
               />
             </div>
 
             {/* Capture Buttons */}
-            <div className="grid grid-cols-2 gap-2">
-              <Button onClick={() => handleCameraCapture('image')} variant="outline" className="w-full">
-                <Camera className="mr-2 h-4 w-4" />
-                Capture Photos ({capturedImages.length})
+            <div className="grid grid-cols-2 gap-2 w-full">
+              <Button onClick={() => handleCameraCapture('image')} variant="outline" className="w-full text-xs sm:text-sm">
+                <Camera className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">Photos ({capturedImages.length})</span>
               </Button>
-              <Button onClick={() => handleCameraCapture('video')} variant="outline" className="w-full">
-                <Camera className="mr-2 h-4 w-4" />
-                Capture Videos ({capturedVideos.length})
+              <Button onClick={() => handleCameraCapture('video')} variant="outline" className="w-full text-xs sm:text-sm">
+                <Camera className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">Videos ({capturedVideos.length})</span>
               </Button>
             </div>
 
@@ -397,30 +397,32 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
 
             {/* Captured Media Preview */}
             {(capturedImages.length > 0 || capturedVideos.length > 0) && (
-              <div className="border rounded-lg p-4">
-                <h4 className="font-medium mb-2">Captured Media</h4>
-                <div className="space-y-2">
+              <div className="border rounded-lg p-3 sm:p-4 w-full max-w-full overflow-hidden">
+                <h4 className="font-medium mb-2 text-sm sm:text-base">Captured Media</h4>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
                   {capturedImages.map((img, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-sm">
-                      <span>📷 {img.name}</span>
+                    <div key={idx} className="flex items-center justify-between text-xs sm:text-sm gap-2">
+                      <span className="truncate flex-1">📷 {img.name}</span>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => setCapturedImages(capturedImages.filter((_, i) => i !== idx))}
+                        className="flex-shrink-0"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </div>
                   ))}
                   {capturedVideos.map((vid, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-sm">
-                      <span>🎥 {vid.name}</span>
+                    <div key={idx} className="flex items-center justify-between text-xs sm:text-sm gap-2">
+                      <span className="truncate flex-1">🎥 {vid.name}</span>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => setCapturedVideos(capturedVideos.filter((_, i) => i !== idx))}
+                        className="flex-shrink-0"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </div>
                   ))}
@@ -429,17 +431,17 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
             )}
 
             {/* Upload Button */}
-            <div className="flex gap-2">
-              <Button onClick={resetUpload} variant="outline" className="flex-1">
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
+              <Button onClick={resetUpload} variant="outline" className="w-full sm:flex-1">
                 Cancel
               </Button>
               <Button
                 onClick={handleUpload}
-                className="flex-1"
+                className="w-full sm:flex-1 text-xs sm:text-sm"
                 disabled={capturedImages.length === 0 && capturedVideos.length === 0}
               >
-                <Upload className="mr-2 h-4 w-4" />
-                Upload ({capturedImages.length + capturedVideos.length} files)
+                <Upload className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">Upload ({capturedImages.length + capturedVideos.length} files)</span>
               </Button>
             </div>
           </CardContent>

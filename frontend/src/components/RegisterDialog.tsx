@@ -102,15 +102,15 @@ export default function RegisterDialog({ open, onOpenChange, onSwitchToLogin }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle className="text-2xl font-bold">Create Account</DialogTitle>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Create Account</DialogTitle>
           <DialogDescription>
             Enter your information to create your account
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="dialog-scroll overflow-y-auto flex-1 px-6 pr-3 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
           {generalError && (
             <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
               {generalError}
@@ -243,17 +243,19 @@ export default function RegisterDialog({ open, onOpenChange, onSwitchToLogin }: 
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating account...
+                <span className="text-sm sm:text-base">Creating account...</span>
               </>
             ) : (
-              'Create Account'
+              <span className="text-sm sm:text-base">Create Account</span>
             )}
           </Button>
 
           <div className="relative">
-            <div className="w-full border-t border-border"></div>
-            <div className="flex justify-center text-sm mt-3">
-              <span className="text-muted-foreground">Or continue with</span>
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
             </div>
           </div>
 
@@ -283,12 +285,11 @@ export default function RegisterDialog({ open, onOpenChange, onSwitchToLogin }: 
             </svg>
             Continue with Google
           </Button>
-        </form>
 
-        <div className="px-6 pb-6 pt-4 border-t border-border text-center">
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
+          <div className="text-center text-sm">
+            <span className="text-muted-foreground">Already have an account? </span>
             <button
+              type="button"
               onClick={() => {
                 onOpenChange(false);
                 onSwitchToLogin?.();
@@ -297,8 +298,8 @@ export default function RegisterDialog({ open, onOpenChange, onSwitchToLogin }: 
             >
               Sign in
             </button>
-          </p>
-        </div>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

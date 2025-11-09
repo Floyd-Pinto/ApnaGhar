@@ -44,12 +44,23 @@ class ProjectListSerializer(serializers.ModelSerializer):
         ]
     
     def get_average_rating(self, obj):
-        reviews = obj.reviews.all()
-        if reviews:
-            return round(sum(r.rating for r in reviews) / len(reviews), 2)
+        # Use prefetched reviews if available, otherwise query
+        if hasattr(obj, '_prefetched_objects_cache') and 'reviews' in obj._prefetched_objects_cache:
+            reviews = obj.reviews.all()
+            if reviews:
+                return round(sum(r.rating for r in reviews) / len(reviews), 2)
+        elif hasattr(obj, 'avg_rating') and obj.avg_rating is not None:
+            # Use annotated average if available
+            return round(obj.avg_rating, 2)
         return 0
     
     def get_total_reviews(self, obj):
+        # Use prefetched reviews count if available
+        if hasattr(obj, '_prefetched_objects_cache') and 'reviews' in obj._prefetched_objects_cache:
+            return len(obj.reviews.all())
+        elif hasattr(obj, 'review_count'):
+            # Use annotated count if available
+            return obj.review_count
         return obj.reviews.count()
 
 
@@ -66,7 +77,7 @@ class MilestoneSerializer(serializers.ModelSerializer):
             'target_date', 'start_date', 'completion_date', 'status',
             'progress_percentage', 'verified', 'verified_by', 'verified_by_name',
             'verified_at', 'ai_verification_score', 'images', 'videos',
-            'blockchain_hash', 'ipfs_hash', 'notes', 'created_at', 'updated_at'
+            'blockchain_hash', 'ipfs_hash', 'notes', 'qr_code_data', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'verified_by_name', 'created_at', 'updated_at']
     

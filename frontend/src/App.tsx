@@ -17,6 +17,7 @@ import PropertyUnitDetails from "./pages/PropertyUnitDetails";
 import Dashboard from "./pages/Dashboard";
 import BuyerDashboard from "./pages/BuyerDashboard";
 import BuilderDashboard from "./pages/BuilderDashboard";
+import ManageQRCodes from "./pages/ManageQRCodes";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import LoginPage from "./pages/Login";
@@ -32,9 +33,9 @@ const Layout = () => {
   const showFooter = location.pathname === '/';
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col overflow-x-hidden max-w-full">
       <Header />
-      <main className="flex-1">
+      <main className="flex-1 overflow-x-hidden w-full max-w-full pt-16">
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Homepage />} />
@@ -67,6 +68,14 @@ const Layout = () => {
             element={
               <ProtectedRoute>
                 <BuilderDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/projects/:projectId/qr-codes" 
+            element={
+              <ProtectedRoute>
+                <ManageQRCodes />
               </ProtectedRoute>
             } 
           />

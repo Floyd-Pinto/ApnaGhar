@@ -189,12 +189,18 @@ class Property(models.Model):
     
     def save(self, *args, **kwargs):
         # Generate QR code data if not exists
-        if not self.qr_code_data:
+        is_new = self.pk is None
+        if not self.qr_code_data and is_new:
+            # For new objects, save first to get ID, then update QR code
+            super().save(*args, **kwargs)
             self.qr_code_data = f"property:{self.project.id}:{self.id}:{uuid.uuid4().hex[:8]}"
             # Generate secret hash for verification
             secret_string = f"{self.id}:{self.project.id}:{self.unit_number}:{uuid.uuid4().hex}"
             self.qr_code_secret = hashlib.sha256(secret_string.encode()).hexdigest()
-        super().save(*args, **kwargs)
+            # Save again with QR code data (use update_fields to avoid recursion)
+            super().save(update_fields=['qr_code_data', 'qr_code_secret'])
+        else:
+            super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'properties'
@@ -263,12 +269,18 @@ class ConstructionMilestone(models.Model):
     
     def save(self, *args, **kwargs):
         # Generate QR code data if not exists
-        if not self.qr_code_data:
+        is_new = self.pk is None
+        if not self.qr_code_data and is_new:
+            # For new objects, save first to get ID, then update QR code
+            super().save(*args, **kwargs)
             self.qr_code_data = f"milestone:{self.project.id}:{self.id}:{uuid.uuid4().hex[:8]}"
             # Generate secret hash for verification
             secret_string = f"{self.id}:{self.project.id}:{self.title}:{uuid.uuid4().hex}"
             self.qr_code_secret = hashlib.sha256(secret_string.encode()).hexdigest()
-        super().save(*args, **kwargs)
+            # Save again with QR code data (use update_fields to avoid recursion)
+            super().save(update_fields=['qr_code_data', 'qr_code_secret'])
+        else:
+            super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'construction_milestones'
