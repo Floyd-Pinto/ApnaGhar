@@ -57,6 +57,7 @@ interface Project {
 export default function ExploreProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [cityFilter, setCityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -64,6 +65,8 @@ export default function ExploreProjects() {
   const [priceMax, setPriceMax] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [showFilters, setShowFilters] = useState(false);
+  const [nextPage, setNextPage] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Read URL params on mount
   useEffect(() => {
@@ -88,25 +91,33 @@ export default function ExploreProjects() {
     fetchProjects();
   }, [cityFilter, statusFilter, sortBy, searchQuery]);
 
-  const fetchProjects = async () => {
-    setLoading(true);
+  const fetchProjects = async (loadMore = false) => {
+    if (loadMore) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    
     try {
-      let url = `${API_BASE_URL}/api/projects/projects/`;
-      const params = new URLSearchParams();
+      let url = loadMore && nextPage ? nextPage : `${API_BASE_URL}/api/projects/projects/`;
       
-      if (cityFilter !== "all") params.append("city", cityFilter);
-      if (statusFilter !== "all") params.append("status", statusFilter);
-      if (searchQuery) params.append("search", searchQuery);
-      if (priceMin) params.append("min_price", priceMin);
-      if (priceMax) params.append("max_price", priceMax);
-      
-      // Apply sorting
-      if (sortBy === "price_low") params.append("ordering", "starting_price");
-      else if (sortBy === "price_high") params.append("ordering", "-starting_price");
-      else if (sortBy === "newest") params.append("ordering", "-created_at");
-      else if (sortBy === "popular") params.append("ordering", "popular"); // Changed to use average rating
-      
-      if (params.toString()) url += `?${params.toString()}`;
+      if (!loadMore || !nextPage) {
+        const params = new URLSearchParams();
+        
+        if (cityFilter !== "all") params.append("city", cityFilter);
+        if (statusFilter !== "all") params.append("status", statusFilter);
+        if (searchQuery) params.append("search", searchQuery);
+        if (priceMin) params.append("min_price", priceMin);
+        if (priceMax) params.append("max_price", priceMax);
+        
+        // Apply sorting
+        if (sortBy === "price_low") params.append("ordering", "starting_price");
+        else if (sortBy === "price_high") params.append("ordering", "-starting_price");
+        else if (sortBy === "newest") params.append("ordering", "-created_at");
+        else if (sortBy === "popular") params.append("ordering", "popular");
+        
+        if (params.toString()) url += `?${params.toString()}`;
+      }
 
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch projects");
@@ -114,11 +125,20 @@ export default function ExploreProjects() {
       
       // Handle paginated response from DRF
       const projectsList = data.results || data;
-      setProjects(projectsList);
+      
+      if (loadMore) {
+        setProjects(prev => [...prev, ...projectsList]);
+      } else {
+        setProjects(projectsList);
+      }
+      
+      setNextPage(data.next || null);
+      setTotalCount(data.count || projectsList.length);
     } catch (error) {
       console.error("Error fetching projects:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -157,7 +177,7 @@ export default function ExploreProjects() {
         <div className="container mx-auto px-4">
           <h1 className="text-4xl font-bold mb-4">Explore Projects</h1>
           <p className="text-lg opacity-90">
-            Find your dream home from {projects.length}+ verified projects
+            Find your dream home from {totalCount || projects.length}+ verified projects
           </p>
         </div>
       </div>
@@ -405,11 +425,40 @@ export default function ExploreProjects() {
                     <Heart className="h-4 w-4" />
                   </Button>
                   <Link to={`/projects/${project.id}`} className="flex-1">
-                    <Button className="w-full">View Details</Button>
+                    <Button variant="cta" className="w-full">View Details</Button>
                   </Link>
                 </CardFooter>
               </Card>
             ))}
+          </div>
+        )}
+
+        {/* Load More Button and Count Info */}
+        {!loading && projects.length > 0 && (
+          <div className="mt-8 space-y-4">
+            <div className="text-center text-sm text-muted-foreground">
+              Showing {projects.length} of {totalCount} projects
+            </div>
+            
+            {nextPage && (
+              <div className="flex justify-center">
+                <Button 
+                  variant="outline" 
+                  onClick={() => fetchProjects(true)}
+                  disabled={loadingMore}
+                  className="min-w-[200px]"
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading more...
+                    </>
+                  ) : (
+                    'Load More Projects'
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -698,7 +698,7 @@ export default function ProjectOverview() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Button className="w-full" size="lg">
+                  <Button variant="cta" className="w-full" size="lg">
                     <Phone className="h-4 w-4 mr-2" />
                     Schedule Site Visit
                   </Button>

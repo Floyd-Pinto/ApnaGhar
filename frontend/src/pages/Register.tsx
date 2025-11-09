@@ -97,8 +97,16 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-hero py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-2xl shadow-elevated border border-border bg-card">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5"></div>
+      
+      {/* Decorative Elements */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+      <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-cta/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+      
+      <Card className="w-full max-w-2xl shadow-elevated border border-border glass-card relative z-10">
         <CardHeader className="space-y-3 pb-6">
           <CardTitle className="text-3xl font-bold text-center text-card-foreground">Create Account</CardTitle>
           <CardDescription className="text-center text-muted-foreground text-base">
@@ -258,7 +266,7 @@ const RegisterPage: React.FC = () => {
               <div className="w-full border-t border-border"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
+              <span className="px-4 bg-background text-muted-foreground">Or continue with</span>
             </div>
           </div>
 

@@ -447,37 +447,6 @@ export default function BuyerDashboard() {
 
 
         </Tabs>
-
-        {/* Quick Actions */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link to="/explore-projects">
-                <Button variant="outline" className="w-full h-20">
-                  <div className="flex flex-col items-center gap-2">
-                    <Building2 className="h-6 w-6" />
-                    <span>Browse Projects</span>
-                  </div>
-                </Button>
-              </Link>
-              <Button variant="outline" className="w-full h-20" disabled>
-                <div className="flex flex-col items-center gap-2">
-                  <Calendar className="h-6 w-6" />
-                  <span>Schedule Visit</span>
-                </div>
-              </Button>
-              <Button variant="outline" className="w-full h-20" disabled>
-                <div className="flex flex-col items-center gap-2">
-                  <FileText className="h-6 w-6" />
-                  <span>Download Brochures</span>
-                </div>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
   darkMode: ["class"],
@@ -15,7 +16,19 @@ export default {
     extend: {
       fontFamily: {
         inter: ['Inter', 'sans-serif'],
-        sans: ['Inter', 'sans-serif'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', 'system-ui', 'sans-serif'],
+      },
+      backdropBlur: {
+        xs: '2px',
+        '3xl': '64px',
+      },
+      backdropSaturate: {
+        180: '180%',
+      },
+      borderRadius: {
+        'xl': '1rem',
+        '2xl': '1.25rem',
+        '3xl': '1.5rem',
       },
       colors: {
         border: "hsl(var(--border))",
@@ -61,6 +74,11 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        cta: {
+          DEFAULT: "hsl(var(--cta))",
+          foreground: "hsl(var(--cta-foreground))",
+          hover: "hsl(var(--cta-hover))",
+        },
         dashboard: {
           sidebar: "hsl(var(--dashboard-sidebar))",
           "sidebar-foreground": "hsl(var(--dashboard-sidebar-foreground))",
@@ -92,11 +110,6 @@ export default {
         'smooth': 'var(--transition-smooth)',
         'bounce': 'var(--transition-bounce)',
       },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
       keyframes: {
         "accordion-down": {
           from: {
@@ -121,5 +134,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

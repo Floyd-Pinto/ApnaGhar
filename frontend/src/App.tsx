@@ -44,14 +44,6 @@ const Layout = () => {
           <Route path="/auth/callback" element={<OAuthCallback />} />
           
           {/* Protected routes */}
-          <Route 
-            path="/projects" 
-            element={
-              <ProtectedRoute>
-                <Projects />
-              </ProtectedRoute>
-            } 
-          />
           <Route path="/projects/:id" element={<ProjectOverview />} />
           <Route path="/property/:propertyId" element={<PropertyUnitDetails />} />
           <Route 
