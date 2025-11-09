@@ -343,6 +343,181 @@ class PropertyViewSet(viewsets.ModelViewSet):
         from .serializers import UnitProgressSerializer
         serializer = UnitProgressSerializer(prop, context={'request': request})
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def secure_upload(self, request, pk=None):
+        """Secure upload endpoint for property units - requires QR verification token and camera capture"""
+        try:
+            prop = self.get_object()
+            
+            # Verify upload token
+            upload_token = request.data.get('upload_token')
+            if not upload_token or upload_token != prop.qr_code_secret[:32]:
+                return Response({'detail': 'Invalid upload token'}, status=status.HTTP_403_FORBIDDEN)
+            
+            # Check if request is from mobile device
+            user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+            is_mobile = any(device in user_agent for device in ['mobile', 'android', 'iphone', 'ipad', 'tablet'])
+            device_info = request.data.get('device_info', {})
+            
+            if not is_mobile and not device_info.get('is_mobile', False):
+                return Response({
+                    'detail': 'Upload is only allowed from mobile devices.',
+                    'error_code': 'DESKTOP_UPLOAD_BLOCKED'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Verify camera capture metadata
+            capture_metadata = request.data.get('capture_metadata', {})
+            if not capture_metadata.get('camera_captured', False):
+                return Response({
+                    'detail': 'Only camera-captured media is allowed. Gallery uploads are blocked.',
+                    'error_code': 'GALLERY_UPLOAD_BLOCKED'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Verify developer
+            developer = Developer.objects.get(user=request.user)
+            if prop.project.developer != developer:
+                return Response({
+                    'detail': 'You are not the developer for this project.'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Process images and videos
+            images = request.FILES.getlist('images')
+            videos = request.FILES.getlist('videos')
+            description = request.data.get('description', '')
+            progress_percentage = request.data.get('progress_percentage')
+            
+            # Check limits
+            if len(images) > 15:
+                return Response({'detail': 'Maximum 15 images allowed per upload'}, status=status.HTTP_400_BAD_REQUEST)
+            if len(videos) > 5:
+                return Response({'detail': 'Maximum 5 videos allowed per upload'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            logger.info(f"Secure property upload - Unit: {prop.unit_number}, Images: {len(images)}, Videos: {len(videos)}")
+            
+            uploaded_images = []
+            uploaded_videos = []
+            
+            # Upload images with metadata
+            for img in images:
+                try:
+                    if img.size > 10 * 1024 * 1024:  # 10MB
+                        return Response({'detail': f'Image {img.name} exceeds 10MB limit'}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    img_bytes = img.read()
+                    sha256 = hashlib.sha256(img_bytes).hexdigest()
+                    
+                    public_id = f"estate_platform/units/{sha256}"
+                    
+                    try:
+                        cloudinary.api.resource(public_id, resource_type='image')
+                        exists = True
+                    except cloudinary.exceptions.NotFound:
+                        exists = False
+                    
+                    if not exists:
+                        res = cloudinary.uploader.upload(
+                            io.BytesIO(img_bytes), 
+                            resource_type='image',
+                            public_id=public_id,
+                            overwrite=False
+                        )
+                    
+                    entry = {
+                        'sha256': sha256,
+                        'uploaded_at': timezone.now().isoformat(),
+                        'description': description,
+                        'capture_metadata': capture_metadata,
+                        'device_info': device_info,
+                        'verified_upload': True,
+                        'qr_verified': True
+                    }
+                    prop.unit_photos.append(entry)
+                    uploaded_images.append(entry)
+                    
+                except Exception as e:
+                    logger.error(f"Secure property image upload failed: {str(e)}", exc_info=True)
+                    return Response({'detail': f'Image upload failed: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Upload videos with metadata
+            for vid in videos:
+                try:
+                    if vid.size > 50 * 1024 * 1024:  # 50MB
+                        return Response({'detail': f'Video {vid.name} exceeds 50MB limit'}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    vid_bytes = vid.read()
+                    sha256 = hashlib.sha256(vid_bytes).hexdigest()
+                    
+                    public_id = f"estate_platform/units/{sha256}"
+                    
+                    try:
+                        cloudinary.api.resource(public_id, resource_type='video')
+                        exists = True
+                    except cloudinary.exceptions.NotFound:
+                        exists = False
+                    
+                    if not exists:
+                        res = cloudinary.uploader.upload(
+                            io.BytesIO(vid_bytes), 
+                            resource_type='video',
+                            public_id=public_id,
+                            overwrite=False
+                        )
+                    
+                    entry = {
+                        'sha256': sha256,
+                        'uploaded_at': timezone.now().isoformat(),
+                        'description': description,
+                        'capture_metadata': capture_metadata,
+                        'device_info': device_info,
+                        'verified_upload': True,
+                        'qr_verified': True
+                    }
+                    prop.unit_videos.append(entry)
+                    uploaded_videos.append(entry)
+                    
+                except Exception as e:
+                    logger.error(f"Secure property video upload failed: {str(e)}", exc_info=True)
+                    return Response({'detail': f'Video upload failed: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Update progress if provided
+            if progress_percentage is not None:
+                try:
+                    p = int(progress_percentage)
+                    prop.unit_progress_percentage = max(0, min(100, p))
+                except ValueError:
+                    pass
+            
+            # Add progress update entry
+            if description:
+                update_entry = {
+                    'phase': request.data.get('phase', ''),
+                    'description': description,
+                    'date': timezone.now().isoformat(),
+                    'progress': prop.unit_progress_percentage,
+                    'verified_upload': True,
+                    'qr_verified': True
+                }
+                prop.unit_progress_updates.append(update_entry)
+            
+            prop.save()
+            
+            logger.info(f"Secure property upload completed - Unit: {prop.unit_number}")
+            
+            return Response({
+                'success': True,
+                'unit_number': prop.unit_number,
+                'uploaded_images': len(uploaded_images),
+                'uploaded_videos': len(uploaded_videos),
+                'unit_progress_percentage': prop.unit_progress_percentage,
+                'message': 'Media uploaded successfully with QR verification'
+            })
+            
+        except Developer.DoesNotExist:
+            return Response({'detail': 'Only builders can upload media'}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            logger.error(f"Secure property upload error: {str(e)}", exc_info=True)
+            return Response({'detail': f'Internal server error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class MilestoneViewSet(viewsets.ModelViewSet):
@@ -508,6 +683,276 @@ class MilestoneViewSet(viewsets.ModelViewSet):
         
         except Exception as e:
             logger.error(f"Upload media error: {str(e)}", exc_info=True)
+            return Response({'detail': f'Internal server error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def verify_qr(self, request):
+        """Verify QR code and return milestone/property details for secure upload"""
+        try:
+            qr_data = request.data.get('qr_data')
+            device_info = request.data.get('device_info', {})
+            
+            logger.info(f"QR verification request - QR Data: {qr_data}, User: {request.user.username}")
+            
+            # Check if request is from mobile device
+            user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+            is_mobile = any(device in user_agent for device in ['mobile', 'android', 'iphone', 'ipad', 'tablet'])
+            
+            if not is_mobile and not device_info.get('is_mobile', False):
+                return Response({
+                    'detail': 'Upload is only allowed from mobile devices.',
+                    'error_code': 'DESKTOP_UPLOAD_BLOCKED'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            if not qr_data:
+                return Response({'detail': 'QR code data is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Parse QR data (format: "milestone:<project_id>:<milestone_id>:<token>")
+            try:
+                parts = qr_data.split(':')
+                if len(parts) < 4:
+                    return Response({'detail': 'Invalid QR code format'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                entity_type = parts[0]  # 'milestone' or 'property'
+                project_id = parts[1]
+                entity_id = parts[2]
+                
+                if entity_type == 'milestone':
+                    milestone = ConstructionMilestone.objects.get(
+                        id=entity_id,
+                        project_id=project_id,
+                        qr_code_data=qr_data
+                    )
+                    
+                    # Verify developer
+                    developer = Developer.objects.get(user=request.user)
+                    if milestone.project.developer != developer:
+                        return Response({
+                            'detail': 'You are not authorized to upload to this milestone.'
+                        }, status=status.HTTP_403_FORBIDDEN)
+                    
+                    return Response({
+                        'verified': True,
+                        'entity_type': 'milestone',
+                        'entity_id': str(milestone.id),
+                        'project_name': milestone.project.name,
+                        'title': milestone.title,
+                        'description': milestone.description,
+                        'phase_number': milestone.phase_number,
+                        'upload_token': milestone.qr_code_secret[:32],  # First 32 chars as upload token
+                        'upload_endpoint': f'/api/projects/milestones/{milestone.id}/secure_upload/',
+                        'restrictions': {
+                            'camera_only': True,
+                            'max_images': 10,
+                            'max_videos': 5,
+                            'max_image_size_mb': 10,
+                            'max_video_size_mb': 50
+                        }
+                    })
+                
+                elif entity_type == 'property':
+                    property_obj = Property.objects.get(
+                        id=entity_id,
+                        project_id=project_id,
+                        qr_code_data=qr_data
+                    )
+                    
+                    # Verify developer
+                    developer = Developer.objects.get(user=request.user)
+                    if property_obj.project.developer != developer:
+                        return Response({
+                            'detail': 'You are not authorized to upload to this property.'
+                        }, status=status.HTTP_403_FORBIDDEN)
+                    
+                    return Response({
+                        'verified': True,
+                        'entity_type': 'property',
+                        'entity_id': str(property_obj.id),
+                        'project_name': property_obj.project.name,
+                        'unit_number': property_obj.unit_number,
+                        'property_type': property_obj.property_type,
+                        'upload_token': property_obj.qr_code_secret[:32],
+                        'upload_endpoint': f'/api/projects/properties/{property_obj.id}/secure_upload/',
+                        'restrictions': {
+                            'camera_only': True,
+                            'max_images': 15,
+                            'max_videos': 5,
+                            'max_image_size_mb': 10,
+                            'max_video_size_mb': 50
+                        }
+                    })
+                
+                else:
+                    return Response({'detail': 'Invalid entity type in QR code'}, status=status.HTTP_400_BAD_REQUEST)
+                    
+            except (ConstructionMilestone.DoesNotExist, Property.DoesNotExist):
+                return Response({'detail': 'Invalid QR code or entity not found'}, status=status.HTTP_404_NOT_FOUND)
+            except Developer.DoesNotExist:
+                return Response({'detail': 'Only builders can upload construction updates'}, status=status.HTTP_403_FORBIDDEN)
+            except Exception as e:
+                logger.error(f"QR verification error: {str(e)}", exc_info=True)
+                return Response({'detail': 'Invalid QR code data'}, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"QR verify error: {str(e)}", exc_info=True)
+            return Response({'detail': f'Internal server error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def secure_upload(self, request, pk=None):
+        """Secure upload endpoint - requires QR verification token and camera capture metadata"""
+        try:
+            milestone = self.get_object()
+            
+            # Verify upload token
+            upload_token = request.data.get('upload_token')
+            if not upload_token or upload_token != milestone.qr_code_secret[:32]:
+                return Response({'detail': 'Invalid upload token'}, status=status.HTTP_403_FORBIDDEN)
+            
+            # Check if request is from mobile device
+            user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+            is_mobile = any(device in user_agent for device in ['mobile', 'android', 'iphone', 'ipad', 'tablet'])
+            device_info = request.data.get('device_info', {})
+            
+            if not is_mobile and not device_info.get('is_mobile', False):
+                return Response({
+                    'detail': 'Upload is only allowed from mobile devices.',
+                    'error_code': 'DESKTOP_UPLOAD_BLOCKED'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Verify camera capture metadata
+            capture_metadata = request.data.get('capture_metadata', {})
+            if not capture_metadata.get('camera_captured', False):
+                return Response({
+                    'detail': 'Only camera-captured media is allowed. Gallery uploads are blocked.',
+                    'error_code': 'GALLERY_UPLOAD_BLOCKED'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Verify developer
+            developer = Developer.objects.get(user=request.user)
+            if milestone.project.developer != developer:
+                return Response({
+                    'detail': 'You are not the developer for this project.'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Process images and videos with metadata
+            images = request.FILES.getlist('images')
+            videos = request.FILES.getlist('videos')
+            description = request.data.get('description', '')
+            
+            # Check limits
+            if len(images) > 10:
+                return Response({'detail': 'Maximum 10 images allowed per upload'}, status=status.HTTP_400_BAD_REQUEST)
+            if len(videos) > 5:
+                return Response({'detail': 'Maximum 5 videos allowed per upload'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            logger.info(f"Secure upload - Milestone: {milestone.id}, Images: {len(images)}, Videos: {len(videos)}")
+            
+            uploaded_images = []
+            uploaded_videos = []
+            
+            # Upload images with enhanced metadata
+            for img in images:
+                try:
+                    # Check size
+                    if img.size > 10 * 1024 * 1024:  # 10MB
+                        return Response({'detail': f'Image {img.name} exceeds 10MB limit'}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    img_bytes = img.read()
+                    sha256 = hashlib.sha256(img_bytes).hexdigest()
+                    
+                    public_id = f"estate_platform/milestones/{sha256}"
+                    
+                    # Upload to Cloudinary
+                    try:
+                        cloudinary.api.resource(public_id, resource_type='image')
+                        exists = True
+                    except cloudinary.exceptions.NotFound:
+                        exists = False
+                    
+                    if not exists:
+                        res = cloudinary.uploader.upload(
+                            io.BytesIO(img_bytes), 
+                            resource_type='image',
+                            public_id=public_id,
+                            overwrite=False
+                        )
+                    
+                    entry = {
+                        'sha256': sha256,
+                        'uploaded_at': timezone.now().isoformat(),
+                        'description': description,
+                        'capture_metadata': capture_metadata,
+                        'device_info': device_info,
+                        'verified_upload': True,
+                        'qr_verified': True
+                    }
+                    uploaded_images.append(entry)
+                    
+                except Exception as e:
+                    logger.error(f"Secure image upload failed: {str(e)}", exc_info=True)
+                    return Response({'detail': f'Image upload failed: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Upload videos with enhanced metadata
+            for vid in videos:
+                try:
+                    # Check size
+                    if vid.size > 50 * 1024 * 1024:  # 50MB
+                        return Response({'detail': f'Video {vid.name} exceeds 50MB limit'}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    vid_bytes = vid.read()
+                    sha256 = hashlib.sha256(vid_bytes).hexdigest()
+                    
+                    public_id = f"estate_platform/milestones/{sha256}"
+                    
+                    try:
+                        cloudinary.api.resource(public_id, resource_type='video')
+                        exists = True
+                    except cloudinary.exceptions.NotFound:
+                        exists = False
+                    
+                    if not exists:
+                        res = cloudinary.uploader.upload(
+                            io.BytesIO(vid_bytes), 
+                            resource_type='video',
+                            public_id=public_id,
+                            overwrite=False
+                        )
+                    
+                    entry = {
+                        'sha256': sha256,
+                        'uploaded_at': timezone.now().isoformat(),
+                        'description': description,
+                        'capture_metadata': capture_metadata,
+                        'device_info': device_info,
+                        'verified_upload': True,
+                        'qr_verified': True
+                    }
+                    uploaded_videos.append(entry)
+                    
+                except Exception as e:
+                    logger.error(f"Secure video upload failed: {str(e)}", exc_info=True)
+                    return Response({'detail': f'Video upload failed: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Update milestone
+            milestone.images = list(milestone.images or []) + uploaded_images
+            milestone.videos = list(milestone.videos or []) + uploaded_videos
+            milestone.save()
+            
+            logger.info(f"Secure upload completed - Milestone: {milestone.id}")
+            
+            serializer = self.get_serializer(milestone)
+            return Response({
+                'success': True,
+                'milestone': serializer.data,
+                'uploaded_images': len(uploaded_images),
+                'uploaded_videos': len(uploaded_videos),
+                'message': 'Media uploaded successfully with QR verification'
+            })
+            
+        except Developer.DoesNotExist:
+            return Response({'detail': 'Only builders can upload media'}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            logger.error(f"Secure upload error: {str(e)}", exc_info=True)
             return Response({'detail': f'Internal server error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

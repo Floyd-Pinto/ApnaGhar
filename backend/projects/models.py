@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
+import hashlib
+import json
 
 User = get_user_model()
 
@@ -179,10 +181,20 @@ class Property(models.Model):
     unit_progress_updates = models.JSONField(default=list, blank=True)  # [{"phase": "Tiling", "description": "...", "date": "...", "progress": 40}]
     unit_videos = models.JSONField(default=list, blank=True)  # [{"url": "...", "uploaded_at": "...", "description": "..."}]
     unit_photos = models.JSONField(default=list, blank=True)  # [{"url": "...", "uploaded_at": "...", "description": "..."}]
-    qr_code_data = models.CharField(max_length=255, blank=True, null=True)  # Unique QR code for this unit
+    qr_code_data = models.CharField(max_length=500, blank=True, null=True, unique=True)  # Unique QR code for this unit
+    qr_code_secret = models.CharField(max_length=128, blank=True, null=True)  # Hash for verification
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        # Generate QR code data if not exists
+        if not self.qr_code_data:
+            self.qr_code_data = f"property:{self.project.id}:{self.id}:{uuid.uuid4().hex[:8]}"
+            # Generate secret hash for verification
+            secret_string = f"{self.id}:{self.project.id}:{self.unit_number}:{uuid.uuid4().hex}"
+            self.qr_code_secret = hashlib.sha256(secret_string.encode()).hexdigest()
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'properties'
@@ -239,11 +251,24 @@ class ConstructionMilestone(models.Model):
     blockchain_hash = models.CharField(max_length=255, blank=True, null=True)
     ipfs_hash = models.CharField(max_length=255, blank=True, null=True)
     
+    # QR Code for secure uploads
+    qr_code_data = models.CharField(max_length=500, blank=True, null=True, unique=True)
+    qr_code_secret = models.CharField(max_length=128, blank=True, null=True)  # Hash for verification
+    
     # Notes
     notes = models.TextField(blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        # Generate QR code data if not exists
+        if not self.qr_code_data:
+            self.qr_code_data = f"milestone:{self.project.id}:{self.id}:{uuid.uuid4().hex[:8]}"
+            # Generate secret hash for verification
+            secret_string = f"{self.id}:{self.project.id}:{self.title}:{uuid.uuid4().hex}"
+            self.qr_code_secret = hashlib.sha256(secret_string.encode()).hexdigest()
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'construction_milestones'
