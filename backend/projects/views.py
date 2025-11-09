@@ -107,17 +107,22 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def milestones(self, request, pk=None):
         """Get construction milestones for a project"""
         project = self.get_object()
-        # Visibility: developer OR any authenticated buyer OR buyers of units in the project
+        # Visibility: developer OR any authenticated buyer OR builders
         user = request.user
         allowed = False
         if user and user.is_authenticated:
-            # Developer
-            try:
-                developer = Developer.objects.get(user=user)
-                if project.developer == developer:
-                    allowed = True
-            except Developer.DoesNotExist:
-                pass
+            # Check if user is a builder (by role)
+            if hasattr(user, 'role') and user.role == 'builder':
+                allowed = True
+            
+            # Check if user is the developer of this project
+            if not allowed:
+                try:
+                    developer = Developer.objects.get(user=user)
+                    if project.developer == developer:
+                        allowed = True
+                except Developer.DoesNotExist:
+                    pass
 
             # Any authenticated buyer (role='buyer') can view project milestones
             if not allowed and hasattr(user, 'role') and user.role == 'buyer':
@@ -142,6 +147,26 @@ class ProjectViewSet(viewsets.ModelViewSet):
         project.interested_count += 1
         project.save(update_fields=['interested_count'])
         return Response({'status': 'interest recorded', 'count': project.interested_count})
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_projects(self, request):
+        """Get projects belonging to the logged-in builder/developer"""
+        try:
+            developer = Developer.objects.get(user=request.user)
+        except Developer.DoesNotExist:
+            return Response({'detail': 'Only builders can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Get projects for this developer
+        queryset = self.get_queryset().filter(developer=developer)
+        
+        # Apply pagination
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class PropertyViewSet(viewsets.ModelViewSet):
@@ -343,24 +368,33 @@ class MilestoneViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(milestone)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsBuilderOrReadOnly])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def upload_media(self, request, pk=None):
         """Upload images/videos against a specific milestone. Only builder (developer) may upload."""
         try:
             milestone = self.get_object()
+            
+            logger.info(f"Upload media request - User: {request.user.username}, Milestone ID: {milestone.id}")
+            logger.info(f"Milestone Project: {milestone.project.name}, Project Developer: {milestone.project.developer.company_name if milestone.project.developer else 'None'}")
 
             # Ensure requester is the developer of the project
             try:
                 developer = Developer.objects.get(user=request.user)
+                logger.info(f"Found developer: {developer.company_name}")
             except Developer.DoesNotExist:
-                return Response({'detail': 'Only builders can upload media.'}, status=status.HTTP_403_FORBIDDEN)
+                logger.error(f"User {request.user.username} does not have a Developer profile")
+                return Response({'detail': 'Only builders can upload media. Please ensure you are logged in as a builder.'}, status=status.HTTP_403_FORBIDDEN)
 
             # Check if project has a developer assigned
             if not hasattr(milestone.project, 'developer') or milestone.project.developer is None:
+                logger.error(f"Project {milestone.project.name} has no developer assigned")
                 return Response({'detail': 'This project has no developer assigned.'}, status=status.HTTP_400_BAD_REQUEST)
 
             if milestone.project.developer != developer:
-                return Response({'detail': 'You are not the developer for this project.'}, status=status.HTTP_403_FORBIDDEN)
+                logger.error(f"Developer mismatch - Request from: {developer.company_name}, Project owner: {milestone.project.developer.company_name}")
+                return Response({
+                    'detail': f'You are not the developer for this project. This project belongs to {milestone.project.developer.company_name}.'
+                }, status=status.HTTP_403_FORBIDDEN)
 
             images = request.FILES.getlist('images')
             videos = request.FILES.getlist('videos')

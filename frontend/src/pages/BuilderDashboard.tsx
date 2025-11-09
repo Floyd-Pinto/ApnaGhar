@@ -92,77 +92,98 @@ export default function BuilderDashboard() {
 
   const fetchBuilderData = async () => {
     setLoading(true);
+    console.log("BuilderDashboard: Starting to fetch data...");
+    
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.error("BuilderDashboard: Fetch timeout - forcing loading to false");
+      setLoading(false);
+      toast({
+        title: "Connection Timeout",
+        description: "Unable to load projects. Please check your connection.",
+        variant: "destructive",
+      });
+    }, 8000); // 8 second timeout (only 1 API call now)
+    
     try {
       const token = localStorage.getItem("access_token");
+      console.log("BuilderDashboard: Token exists:", !!token);
+      
       if (!token) {
+        console.error("BuilderDashboard: No access token found");
+        clearTimeout(timeoutId);
         toast({
           title: "Authentication required",
           description: "Please login to continue",
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
 
-      // Fetch builder's projects
-      const projectsRes = await fetch(`${API_BASE_URL}/api/projects/projects/`, {
+      // Fetch builder's projects (using my_projects endpoint to get only this builder's projects)
+      console.log(`BuilderDashboard: Fetching from ${API_BASE_URL}/api/projects/projects/my_projects/`);
+      const projectsRes = await fetch(`${API_BASE_URL}/api/projects/projects/my_projects/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      console.log("BuilderDashboard: Response status:", projectsRes.status);
+
       if (projectsRes.ok) {
         const allProjects = await projectsRes.json();
-        console.log("Fetched projects:", allProjects);
+        console.log("BuilderDashboard: Fetched projects:", allProjects);
         
-        // Filter only this builder's projects (in a real scenario, backend should filter by developer)
+        // Backend now filters by developer, so these are all this builder's projects
         const projectsList = allProjects.results || allProjects;
-        setProjects(Array.isArray(projectsList) ? projectsList : []);
+        const projectsArray = Array.isArray(projectsList) ? projectsList : [];
+        console.log(`BuilderDashboard: Setting ${projectsArray.length} projects for this builder`);
+        setProjects(projectsArray);
 
-        // Fetch milestones for all builder's projects only if there are projects
-        if (projectsList.length > 0) {
-          const projectIds = projectsList.map((p: Project) => p.id);
-          const milestonesPromises = projectIds.map((id: string) =>
-            fetch(`${API_BASE_URL}/api/projects/projects/${id}/milestones/`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }).then((res) => (res.ok ? res.json() : []))
-          );
+        // Don't fetch milestones on initial load - they're loaded per-project when needed
+        // This makes the dashboard load instantly
+        console.log("BuilderDashboard: Skipping milestone fetch for faster load");
+        setMilestones([]);
 
-          const milestonesData = await Promise.all(milestonesPromises);
-          const allMilestones = milestonesData.flat().map((m: any) => ({
-            ...m,
-            project_name: projectsList.find((p: Project) => p.id === m.project)?.name || "Unknown Project",
-          }));
-          setMilestones(allMilestones);
+        // Mock inquiries data (you can create a real API endpoint)
+        // Only create if there are projects
+        if (projectsArray.length > 0) {
+          setInquiries([
+            {
+              id: "1",
+              project_id: projectsArray[0]?.id || "",
+              project_name: projectsArray[0]?.name || "Sample Project",
+              buyer_name: "John Doe",
+              buyer_email: "john@example.com",
+              buyer_phone: "+91 98765 43210",
+              message: "I'm interested in 3BHK units. Can you share more details?",
+              status: "new",
+              created_at: new Date().toISOString(),
+            },
+          ]);
+        } else {
+          // No projects, no inquiries
+          setInquiries([]);
         }
       } else {
         console.error("Failed to fetch projects:", projectsRes.status, projectsRes.statusText);
+        clearTimeout(timeoutId);
         toast({
           title: "Error",
           description: "Failed to load projects",
           variant: "destructive",
         });
       }
-
-      // Mock inquiries data (you can create a real API endpoint)
-      setInquiries([
-        {
-          id: "1",
-          project_id: projects[0]?.id || "",
-          project_name: projects[0]?.name || "Sample Project",
-          buyer_name: "John Doe",
-          buyer_email: "john@example.com",
-          buyer_phone: "+91 98765 43210",
-          message: "I'm interested in 3BHK units. Can you share more details?",
-          status: "new",
-          created_at: new Date().toISOString(),
-        },
-      ]);
     } catch (error) {
       console.error("Failed to fetch builder data:", error);
+      clearTimeout(timeoutId);
       toast({
         title: "Error",
         description: "Failed to load dashboard data",
         variant: "destructive",
       });
     } finally {
+      clearTimeout(timeoutId);
+      console.log("BuilderDashboard: Data fetch complete - setting loading to false");
       setLoading(false);
     }
   };

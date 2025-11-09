@@ -69,9 +69,36 @@ export default function ProgressTracker({
   const { user } = useAuth();
   const { toast } = useToast();
   const [uploadingMilestoneId, setUploadingMilestoneId] = useState<string | null>(null);
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
-  const [uploadDescription, setUploadDescription] = useState("");
+  
+  // Per-milestone upload state - each milestone has its own description, images, and videos
+  const [milestoneUploads, setMilestoneUploads] = useState<Record<string, {
+    description: string;
+    images: File[];
+    videos: File[];
+  }>>({});
+  
+  // Helper functions to get and set per-milestone data
+  const getMilestoneData = (milestoneId: string) => {
+    return milestoneUploads[milestoneId] || { description: "", images: [], videos: [] };
+  };
+  
+  const updateMilestoneData = (milestoneId: string, field: 'description' | 'images' | 'videos', value: any) => {
+    setMilestoneUploads(prev => ({
+      ...prev,
+      [milestoneId]: {
+        ...getMilestoneData(milestoneId),
+        [field]: value
+      }
+    }));
+  };
+  
+  const clearMilestoneData = (milestoneId: string) => {
+    setMilestoneUploads(prev => {
+      const newState = { ...prev };
+      delete newState[milestoneId];
+      return newState;
+    });
+  };
   
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -95,7 +122,9 @@ export default function ProgressTracker({
   };
 
   const handleUpload = async (milestoneId: string) => {
-    if (selectedImages.length === 0 && selectedVideos.length === 0) {
+    const milestoneData = getMilestoneData(milestoneId);
+    
+    if (milestoneData.images.length === 0 && milestoneData.videos.length === 0) {
       toast({
         title: "No files selected",
         description: "Please select at least one image or video",
@@ -109,9 +138,9 @@ export default function ProgressTracker({
       const token = localStorage.getItem("access_token");
       const formData = new FormData();
       
-      selectedImages.forEach((file) => formData.append("images", file));
-      selectedVideos.forEach((file) => formData.append("videos", file));
-      if (uploadDescription) formData.append("description", uploadDescription);
+      milestoneData.images.forEach((file) => formData.append("images", file));
+      milestoneData.videos.forEach((file) => formData.append("videos", file));
+      if (milestoneData.description) formData.append("description", milestoneData.description);
 
       const response = await fetch(
         `${API_BASE_URL}/api/projects/milestones/${milestoneId}/upload_media/`,
@@ -145,10 +174,8 @@ export default function ProgressTracker({
         description: "Media has been uploaded to milestone",
       });
 
-      // Reset form
-      setSelectedImages([]);
-      setSelectedVideos([]);
-      setUploadDescription("");
+      // Reset form for this milestone
+      clearMilestoneData(milestoneId);
       
       // Notify parent to refresh data
       if (onMilestoneUpdate) {
@@ -206,19 +233,6 @@ export default function ProgressTracker({
 
   return (
     <div className="space-y-6">
-      {/* Debug Info - Remove after testing */}
-      {process.env.NODE_ENV === 'development' && (
-        <Card className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950">
-          <CardContent className="pt-4">
-            <p className="text-xs font-mono">
-              <strong>Debug Info:</strong> User Role: {user?.role || 'Not logged in'} | 
-              Milestones: {milestones.length} | 
-              Project ID: {projectId || 'N/A'}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Header Card */}
       <Card>
         <CardHeader>
@@ -321,8 +335,8 @@ export default function ProgressTracker({
                       <div>
                         <label className="text-sm mb-1 block font-medium">Description</label>
                         <input
-                          value={uploadDescription}
-                          onChange={(e) => setUploadDescription(e.target.value)}
+                          value={getMilestoneData("general").description}
+                          onChange={(e) => updateMilestoneData("general", "description", e.target.value)}
                           className="w-full rounded border p-2 bg-background"
                           placeholder="e.g., Foundation work completed"
                         />
@@ -334,12 +348,12 @@ export default function ProgressTracker({
                           type="file"
                           accept="image/*"
                           multiple
-                          onChange={(e) => setSelectedImages(Array.from(e.target.files || []))}
+                          onChange={(e) => updateMilestoneData("general", "images", Array.from(e.target.files || []))}
                           className="w-full"
                         />
-                        {selectedImages.length > 0 && (
+                        {getMilestoneData("general").images.length > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            ✓ {selectedImages.length} image(s) selected
+                            ✓ {getMilestoneData("general").images.length} image(s) selected
                           </p>
                         )}
                       </div>
@@ -350,12 +364,12 @@ export default function ProgressTracker({
                           type="file"
                           accept="video/*"
                           multiple
-                          onChange={(e) => setSelectedVideos(Array.from(e.target.files || []))}
+                          onChange={(e) => updateMilestoneData("general", "videos", Array.from(e.target.files || []))}
                           className="w-full"
                         />
-                        {selectedVideos.length > 0 && (
+                        {getMilestoneData("general").videos.length > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            ✓ {selectedVideos.length} video(s) selected
+                            ✓ {getMilestoneData("general").videos.length} video(s) selected
                           </p>
                         )}
                       </div>
@@ -510,8 +524,8 @@ export default function ProgressTracker({
                           <div>
                             <label className="text-xs mb-1 block font-medium">Description</label>
                             <input
-                              value={uploadDescription}
-                              onChange={(e) => setUploadDescription(e.target.value)}
+                              value={getMilestoneData(milestone.id).description}
+                              onChange={(e) => updateMilestoneData(milestone.id, "description", e.target.value)}
                               className="w-full text-sm rounded border p-2 bg-background"
                               placeholder="e.g., Completed foundation work"
                             />
@@ -523,12 +537,12 @@ export default function ProgressTracker({
                               type="file"
                               accept="image/*"
                               multiple
-                              onChange={(e) => setSelectedImages(Array.from(e.target.files || []))}
+                              onChange={(e) => updateMilestoneData(milestone.id, "images", Array.from(e.target.files || []))}
                               className="w-full text-xs p-1 bg-background border rounded"
                             />
-                            {selectedImages.length > 0 && (
+                            {getMilestoneData(milestone.id).images.length > 0 && (
                               <p className="text-xs text-primary font-medium mt-1">
-                                ✓ {selectedImages.length} image(s) selected
+                                ✓ {getMilestoneData(milestone.id).images.length} image(s) selected
                               </p>
                             )}
                           </div>
@@ -539,12 +553,12 @@ export default function ProgressTracker({
                               type="file"
                               accept="video/*"
                               multiple
-                              onChange={(e) => setSelectedVideos(Array.from(e.target.files || []))}
+                              onChange={(e) => updateMilestoneData(milestone.id, "videos", Array.from(e.target.files || []))}
                               className="w-full text-xs p-1 bg-background border rounded"
                             />
-                            {selectedVideos.length > 0 && (
+                            {getMilestoneData(milestone.id).videos.length > 0 && (
                               <p className="text-xs text-primary font-medium mt-1">
-                                ✓ {selectedVideos.length} video(s) selected
+                                ✓ {getMilestoneData(milestone.id).videos.length} video(s) selected
                               </p>
                             )}
                           </div>
@@ -571,11 +585,7 @@ export default function ProgressTracker({
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => {
-                                setSelectedImages([]);
-                                setSelectedVideos([]);
-                                setUploadDescription("");
-                              }}
+                              onClick={() => clearMilestoneData(milestone.id)}
                             >
                               Clear
                             </Button>

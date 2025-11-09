@@ -91,27 +91,47 @@ class MilestoneSerializer(serializers.ModelSerializer):
         # obj.images is a list of dicts stored in DB; each dict should contain 'sha256', 'uploaded_at', 'description'
         out = []
         for entry in obj.images or []:
-            sha = entry.get('sha256') if isinstance(entry, dict) else None
-            url = self._build_media_url(sha, 'image') if sha else None
-            out.append({
-                'sha256': sha,
-                'url': url,
-                'uploaded_at': entry.get('uploaded_at'),
-                'description': entry.get('description', '')
-            })
+            # Handle both dict and string formats (backward compatibility)
+            if isinstance(entry, dict):
+                sha = entry.get('sha256')
+                url = self._build_media_url(sha, 'image') if sha else None
+                out.append({
+                    'sha256': sha,
+                    'url': url,
+                    'uploaded_at': entry.get('uploaded_at'),
+                    'description': entry.get('description', '')
+                })
+            elif isinstance(entry, str):
+                # If it's just a string (URL), wrap it in the expected format
+                out.append({
+                    'sha256': None,
+                    'url': entry,
+                    'uploaded_at': None,
+                    'description': ''
+                })
         return out
 
     def get_videos(self, obj):
         out = []
         for entry in obj.videos or []:
-            sha = entry.get('sha256') if isinstance(entry, dict) else None
-            url = self._build_media_url(sha, 'video') if sha else None
-            out.append({
-                'sha256': sha,
-                'url': url,
-                'uploaded_at': entry.get('uploaded_at'),
-                'description': entry.get('description', '')
-            })
+            # Handle both dict and string formats (backward compatibility)
+            if isinstance(entry, dict):
+                sha = entry.get('sha256')
+                url = self._build_media_url(sha, 'video') if sha else None
+                out.append({
+                    'sha256': sha,
+                    'url': url,
+                    'uploaded_at': entry.get('uploaded_at'),
+                    'description': entry.get('description', '')
+                })
+            elif isinstance(entry, str):
+                # If it's just a string (URL), wrap it in the expected format
+                out.append({
+                    'sha256': None,
+                    'url': entry,
+                    'uploaded_at': None,
+                    'description': ''
+                })
         return out
 
 
@@ -125,7 +145,8 @@ class PropertySerializer(serializers.ModelSerializer):
             'id', 'project', 'unit_number', 'property_type', 'floor_number',
             'tower', 'carpet_area', 'built_up_area', 'super_built_up_area',
             'bedrooms', 'bathrooms', 'balconies', 'price', 'price_per_sqft',
-            'status', 'buyer', 'features', 'floor_plan_image',
+            'status', 'buyer', 'features', 'floor_plan_image', 'unit_photos',
+            'unit_videos', 'unit_progress_percentage', 'qr_code_data',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
