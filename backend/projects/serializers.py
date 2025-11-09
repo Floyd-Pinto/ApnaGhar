@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Developer, Project, Property, ConstructionMilestone, Review
+from .models import Developer, Project, Property, ConstructionMilestone, Review, ConstructionUpdate
 from django.contrib.auth import get_user_model
 import cloudinary.utils
 
@@ -308,3 +308,23 @@ class UnitProgressSerializer(serializers.ModelSerializer):
             'unit_progress_updates', 'unit_photos', 'unit_videos', 'qr_code_data'
         ]
         read_only_fields = ['id']
+
+
+class ConstructionUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for Construction Updates"""
+    created_by_name = serializers.SerializerMethodField()
+    project_name = serializers.CharField(source='project.name', read_only=True)
+    
+    class Meta:
+        model = ConstructionUpdate
+        fields = [
+            'id', 'project', 'project_name', 'created_by', 'created_by_name',
+            'update_type', 'title', 'description', 'update_date',
+            'images', 'videos', 'completion_percentage', 'milestone_achieved',
+            'property_unit_number', 'visible_to_owner_only',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_by', 'created_by_name', 'project_name', 'created_at', 'updated_at']
+    
+    def get_created_by_name(self, obj):
+        return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.email

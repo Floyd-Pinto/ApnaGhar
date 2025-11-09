@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Camera, Upload, QrCode, Check, X, AlertCircle, Smartphone } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Html5Qrcode } from 'html5-qrcode';
 
 interface SecureUploadProps {
   onSuccess?: () => void;
@@ -21,9 +22,11 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
   const [description, setDescription] = useState('');
   const [uploading, setUploading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -45,6 +48,71 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
     
     checkMobile();
   }, []);
+
+  // Cleanup scanner on unmount
+  useEffect(() => {
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(console.error);
+      }
+    };
+  }, []);
+
+  const startQRScanner = async () => {
+    if (!isMobile) {
+      toast({
+        title: 'Mobile Device Required',
+        description: 'QR scanning is only available on mobile devices',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsScanning(true);
+    
+    try {
+      const scanner = new Html5Qrcode('qr-reader');
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: 'environment' }, // Use rear camera
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        (decodedText) => {
+          // Success callback
+          scanner.stop().then(() => {
+            setIsScanning(false);
+            handleQRScan(decodedText);
+          }).catch(console.error);
+        },
+        (errorMessage) => {
+          // Error callback - can be ignored for continuous scanning
+          console.log('QR scan error:', errorMessage);
+        }
+      );
+    } catch (error: any) {
+      console.error('Error starting scanner:', error);
+      setIsScanning(false);
+      toast({
+        title: 'Scanner Error',
+        description: error.message || 'Failed to start camera. Please check permissions.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const stopQRScanner = () => {
+    if (scannerRef.current) {
+      scannerRef.current.stop()
+        .then(() => {
+          setIsScanning(false);
+          scannerRef.current = null;
+        })
+        .catch(console.error);
+    }
+  };
 
   const handleQRScan = async (scannedData: string) => {
     try {
@@ -305,15 +373,39 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
               </AlertDescription>
             </Alert>
             
-            <div className="flex flex-col gap-2">
-              <Button onClick={() => {/* Integrate QR scanner library */}} className="w-full">
-                <Camera className="mr-2 h-4 w-4" />
-                Open Camera to Scan
-              </Button>
-              <Button variant="outline" onClick={handleManualQRInput} className="w-full">
-                Enter QR Code Manually
-              </Button>
-            </div>
+            {/* QR Scanner Container */}
+            {isScanning && (
+              <div className="space-y-3">
+                <div id="qr-reader" className="w-full rounded-lg overflow-hidden border-2 border-primary"></div>
+                <Button 
+                  onClick={stopQRScanner} 
+                  variant="destructive" 
+                  className="w-full min-h-[44px]"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Cancel Scanning
+                </Button>
+              </div>
+            )}
+            
+            {!isScanning && (
+              <div className="flex flex-col gap-2">
+                <Button 
+                  onClick={startQRScanner} 
+                  className="w-full min-h-[44px]"
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Open Camera to Scan
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleManualQRInput} 
+                  className="w-full min-h-[44px]"
+                >
+                  Enter QR Code Manually
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

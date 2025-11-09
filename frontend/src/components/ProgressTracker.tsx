@@ -423,9 +423,9 @@ export default function ProgressTracker({
 
                   <div className="bg-muted/30 rounded-lg p-4 space-y-3">
                     {/* Header */}
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
                           <Badge variant="outline" className="text-xs">
                             Phase {milestone.phase_number}
                           </Badge>
@@ -444,7 +444,7 @@ export default function ProgressTracker({
                           {milestone.description}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-left sm:text-right">
                         <div className="text-2xl font-bold text-primary">
                           {parseFloat(milestone.progress_percentage).toFixed(0)}%
                         </div>
@@ -559,26 +559,26 @@ export default function ProgressTracker({
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <Button
-                            size="sm"
+                            size="default"
                             variant="outline"
                             onClick={() => {
                               setSelectedMilestone(milestone);
                               setShowQRDialog(true);
                             }}
-                            className="flex-1"
+                            className="flex-1 min-h-[44px]"
                           >
                             <QrCode className="h-4 w-4 mr-2" />
                             Show QR Code
                           </Button>
                           <Button
-                            size="sm"
+                            size="default"
                             onClick={() => {
                               setSelectedMilestone(milestone);
                               setShowSecureUploadDialog(true);
                             }}
-                            className="flex-1"
+                            className="flex-1 min-h-[44px]"
                           >
                             <Camera className="h-4 w-4 mr-2" />
                             Upload Update

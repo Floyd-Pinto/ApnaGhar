@@ -90,8 +90,8 @@ export default function QRCodeDisplay({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col items-center justify-center p-6 bg-muted/50 rounded-lg">
-        <div className="bg-background p-4 rounded-lg shadow-sm border">
+      <div className="flex flex-col items-center justify-center p-4 sm:p-6 bg-muted/50 rounded-lg">
+        <div className="bg-background p-3 sm:p-4 rounded-lg shadow-sm border">
           <QRCodeSVG
             id={`qr-${entityId}`}
             value={qrCodeData}
@@ -121,12 +121,12 @@ export default function QRCodeDisplay({
         </ul>
       </div>
 
-      <div className="flex gap-2">
-        <Button onClick={handlePrint} variant="outline" className="flex-1">
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Button onClick={handlePrint} variant="outline" className="flex-1 min-h-[44px]">
           <Printer className="mr-2 h-4 w-4" />
           Print
         </Button>
-        <Button onClick={handleDownload} variant="outline" className="flex-1">
+        <Button onClick={handleDownload} variant="outline" className="flex-1 min-h-[44px]">
           <Download className="mr-2 h-4 w-4" />
           Download
         </Button>

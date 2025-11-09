@@ -2,13 +2,14 @@ from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Avg
-from .models import Developer, Project, Property, ConstructionMilestone, Review
+from .models import Developer, Project, Property, ConstructionMilestone, Review, ConstructionUpdate
 from .serializers import (
     DeveloperSerializer, ProjectListSerializer, ProjectDetailSerializer,
     ProjectCreateUpdateSerializer, PropertySerializer, MilestoneSerializer,
-    ReviewSerializer
+    ReviewSerializer, ConstructionUpdateSerializer
 )
 from .permissions import IsOwnerOrBuilderOrReadOnly, IsBuilderOrReadOnly
 import cloudinary
@@ -1070,4 +1071,104 @@ class ReviewViewSet(viewsets.ModelViewSet):
         review.helpful_count += 1
         review.save(update_fields=['helpful_count'])
         return Response({'status': 'marked as helpful', 'count': review.helpful_count})
+
+
+class ConstructionUpdateViewSet(viewsets.ModelViewSet):
+    """ViewSet for Construction Updates
+    
+    Builders can create project-level updates (visible to everyone)
+    or property-specific updates (visible only to property owners)
+    """
+    serializer_class = ConstructionUpdateSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filterset_fields = ['project', 'update_type', 'property_unit_number']
+    ordering_fields = ['update_date', 'created_at']
+    ordering = ['-update_date', '-created_at']
+    search_fields = ['title', 'description']
+    
+    def get_queryset(self):
+        """
+        Filter updates based on user permissions:
+        - Builders see all updates for their projects
+        - Property owners see project-level updates + their property-specific updates
+        - Others see only public project-level updates
+        """
+        user = self.request.user
+        
+        if user.is_authenticated and user.role == 'builder':
+            # Builders see all updates for their projects
+            return ConstructionUpdate.objects.filter(
+                project__developer__user=user
+            ).select_related('project', 'created_by')
+        
+        # Base queryset - public project-level updates
+        queryset = ConstructionUpdate.objects.filter(
+            update_type='project_level',
+            visible_to_owner_only=False
+        ).select_related('project', 'created_by')
+        
+        # If user is authenticated buyer, include their property-specific updates
+        if user.is_authenticated and user.role == 'buyer':
+            # Get user's owned properties
+            user_properties = user.saved_projects  # List of project IDs
+            
+            # Include property-specific updates for user's properties
+            property_updates = ConstructionUpdate.objects.filter(
+                project__id__in=user_properties,
+                visible_to_owner_only=True
+            ).select_related('project', 'created_by')
+            
+            # Combine both querysets
+            queryset = queryset | property_updates
+        
+        return queryset.distinct()
+    
+    def perform_create(self, serializer):
+        """Only builders can create updates"""
+        if self.request.user.role != 'builder':
+            raise PermissionDenied("Only builders can create construction updates")
+        
+        serializer.save(created_by=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def my_properties_updates(self, request):
+        """Get construction updates for buyer's owned properties"""
+        if not request.user.is_authenticated or request.user.role != 'buyer':
+            return Response({'error': 'Only buyers can access this endpoint'}, 
+                          status=status.HTTP_403_FORBIDDEN)
+        
+        # Get user's owned properties
+        user_properties = request.user.saved_projects
+        
+        # Get all updates (project-level and property-specific) for owned properties
+        updates = ConstructionUpdate.objects.filter(
+            project__id__in=user_properties
+        ).select_related('project', 'created_by').order_by('-update_date', '-created_at')
+        
+        # Apply pagination
+        page = self.paginate_queryset(updates)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(updates, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='project/(?P<project_id>[^/.]+)')
+    def by_project(self, request, project_id=None):
+        """Get all updates for a specific project (respecting permissions)"""
+        try:
+            project = Project.objects.get(id=project_id)
+        except Project.DoesNotExist:
+            return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get base queryset with permissions applied
+        queryset = self.get_queryset().filter(project=project)
+        
+        # Apply ordering
+        queryset = queryset.order_by('-update_date', '-created_at')
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 

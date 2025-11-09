@@ -331,3 +331,53 @@ class Review(models.Model):
     def __str__(self):
         return f"{self.user.email} - {self.project.name} ({self.rating}★)"
 
+
+class ConstructionUpdate(models.Model):
+    """Construction updates for projects - can be project-level or property-specific"""
+    UPDATE_TYPES = [
+        ('project_level', 'Project Level Update'),
+        ('property_specific', 'Property Specific Update'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='construction_updates')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='construction_updates')
+    
+    # Update details
+    update_type = models.CharField(max_length=20, choices=UPDATE_TYPES, default='project_level')
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    update_date = models.DateField()
+    
+    # Media
+    images = models.JSONField(default=list, blank=True)  # [{"url": "...", "caption": "..."}]
+    videos = models.JSONField(default=list, blank=True)  # [{"url": "...", "caption": "..."}]
+    
+    # Progress tracking
+    completion_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    milestone_achieved = models.CharField(max_length=255, null=True, blank=True)
+    
+    # Property-specific fields
+    property_unit_number = models.CharField(max_length=50, null=True, blank=True, 
+                                           help_text='Specific flat/unit number for property-specific updates')
+    visible_to_owner_only = models.BooleanField(default=False, 
+                                                help_text='If True, only property owner can see this update')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'construction_updates'
+        verbose_name = 'Construction Update'
+        verbose_name_plural = 'Construction Updates'
+        ordering = ['-update_date', '-created_at']
+        indexes = [
+            models.Index(fields=['project', 'update_type']),
+            models.Index(fields=['project', 'property_unit_number']),
+        ]
+
+    def __str__(self):
+        if self.update_type == 'property_specific':
+            return f"{self.project.name} - Unit {self.property_unit_number} - {self.title}"
+        return f"{self.project.name} - {self.title}"
+

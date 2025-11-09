@@ -221,9 +221,9 @@ export default function ManageQRCodes() {
 
           {/* Milestones Tab */}
           <TabsContent value="milestones" className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
               <h2 className="text-xl font-semibold">Construction Milestones</h2>
-              <Button onClick={handleUpload} variant="outline">
+              <Button onClick={handleUpload} variant="outline" className="w-full sm:w-auto min-h-[44px]">
                 <Upload className="mr-2 h-4 w-4" />
                 Secure Upload
               </Button>
@@ -240,8 +240,8 @@ export default function ManageQRCodes() {
                 {milestones.map((milestone) => (
                   <Card key={milestone.id}>
                     <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="flex-1">
                           <CardTitle className="text-lg">
                             Phase {milestone.phase_number}: {milestone.title}
                           </CardTitle>
@@ -255,6 +255,7 @@ export default function ManageQRCodes() {
                               ? 'secondary'
                               : 'outline'
                           }
+                          className="self-start"
                         >
                           {milestone.status.replace('_', ' ')}
                         </Badge>
@@ -264,6 +265,7 @@ export default function ManageQRCodes() {
                       <Button
                         onClick={() => handleShowQR(milestone, 'milestone')}
                         disabled={!milestone.qr_code_data}
+                        className="w-full sm:w-auto min-h-[44px]"
                       >
                         <QrCode className="mr-2 h-4 w-4" />
                         {milestone.qr_code_data ? 'Show QR Code' : 'QR Code Not Available'}
@@ -277,9 +279,9 @@ export default function ManageQRCodes() {
 
           {/* Properties Tab */}
           <TabsContent value="properties" className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
               <h2 className="text-xl font-semibold">Property Units</h2>
-              <Button onClick={handleUpload} variant="outline">
+              <Button onClick={handleUpload} variant="outline" className="w-full sm:w-auto min-h-[44px]">
                 <Upload className="mr-2 h-4 w-4" />
                 Secure Upload
               </Button>
@@ -309,7 +311,7 @@ export default function ManageQRCodes() {
                       <Button
                         onClick={() => handleShowQR(property, 'property')}
                         disabled={!property.qr_code_data}
-                        className="w-full"
+                        className="w-full min-h-[44px]"
                       >
                         <QrCode className="mr-2 h-4 w-4" />
                         {property.qr_code_data ? 'Show QR Code' : 'QR Code Not Available'}

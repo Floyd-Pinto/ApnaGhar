@@ -591,13 +591,23 @@ export default function PropertyUnitDetails() {
 
             {/* QR Code Display - Builders Only */}
             {user?.role === "builder" && property.qr_code_data && (
-              <QRCodeDisplay
-                entityType="property"
-                entityId={property.id}
-                projectName={property.project.name}
-                unitNumber={property.unit_number}
-                qrCodeData={property.qr_code_data}
-              />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Property QR Code</CardTitle>
+                  <CardDescription>
+                    Scan this QR code for secure uploads
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <QRCodeDisplay
+                    entityType="property"
+                    entityId={property.id}
+                    projectName={property.project.name}
+                    unitNumber={property.unit_number}
+                    qrCodeData={property.qr_code_data}
+                  />
+                </CardContent>
+              </Card>
             )}
 
             {/* Secure Upload Card - Builders Only */}
@@ -625,7 +635,7 @@ export default function PropertyUnitDetails() {
 
                     <Button 
                       onClick={() => setShowSecureUploadDialog(true)} 
-                      className="w-full"
+                      className="w-full min-h-[44px]"
                       size="lg"
                     >
                       <QrCode className="h-5 w-5 mr-2" />
@@ -675,7 +685,7 @@ export default function PropertyUnitDetails() {
                   <div className="text-center py-6">Loading progress...</div>
                 ) : progressData ? (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div>
                         <div className="text-sm text-muted-foreground">Progress</div>
                         <div className="font-semibold text-lg">{progressData.unit_progress_percentage}%</div>
@@ -683,8 +693,9 @@ export default function PropertyUnitDetails() {
                       {user?.role === "builder" && property.qr_code_data && (
                         <Button 
                           onClick={() => setShowSecureUploadDialog(true)}
-                          size="sm"
+                          size="default"
                           variant="outline"
+                          className="w-full sm:w-auto min-h-[44px]"
                         >
                           <QrCode className="h-4 w-4 mr-2" />
                           Upload Update

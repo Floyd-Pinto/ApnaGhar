@@ -510,13 +510,13 @@ export default function BuilderDashboard() {
 
                       return (
                         <div key={project.id} className="space-y-3">
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
                               <Building2 className="h-5 w-5 text-primary" />
                               {project.name}
                             </h3>
                             <Link to={`/projects/${project.id}?tab=progress`}>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="default" className="w-full sm:w-auto min-h-[44px]">
                                 <Upload className="h-4 w-4 mr-2" />
                                 Upload More
                               </Button>
@@ -618,10 +618,10 @@ export default function BuilderDashboard() {
                   <div className="space-y-4">
                     {inquiries.map((inquiry) => (
                       <Card key={inquiry.id} className="bg-muted/30">
-                        <CardContent className="pt-6">
-                          <div className="flex items-start justify-between mb-4">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
+                        <CardContent className="pt-4 sm:pt-6">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4">
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-center gap-2 mb-1">
                                 <h4 className="font-semibold">{inquiry.buyer_name}</h4>
                                 <Badge variant={inquiry.status === "new" ? "default" : "secondary"}>
                                   {inquiry.status === "new" ? (
@@ -641,7 +641,7 @@ export default function BuilderDashboard() {
                                 {inquiry.project_name}
                               </p>
                             </div>
-                            <div className="text-right text-sm text-muted-foreground">
+                            <div className="text-left sm:text-right text-sm text-muted-foreground">
                               <Clock className="h-4 w-4 inline mr-1" />
                               {new Date(inquiry.created_at).toLocaleDateString()}
                             </div>
@@ -652,16 +652,16 @@ export default function BuilderDashboard() {
                               <p className="text-sm">{inquiry.message}</p>
                             </div>
 
-                            <div className="flex items-center gap-4 text-sm">
-                              <div className="flex items-center gap-2">
-                                <MessageSquare className="h-4 w-4 text-primary" />
-                                <a href={`mailto:${inquiry.buyer_email}`} className="text-primary hover:underline">
+                            <div className="flex flex-col gap-3 text-sm">
+                              <div className="flex items-start gap-2 p-2 bg-muted/30 rounded">
+                                <MessageSquare className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                <a href={`mailto:${inquiry.buyer_email}`} className="text-primary hover:underline break-all flex-1">
                                   {inquiry.buyer_email}
                                 </a>
                               </div>
                               {inquiry.buyer_phone && (
-                                <div className="flex items-center gap-2">
-                                  <Users className="h-4 w-4 text-primary" />
+                                <div className="flex items-center gap-2 p-2 bg-muted/30 rounded">
+                                  <Users className="h-4 w-4 text-primary flex-shrink-0" />
                                   <a href={`tel:${inquiry.buyer_phone}`} className="text-primary hover:underline">
                                     {inquiry.buyer_phone}
                                   </a>
@@ -669,12 +669,12 @@ export default function BuilderDashboard() {
                               )}
                             </div>
 
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="default">
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <Button size="default" variant="default" className="w-full sm:w-auto min-h-[44px]">
                                 <MessageSquare className="h-4 w-4 mr-2" />
                                 Respond
                               </Button>
-                              <Button size="sm" variant="outline">
+                              <Button size="default" variant="outline" className="w-full sm:w-auto min-h-[44px]">
                                 Mark as Read
                               </Button>
                             </div>
@@ -699,33 +699,33 @@ export default function BuilderDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+                    <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">Total Views</span>
                         <Eye className="h-4 w-4 text-primary" />
                       </div>
-                      <p className="text-3xl font-bold">{totalViews}</p>
+                      <p className="text-2xl sm:text-3xl font-bold">{totalViews}</p>
                       <Progress value={75} className="h-2" />
                       <p className="text-xs text-green-600">↑ 12% from last month</p>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">Interested Buyers</span>
                         <Users className="h-4 w-4 text-primary" />
                       </div>
-                      <p className="text-3xl font-bold">{totalInterested}</p>
+                      <p className="text-2xl sm:text-3xl font-bold">{totalInterested}</p>
                       <Progress value={60} className="h-2" />
                       <p className="text-xs text-green-600">↑ 8% from last month</p>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 p-4 bg-muted/30 rounded-lg sm:col-span-2 md:col-span-1">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">Conversion Rate</span>
                         <TrendingUp className="h-4 w-4 text-primary" />
                       </div>
-                      <p className="text-3xl font-bold">{conversionRate}%</p>
+                      <p className="text-2xl sm:text-3xl font-bold">{conversionRate}%</p>
                       <Progress value={parseFloat(conversionRate)} className="h-2" />
                       <p className="text-xs text-green-600">↑ 3% from last month</p>
                     </div>
@@ -755,32 +755,32 @@ export default function BuilderDashboard() {
                           : "0";
 
                         return (
-                          <div key={project.id} className="p-4 bg-muted/30 rounded-lg">
-                            <div className="flex items-center justify-between mb-3">
+                          <div key={project.id} className="p-3 sm:p-4 bg-muted/30 rounded-lg">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                               <div className="flex-1">
                                 <h4 className="font-semibold">{project.name}</h4>
                                 <p className="text-sm text-muted-foreground">{project.city}</p>
                               </div>
                               <Link to={`/projects/${project.id}`}>
-                                <Button variant="outline" size="sm">
+                                <Button variant="outline" size="default" className="w-full sm:w-auto min-h-[44px]">
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
                                 </Button>
                               </Link>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-4 mb-3">
-                              <div>
+                            <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-3">
+                              <div className="p-2 sm:p-3 bg-background rounded">
                                 <p className="text-xs text-muted-foreground mb-1">Views</p>
-                                <p className="text-xl font-bold">{project.views_count}</p>
+                                <p className="text-lg sm:text-xl font-bold">{project.views_count}</p>
                               </div>
-                              <div>
+                              <div className="p-2 sm:p-3 bg-background rounded">
                                 <p className="text-xs text-muted-foreground mb-1">Interested</p>
-                                <p className="text-xl font-bold">{project.interested_count}</p>
+                                <p className="text-lg sm:text-xl font-bold">{project.interested_count}</p>
                               </div>
-                              <div>
+                              <div className="p-2 sm:p-3 bg-background rounded">
                                 <p className="text-xs text-muted-foreground mb-1">Conversion</p>
-                                <p className="text-xl font-bold text-primary">{projectConversion}%</p>
+                                <p className="text-lg sm:text-xl font-bold text-primary">{projectConversion}%</p>
                               </div>
                             </div>
 
