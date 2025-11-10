@@ -36,24 +36,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check if user is logged in on app start
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('AuthContext: Initializing authentication...');
       const accessToken = localStorage.getItem('access_token');
       const refreshToken = localStorage.getItem('refresh_token');
 
       if (accessToken && refreshToken) {
+        console.log('AuthContext: Found tokens, fetching user profile...');
         try {
-          // Try to get user profile
-          const userData = await authAPI.getProfile();
+          // Try to get user profile with 5 second timeout
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+          );
+          
+          const userData = await Promise.race([
+            authAPI.getProfile(),
+            timeoutPromise
+          ]) as User;
+          
+          console.log('AuthContext: User profile fetched successfully');
           setUser(userData);
         } catch (error) {
-          // If profile fetch fails, try to refresh token
-          try {
-            await refreshTokens();
-          } catch (refreshError) {
-            // If refresh fails, clear tokens
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-          }
+          console.error('AuthContext: Profile fetch failed', error);
+          // If profile fetch fails, clear tokens
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          setUser(null);
         }
+      } else {
+        console.log('AuthContext: No tokens, skipping profile fetch');
       }
       setIsLoading(false);
     };

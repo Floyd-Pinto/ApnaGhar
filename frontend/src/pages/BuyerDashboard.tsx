@@ -21,6 +21,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -51,6 +52,7 @@ interface PurchasedProperty {
 
 export default function BuyerDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<SavedProject[]>([]);
   const [purchasedProperties, setPurchasedProperties] = useState<PurchasedProperty[]>([]);
@@ -62,45 +64,71 @@ export default function BuyerDashboard() {
 
   const fetchUserData = async () => {
     setLoading(true);
+    console.log("BuyerDashboard: Starting to fetch data...");
+    
     try {
       const token = localStorage.getItem("access_token");
+      console.log("BuyerDashboard: Token exists:", !!token);
+      
+      if (!token) {
+        console.error("BuyerDashboard: No access token found");
+        setLoading(false);
+        return;
+      }
+      
       const headers = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       };
 
       // Fetch purchased properties
+      console.log("BuyerDashboard: Fetching purchased properties...");
       const propertiesRes = await fetch(
         `${API_BASE_URL}/api/projects/user/properties/my_properties/`,
         { headers }
       );
+      console.log("BuyerDashboard: Properties response status:", propertiesRes.status);
       if (propertiesRes.ok) {
         const propertiesData = await propertiesRes.json();
+        console.log("BuyerDashboard: Purchased properties:", propertiesData);
         setPurchasedProperties(propertiesData);
+      } else {
+        console.error("BuyerDashboard: Failed to fetch properties:", await propertiesRes.text());
       }
 
       // Fetch saved projects
+      console.log("BuyerDashboard: Fetching saved projects...");
       const savedRes = await fetch(
         `${API_BASE_URL}/api/projects/user/projects/saved_projects/`,
         { headers }
       );
+      console.log("BuyerDashboard: Saved projects response status:", savedRes.status);
       if (savedRes.ok) {
         const savedData = await savedRes.json();
+        console.log("BuyerDashboard: Saved projects:", savedData);
         setSavedProjects(savedData);
+      } else {
+        console.error("BuyerDashboard: Failed to fetch saved projects:", await savedRes.text());
       }
 
       // Fetch recently viewed projects
+      console.log("BuyerDashboard: Fetching recently viewed projects...");
       const viewedRes = await fetch(
         `${API_BASE_URL}/api/projects/user/projects/recently_viewed/`,
         { headers }
       );
+      console.log("BuyerDashboard: Recently viewed response status:", viewedRes.status);
       if (viewedRes.ok) {
         const viewedData = await viewedRes.json();
+        console.log("BuyerDashboard: Recently viewed:", viewedData);
         setRecentlyViewed(viewedData);
+      } else {
+        console.error("BuyerDashboard: Failed to fetch recently viewed:", await viewedRes.text());
       }
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      console.error("BuyerDashboard: Error fetching user data:", error);
     } finally {
+      console.log("BuyerDashboard: Data fetch complete");
       setLoading(false);
     }
   };
@@ -185,29 +213,31 @@ export default function BuyerDashboard() {
     },
   ];
 
+  console.log("BuyerDashboard: Rendering, loading:", loading, "user:", user?.first_name);
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="bg-primary text-primary-foreground py-12">
+      <div className="bg-primary text-primary-foreground py-8 sm:py-12">
         <div className="container mx-auto px-4">
-          <h1 className="text-4xl font-bold mb-2">My Dashboard</h1>
-          <p className="text-lg opacity-90">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 break-words">My Dashboard</h1>
+          <p className="text-sm sm:text-base md:text-lg opacity-90 break-words">
             Welcome back, {user?.first_name || "Buyer"}!
           </p>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8 w-full">
           {stats.map((stat) => (
-            <Card key={stat.title}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between mb-2">
-                  <stat.icon className="h-8 w-8 text-primary" />
-                  <span className="text-3xl font-bold">{stat.value}</span>
+            <Card key={stat.title} className="w-full max-w-full">
+              <CardContent className="pt-4 sm:pt-6 flex flex-col items-center text-center">
+                <div className="flex flex-col items-center gap-2 mb-3 w-full">
+                  <stat.icon className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                  <span className="text-xl sm:text-2xl md:text-3xl font-bold">{stat.value}</span>
                 </div>
-                <h3 className="font-semibold">{stat.title}</h3>
-                <p className="text-sm text-muted-foreground">{stat.description}</p>
+                <h3 className="font-semibold text-xs sm:text-sm md:text-base">{stat.title}</h3>
+                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">{stat.description}</p>
               </CardContent>
             </Card>
           ))}
@@ -215,24 +245,26 @@ export default function BuyerDashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue="properties" className="w-full">
-          <TabsList>
-            <TabsTrigger value="properties">
-              <Building2 className="h-4 w-4 mr-2" />
-              My Properties
-            </TabsTrigger>
-            <TabsTrigger value="saved">
-              <Heart className="h-4 w-4 mr-2" />
-              Saved Projects
-            </TabsTrigger>
-            <TabsTrigger value="viewed">
-              <Eye className="h-4 w-4 mr-2" />
-              Recently Viewed
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+            <TabsList className="inline-flex md:grid w-auto md:w-full grid-cols-3 min-w-max md:min-w-0">
+              <TabsTrigger value="properties" className="text-xs sm:text-sm whitespace-nowrap">
+                <Building2 className="h-4 w-4 mr-2" />
+                My Properties
+              </TabsTrigger>
+              <TabsTrigger value="saved" className="text-xs sm:text-sm whitespace-nowrap">
+                <Heart className="h-4 w-4 mr-2" />
+                Saved Projects
+              </TabsTrigger>
+              <TabsTrigger value="viewed" className="text-xs sm:text-sm whitespace-nowrap">
+                <Eye className="h-4 w-4 mr-2" />
+                Recently Viewed
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="properties" className="mt-6">
             <Card>
-              <CardHeader>
+              <CardHeader className="text-center space-y-2">
                 <CardTitle>My Properties</CardTitle>
                 <CardDescription>
                   Properties you've purchased or booked
@@ -304,7 +336,7 @@ export default function BuyerDashboard() {
 
           <TabsContent value="saved" className="mt-6">
             <Card>
-              <CardHeader>
+              <CardHeader className="text-center space-y-2">
                 <CardTitle>Saved Projects</CardTitle>
                 <CardDescription>
                   Projects you've marked as favorites
@@ -369,11 +401,11 @@ export default function BuyerDashboard() {
 
           <TabsContent value="viewed" className="mt-6">
             <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Recently Viewed</CardTitle>
-                    <CardDescription>
+              <CardHeader className="text-center space-y-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
+                  <div className="w-full sm:w-auto text-center sm:text-left">
+                    <CardTitle className="text-center sm:text-left">Recently Viewed</CardTitle>
+                    <CardDescription className="text-center sm:text-left">
                       Projects you've recently looked at
                     </CardDescription>
                   </div>
@@ -382,6 +414,7 @@ export default function BuyerDashboard() {
                       variant="outline" 
                       size="sm"
                       onClick={clearRecentlyViewed}
+                      className="w-full sm:w-auto"
                     >
                       Clear History
                     </Button>
@@ -447,37 +480,6 @@ export default function BuyerDashboard() {
 
 
         </Tabs>
-
-        {/* Quick Actions */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link to="/explore-projects">
-                <Button variant="outline" className="w-full h-20">
-                  <div className="flex flex-col items-center gap-2">
-                    <Building2 className="h-6 w-6" />
-                    <span>Browse Projects</span>
-                  </div>
-                </Button>
-              </Link>
-              <Button variant="outline" className="w-full h-20" disabled>
-                <div className="flex flex-col items-center gap-2">
-                  <Calendar className="h-6 w-6" />
-                  <span>Schedule Visit</span>
-                </div>
-              </Button>
-              <Button variant="outline" className="w-full h-20" disabled>
-                <div className="flex flex-col items-center gap-2">
-                  <FileText className="h-6 w-6" />
-                  <span>Download Brochures</span>
-                </div>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

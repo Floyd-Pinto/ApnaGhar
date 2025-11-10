@@ -50,8 +50,8 @@ const SettingsPage: React.FC = () => {
         <div className="space-y-6">
           {/* Appearance Settings */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="flex items-center gap-2 text-xl">
                 <Palette className="h-5 w-5" />
                 <span>Appearance</span>
               </CardTitle>
@@ -60,14 +60,14 @@ const SettingsPage: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Theme</Label>
+              <div className="flex items-start justify-between gap-6">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Theme</Label>
                   <p className="text-sm text-muted-foreground">
                     Choose between light and dark mode
                   </p>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2 pt-1">
                   <Sun className="h-4 w-4" />
                   <Switch
                     checked={theme === 'dark'}
@@ -79,30 +79,32 @@ const SettingsPage: React.FC = () => {
               
               <Separator />
               
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Theme Preference</Label>
+              <div className="flex items-start justify-between gap-6">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Theme Preference</Label>
                   <p className="text-sm text-muted-foreground">
                     Set your preferred theme mode
                   </p>
                 </div>
-                <Select value={theme} onValueChange={(value: 'light' | 'dark') => setTheme(value)}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="pt-1">
+                  <Select value={theme} onValueChange={(value: 'light' | 'dark') => setTheme(value)}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="dark">Dark</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Notification Settings */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="flex items-center gap-2 text-xl">
                 <Bell className="h-5 w-5" />
                 <span>Notifications</span>
               </CardTitle>
@@ -111,51 +113,61 @@ const SettingsPage: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Email Notifications</Label>
+              <div className="flex items-start justify-between gap-6">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Email Notifications</Label>
                   <p className="text-sm text-muted-foreground">
                     Receive notifications via email
                   </p>
                 </div>
-                <Switch
-                  checked={notifications.email}
-                  onCheckedChange={() => handleNotificationChange('email')}
-                />
+                <div className="pt-1">
+                  <Switch
+                    checked={notifications.email}
+                    onCheckedChange={() => handleNotificationChange('email')}
+                  />
+                </div>
               </div>
               
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Push Notifications</Label>
+              <Separator />
+              
+              <div className="flex items-start justify-between gap-6">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Push Notifications</Label>
                   <p className="text-sm text-muted-foreground">
                     Receive push notifications in your browser
                   </p>
                 </div>
-                <Switch
-                  checked={notifications.push}
-                  onCheckedChange={() => handleNotificationChange('push')}
-                />
+                <div className="pt-1">
+                  <Switch
+                    checked={notifications.push}
+                    onCheckedChange={() => handleNotificationChange('push')}
+                  />
+                </div>
               </div>
               
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Marketing Communications</Label>
+              <Separator />
+              
+              <div className="flex items-start justify-between gap-6">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Marketing Communications</Label>
                   <p className="text-sm text-muted-foreground">
                     Receive updates about new features and promotions
                   </p>
                 </div>
-                <Switch
-                  checked={notifications.marketing}
-                  onCheckedChange={() => handleNotificationChange('marketing')}
-                />
+                <div className="pt-1">
+                  <Switch
+                    checked={notifications.marketing}
+                    onCheckedChange={() => handleNotificationChange('marketing')}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Localization Settings */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="flex items-center gap-2 text-xl">
                 <Globe className="h-5 w-5" />
                 <span>Localization</span>
               </CardTitle>
@@ -164,56 +176,62 @@ const SettingsPage: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Language</Label>
+              <div className="flex items-start justify-between gap-6">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Language</Label>
                   <p className="text-sm text-muted-foreground">
                     Choose your preferred language
                   </p>
                 </div>
-                <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="es">Español</SelectItem>
-                    <SelectItem value="fr">Français</SelectItem>
-                    <SelectItem value="de">Deutsch</SelectItem>
-                    <SelectItem value="hi">हिंदी</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="pt-1">
+                  <Select value={language} onValueChange={setLanguage}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                      <SelectItem value="de">Deutsch</SelectItem>
+                      <SelectItem value="hi">हिंदी</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Timezone</Label>
+              <Separator />
+              
+              <div className="flex items-start justify-between gap-6">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Timezone</Label>
                   <p className="text-sm text-muted-foreground">
                     Set your local timezone
                   </p>
                 </div>
-                <Select value={timezone} onValueChange={setTimezone}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UTC">UTC</SelectItem>
-                    <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                    <SelectItem value="America/Chicago">Central Time</SelectItem>
-                    <SelectItem value="America/Denver">Mountain Time</SelectItem>
-                    <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
-                    <SelectItem value="Asia/Kolkata">India Standard Time</SelectItem>
-                    <SelectItem value="Europe/London">Greenwich Mean Time</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="pt-1">
+                  <Select value={timezone} onValueChange={setTimezone}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UTC">UTC</SelectItem>
+                      <SelectItem value="America/New_York">Eastern Time</SelectItem>
+                      <SelectItem value="America/Chicago">Central Time</SelectItem>
+                      <SelectItem value="America/Denver">Mountain Time</SelectItem>
+                      <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
+                      <SelectItem value="Asia/Kolkata">India Standard Time</SelectItem>
+                      <SelectItem value="Europe/London">Greenwich Mean Time</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Privacy & Security */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="flex items-center gap-2 text-xl">
                 <Shield className="h-5 w-5" />
                 <span>Privacy & Security</span>
               </CardTitle>
@@ -222,39 +240,45 @@ const SettingsPage: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Profile Visibility</Label>
+              <div className="flex items-start justify-between gap-6">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Profile Visibility</Label>
                   <p className="text-sm text-muted-foreground">
                     Make your profile visible to other users
                   </p>
                 </div>
-                <Switch defaultChecked />
+                <div className="pt-1">
+                  <Switch defaultChecked />
+                </div>
               </div>
               
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Activity Status</Label>
+              <Separator />
+              
+              <div className="flex items-start justify-between gap-6">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Activity Status</Label>
                   <p className="text-sm text-muted-foreground">
                     Show when you're active on the platform
                   </p>
                 </div>
-                <Switch defaultChecked />
+                <div className="pt-1">
+                  <Switch defaultChecked />
+                </div>
               </div>
               
               <Separator />
               
               <div className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-medium">Account Actions</h4>
+                <div className="space-y-1">
+                  <Label className="text-base font-medium">Account Actions</Label>
                   <p className="text-sm text-muted-foreground">
                     Manage your account settings
                   </p>
                 </div>
-                <div className="flex space-x-4">
-                  <Button variant="outline">Change Password</Button>
-                  <Button variant="outline">Download Data</Button>
-                  <Button variant="destructive">Delete Account</Button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button variant="outline" className="w-full sm:w-auto">Change Password</Button>
+                  <Button variant="outline" className="w-full sm:w-auto">Download Data</Button>
+                  <Button variant="destructive" className="w-full sm:w-auto">Delete Account</Button>
                 </div>
               </div>
             </CardContent>

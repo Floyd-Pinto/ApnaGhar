@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
+import hashlib
+import json
 
 User = get_user_model()
 
@@ -179,10 +181,26 @@ class Property(models.Model):
     unit_progress_updates = models.JSONField(default=list, blank=True)  # [{"phase": "Tiling", "description": "...", "date": "...", "progress": 40}]
     unit_videos = models.JSONField(default=list, blank=True)  # [{"url": "...", "uploaded_at": "...", "description": "..."}]
     unit_photos = models.JSONField(default=list, blank=True)  # [{"url": "...", "uploaded_at": "...", "description": "..."}]
-    qr_code_data = models.CharField(max_length=255, blank=True, null=True)  # Unique QR code for this unit
+    qr_code_data = models.CharField(max_length=500, blank=True, null=True, unique=True)  # Unique QR code for this unit
+    qr_code_secret = models.CharField(max_length=128, blank=True, null=True)  # Hash for verification
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        # Generate QR code data if not exists
+        is_new = self.pk is None
+        if not self.qr_code_data and is_new:
+            # For new objects, save first to get ID, then update QR code
+            super().save(*args, **kwargs)
+            self.qr_code_data = f"property:{self.project.id}:{self.id}:{uuid.uuid4().hex[:8]}"
+            # Generate secret hash for verification
+            secret_string = f"{self.id}:{self.project.id}:{self.unit_number}:{uuid.uuid4().hex}"
+            self.qr_code_secret = hashlib.sha256(secret_string.encode()).hexdigest()
+            # Save again with QR code data (use update_fields to avoid recursion)
+            super().save(update_fields=['qr_code_data', 'qr_code_secret'])
+        else:
+            super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'properties'
@@ -239,11 +257,30 @@ class ConstructionMilestone(models.Model):
     blockchain_hash = models.CharField(max_length=255, blank=True, null=True)
     ipfs_hash = models.CharField(max_length=255, blank=True, null=True)
     
+    # QR Code for secure uploads
+    qr_code_data = models.CharField(max_length=500, blank=True, null=True, unique=True)
+    qr_code_secret = models.CharField(max_length=128, blank=True, null=True)  # Hash for verification
+    
     # Notes
     notes = models.TextField(blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        # Generate QR code data if not exists
+        is_new = self.pk is None
+        if not self.qr_code_data and is_new:
+            # For new objects, save first to get ID, then update QR code
+            super().save(*args, **kwargs)
+            self.qr_code_data = f"milestone:{self.project.id}:{self.id}:{uuid.uuid4().hex[:8]}"
+            # Generate secret hash for verification
+            secret_string = f"{self.id}:{self.project.id}:{self.title}:{uuid.uuid4().hex}"
+            self.qr_code_secret = hashlib.sha256(secret_string.encode()).hexdigest()
+            # Save again with QR code data (use update_fields to avoid recursion)
+            super().save(update_fields=['qr_code_data', 'qr_code_secret'])
+        else:
+            super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'construction_milestones'
@@ -293,4 +330,54 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.project.name} ({self.rating}★)"
+
+
+class ConstructionUpdate(models.Model):
+    """Construction updates for projects - can be project-level or property-specific"""
+    UPDATE_TYPES = [
+        ('project_level', 'Project Level Update'),
+        ('property_specific', 'Property Specific Update'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='construction_updates')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='construction_updates')
+    
+    # Update details
+    update_type = models.CharField(max_length=20, choices=UPDATE_TYPES, default='project_level')
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    update_date = models.DateField()
+    
+    # Media
+    images = models.JSONField(default=list, blank=True)  # [{"url": "...", "caption": "..."}]
+    videos = models.JSONField(default=list, blank=True)  # [{"url": "...", "caption": "..."}]
+    
+    # Progress tracking
+    completion_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    milestone_achieved = models.CharField(max_length=255, null=True, blank=True)
+    
+    # Property-specific fields
+    property_unit_number = models.CharField(max_length=50, null=True, blank=True, 
+                                           help_text='Specific flat/unit number for property-specific updates')
+    visible_to_owner_only = models.BooleanField(default=False, 
+                                                help_text='If True, only property owner can see this update')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'construction_updates'
+        verbose_name = 'Construction Update'
+        verbose_name_plural = 'Construction Updates'
+        ordering = ['-update_date', '-created_at']
+        indexes = [
+            models.Index(fields=['project', 'update_type']),
+            models.Index(fields=['project', 'property_unit_number']),
+        ]
+
+    def __str__(self):
+        if self.update_type == 'property_specific':
+            return f"{self.project.name} - Unit {self.property_unit_number} - {self.title}"
+        return f"{self.project.name} - {self.title}"
 

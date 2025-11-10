@@ -18,6 +18,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   Loader2,
   MapPin,
   Building2,
@@ -31,9 +37,15 @@ import {
   Share2,
   DollarSign,
   MapPinned,
+  QrCode,
+  Smartphone,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/services/api";
+import QRCodeDisplay from "@/components/QRCodeDisplay";
+import SecureUpload from "@/components/SecureUpload";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -55,6 +67,7 @@ interface Property {
   features: string[];
   floor_plan_image: string;
   buyer: any;
+  qr_code_data: string | null;
   project: {
     id: string;
     name: string;
@@ -79,11 +92,23 @@ export default function PropertyUnitDetails() {
   
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
+  const [progressLoading, setProgressLoading] = useState(false);
+  const [progressData, setProgressData] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [uploadPhase, setUploadPhase] = useState("");
+  const [uploadProgressPercent, setUploadProgressPercent] = useState<number | undefined>(undefined);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [booking, setBooking] = useState(false);
+  const [showQRDialog, setShowQRDialog] = useState(false);
+  const [showSecureUploadDialog, setShowSecureUploadDialog] = useState(false);
 
   useEffect(() => {
     fetchPropertyDetails();
+    // fetch progress separately (will be permission-protected)
+    fetchProgress();
   }, [propertyId]);
 
   const fetchPropertyDetails = async () => {
@@ -111,6 +136,21 @@ export default function PropertyUnitDetails() {
       
       if (!response.ok) throw new Error("Failed to fetch property");
       const data = await response.json();
+      
+      // Block sold properties from buyers (unless they are the buyer)
+      if (user && user.role === 'buyer' && data.status === 'sold') {
+        // Check if current user is the buyer of this property
+        if (!data.buyer || data.buyer.id !== user.id) {
+          toast({
+            title: "Property Sold",
+            description: "This property has been sold and is no longer available.",
+            variant: "destructive",
+          });
+          setTimeout(() => navigate("/explore-projects"), 2000);
+          return;
+        }
+      }
+      
       setProperty(data);
     } catch (error) {
       console.error("Error fetching property:", error);
@@ -121,6 +161,30 @@ export default function PropertyUnitDetails() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProgress = async () => {
+    if (!propertyId) return;
+    setProgressLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const headers: HeadersInit = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const res = await fetch(`${API_BASE_URL}/api/projects/properties/${propertyId}/progress/`, { headers });
+      if (res.status === 403) {
+        // not allowed to view progress; ignore silently
+        setProgressData(null);
+        return;
+      }
+      if (!res.ok) throw new Error("Failed to fetch progress");
+      const data = await res.json();
+      setProgressData(data);
+    } catch (err) {
+      console.error("Error fetching progress:", err);
+    } finally {
+      setProgressLoading(false);
     }
   };
 
@@ -265,7 +329,135 @@ export default function PropertyUnitDetails() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 md:py-8">
+        {/* Mobile: Quick Actions Accordion - Only visible on mobile */}
+        <div className="lg:hidden mb-4">
+          <Card className="shadow-md">
+            <Accordion type="single" collapsible className="w-full" defaultValue="booking">
+              <AccordionItem value="booking" className="border-0">
+                <AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-muted/50 rounded-t-lg transition-colors">
+                  <div className="flex items-center gap-2 w-full">
+                    <div className="flex items-center gap-2 flex-1">
+                      <Home className="h-4 w-4 text-primary flex-shrink-0" />
+                      <span className="font-semibold text-sm">Property Actions & Info</span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 pt-1">
+                  <div className="space-y-3">
+                    {/* Booking Section */}
+                    <div className="space-y-2.5">
+                      <div className="text-center space-y-1.5">
+                        <h4 className="font-semibold text-sm">Book This Property</h4>
+                        <p className="text-xs text-muted-foreground">{property.project.name}</p>
+                        <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                          <MapPin className="h-3.5 w-3.5" />
+                          <span>{property.project.city}, {property.project.state}</span>
+                        </div>
+                      </div>
+
+                      <div className="p-2.5 bg-muted/60 rounded-lg space-y-1.5 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Property Price</span>
+                          <span className="font-bold">{formatPrice(property.price)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Status</span>
+                          <Badge className={getStatusColor(property.status)}>
+                            {property.status}
+                          </Badge>
+                        </div>
+                        {property.project.expected_completion && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Possession</span>
+                            <span className="font-medium">
+                              {new Date(property.project.expected_completion).toLocaleDateString(
+                                "en-US",
+                                { month: "short", year: "numeric" }
+                              )}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {property.status === "available" ? (
+                        <>
+                          {user?.role === "buyer" || !user ? (
+                            <Button
+                              className="w-full h-11"
+                              size="default"
+                              onClick={() => setShowBookingDialog(true)}
+                              disabled={!isAuthenticated}
+                            >
+                              <DollarSign className="h-4 w-4 mr-2" />
+                              {isAuthenticated ? "Book Now" : "Login to Book"}
+                            </Button>
+                          ) : (
+                            <div className="p-2.5 bg-muted/60 rounded-lg text-center">
+                              <p className="text-xs text-muted-foreground">
+                                Only buyers can book properties
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="p-2.5 bg-muted/60 rounded-lg text-center">
+                          <p className="text-xs font-medium">This property is {property.status}</p>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Button variant="outline" className="flex-1 h-10" size="sm">
+                          <Heart className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" className="flex-1 h-10" size="sm">
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-3">
+                      <div className="space-y-2.5">
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="font-semibold text-xs">Developer</span>
+                            {property.project.developer.verified && (
+                              <Badge className="bg-green-600 text-[10px] px-1.5 py-0.5 h-5">
+                                <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />
+                                Verified
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs font-medium">
+                            {property.project.developer.company_name}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <MapPinned className="h-3.5 w-3.5 text-primary" />
+                            <span className="font-semibold text-xs">Location</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">{property.project.address}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {property.project.city}, {property.project.state}
+                          </p>
+                        </div>
+
+                        <Link to={`/projects/${property.project.id}`} className="block">
+                          <Button variant="outline" className="w-full h-10 text-xs" size="sm">
+                            View Full Project
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -322,28 +514,28 @@ export default function PropertyUnitDetails() {
                 </div>
 
                 {/* Key Features */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-                    <Bed className="h-8 w-8 text-primary" />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+                  <div className="flex items-center gap-3 p-3 md:p-4 bg-muted rounded-lg">
+                    <Bed className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                     <div>
-                      <div className="text-2xl font-bold">{property.bedrooms}</div>
-                      <div className="text-sm text-muted-foreground">Bedrooms</div>
+                      <div className="text-xl md:text-2xl font-bold">{property.bedrooms}</div>
+                      <div className="text-xs md:text-sm text-muted-foreground">Bedrooms</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-                    <Bath className="h-8 w-8 text-primary" />
+                  <div className="flex items-center gap-3 p-3 md:p-4 bg-muted rounded-lg">
+                    <Bath className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                     <div>
-                      <div className="text-2xl font-bold">{property.bathrooms}</div>
-                      <div className="text-sm text-muted-foreground">Bathrooms</div>
+                      <div className="text-xl md:text-2xl font-bold">{property.bathrooms}</div>
+                      <div className="text-xs md:text-sm text-muted-foreground">Bathrooms</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-                    <Maximize className="h-8 w-8 text-primary" />
+                  <div className="flex items-center gap-3 p-3 md:p-4 bg-muted rounded-lg">
+                    <Maximize className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                     <div>
-                      <div className="text-2xl font-bold">
+                      <div className="text-xl md:text-2xl font-bold">
                         {parseFloat(property.carpet_area).toFixed(0)}
                       </div>
-                      <div className="text-sm text-muted-foreground">Sq. Ft</div>
+                      <div className="text-xs md:text-sm text-muted-foreground">Sq. Ft</div>
                     </div>
                   </div>
                 </div>
@@ -397,6 +589,69 @@ export default function PropertyUnitDetails() {
               </CardContent>
             </Card>
 
+            {/* QR Code Display - Builders Only */}
+            {user?.role === "builder" && property.qr_code_data && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Property QR Code</CardTitle>
+                  <CardDescription>
+                    Scan this QR code for secure uploads
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <QRCodeDisplay
+                    entityType="property"
+                    entityId={property.id}
+                    projectName={property.project.name}
+                    unitNumber={property.unit_number}
+                    qrCodeData={property.qr_code_data}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Secure Upload Card - Builders Only */}
+            {user?.role === "builder" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Upload Construction Updates</CardTitle>
+                  <CardDescription>
+                    Secure, QR-verified uploads from mobile devices only
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <Smartphone className="h-5 w-5 text-blue-600 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                          Mobile-Only Secure Upload
+                        </h4>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          For security and authenticity, construction updates must be uploaded from a mobile device using QR code verification.
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button 
+                      onClick={() => setShowSecureUploadDialog(true)} 
+                      className="w-full min-h-[44px]"
+                      size="lg"
+                    >
+                      <QrCode className="h-5 w-5 mr-2" />
+                      Start Secure Upload
+                    </Button>
+
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>• Scan the QR code at the property site</p>
+                      <p>• Use mobile device camera only</p>
+                      <p>• Gallery uploads are blocked for authenticity</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Project Amenities */}
             {property.project.amenities && property.project.amenities.length > 0 && (
               <Card>
@@ -418,39 +673,141 @@ export default function PropertyUnitDetails() {
                 </CardContent>
               </Card>
             )}
-          </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Booking Card */}
+            {/* Unit Progress (photos/videos/updates) */}
             <Card>
               <CardHeader>
-                <CardTitle>Book This Property</CardTitle>
-                <CardDescription>{property.project.name}</CardDescription>
+                <CardTitle>Unit Progress</CardTitle>
+                <CardDescription>Photos, videos and progress updates</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <CardContent>
+                {progressLoading ? (
+                  <div className="text-center py-6">Loading progress...</div>
+                ) : progressData ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <div className="text-sm text-muted-foreground">Progress</div>
+                        <div className="font-semibold text-lg">{progressData.unit_progress_percentage}%</div>
+                      </div>
+                      {user?.role === "builder" && property.qr_code_data && (
+                        <Button 
+                          onClick={() => setShowSecureUploadDialog(true)}
+                          size="default"
+                          variant="outline"
+                          className="w-full sm:w-auto min-h-[44px]"
+                        >
+                          <QrCode className="h-4 w-4 mr-2" />
+                          Upload Update
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Photos */}
+                    {progressData.unit_photos && progressData.unit_photos.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2">Photos</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {progressData.unit_photos.map((p: any, idx: number) => (
+                            <img key={idx} src={p.url} alt={p.description || `photo-${idx}`} className="w-full h-32 object-cover rounded" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Videos */}
+                    {progressData.unit_videos && progressData.unit_videos.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2">Videos</h4>
+                        <div className="space-y-2">
+                          {progressData.unit_videos.map((v: any, idx: number) => (
+                            <video key={idx} controls className="w-full h-48 bg-black rounded">
+                              <source src={v.url} />
+                              Your browser does not support the video tag.
+                            </video>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Updates */}
+                    {progressData.unit_progress_updates && progressData.unit_progress_updates.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2">Updates</h4>
+                        <div className="space-y-2">
+                          {progressData.unit_progress_updates.map((u: any, idx: number) => (
+                            <div key={idx} className="p-3 bg-muted rounded">
+                              <div className="text-sm text-muted-foreground">{u.date ? new Date(u.date).toLocaleString() : ''} • {u.phase}</div>
+                              <div className="mt-1">{u.description}</div>
+                              <div className="text-xs text-muted-foreground mt-1">Progress: {u.progress}%</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {!progressData.unit_photos?.length && !progressData.unit_videos?.length && (!progressData.unit_progress_updates || progressData.unit_progress_updates.length === 0) && (
+                      <div className="text-sm text-muted-foreground">No progress updates yet.</div>
+                    )}
+
+                    {/* Builder Upload Information */}
+                    {user?.role === "builder" && property.qr_code_data && (
+                      <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <Smartphone className="h-5 w-5 text-blue-600 mt-0.5" />
+                          <div className="flex-1 text-sm">
+                            <p className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                              Upload Progress Updates Securely
+                            </p>
+                            <ul className="space-y-1 text-blue-700 dark:text-blue-300">
+                              <li>• Click "Upload Update" button above</li>
+                              <li>• Scan the property QR code from your mobile device</li>
+                              <li>• Capture photos/videos using camera only</li>
+                              <li>• Gallery uploads are blocked for authenticity</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">Progress is private or not available.</div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar - Hidden on mobile, visible on desktop */}
+          <div className="hidden lg:block space-y-6 lg:sticky lg:top-20">
+            {/* Booking Card */}
+            <Card>
+              <CardHeader className="text-center space-y-2">
+                <CardTitle className="text-center">Book This Property</CardTitle>
+                <CardDescription className="text-center">{property.project.name}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 flex flex-col items-center">
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground w-full">
                   <MapPin className="h-4 w-4" />
                   <span>
                     {property.project.city}, {property.project.state}
                   </span>
                 </div>
 
-                <div className="p-4 bg-muted rounded-lg space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Property Price</span>
+                <div className="p-4 bg-muted rounded-lg space-y-2 w-full">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-sm">Property Price</span>
                     <span className="font-bold">{formatPrice(property.price)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Status</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-sm">Status</span>
                     <Badge className={getStatusColor(property.status)}>
                       {property.status}
                     </Badge>
                   </div>
                   {property.project.expected_completion && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Possession</span>
-                      <span className="font-medium">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-sm">Possession</span>
+                      <span className="font-medium text-sm">
                         {new Date(property.project.expected_completion).toLocaleDateString(
                           "en-US",
                           { month: "short", year: "numeric" }
@@ -505,11 +862,11 @@ export default function PropertyUnitDetails() {
             {/* Developer Info */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Developer</CardTitle>
+                <CardTitle className="text-lg text-center">Developer</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-semibold">
+              <CardContent className="flex flex-col items-center text-center space-y-3">
+                <div className="flex flex-col items-center gap-2 mb-1 w-full">
+                  <span className="font-semibold text-center">
                     {property.project.developer.company_name}
                   </span>
                   {property.project.developer.verified && (
@@ -519,10 +876,10 @@ export default function PropertyUnitDetails() {
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground text-center">
                   {property.project.address}
                 </p>
-                <Link to={`/projects/${property.project.id}`}>
+                <Link to={`/projects/${property.project.id}`} className="w-full">
                   <Button variant="outline" className="w-full" size="sm">
                     View Full Project
                   </Button>
@@ -533,13 +890,13 @@ export default function PropertyUnitDetails() {
             {/* Location */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center justify-center gap-2">
                   <MapPinned className="h-5 w-5" />
                   Location
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm mb-3">{property.project.address}</p>
+              <CardContent className="text-center space-y-2">
+                <p className="text-sm">{property.project.address}</p>
                 <p className="text-sm text-muted-foreground">
                   {property.project.city}, {property.project.state}
                 </p>
@@ -605,6 +962,28 @@ export default function PropertyUnitDetails() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Secure Upload Dialog */}
+      <Dialog open={showSecureUploadDialog} onOpenChange={setShowSecureUploadDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Secure Upload - Construction Updates</DialogTitle>
+            <DialogDescription>
+              Upload construction progress photos/videos with QR code verification
+            </DialogDescription>
+          </DialogHeader>
+          <SecureUpload
+            onSuccess={() => {
+              toast({
+                title: 'Upload Successful',
+                description: 'Construction updates uploaded successfully',
+              });
+              setShowSecureUploadDialog(false);
+              fetchProgress(); // Refresh progress data
+            }}
+          />
         </DialogContent>
       </Dialog>
     </div>

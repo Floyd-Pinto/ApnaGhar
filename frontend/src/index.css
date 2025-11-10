@@ -1,153 +1,191 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ApnaGhar Design System - 99acres Inspired Real Estate Platform */
+/* ApnaGhar Design System - macOS/iOS Glassmorphism Theme */
 
 @layer base {
-  :root {
-    /* Core Brand Colors - 99acres inspired */
-    --background: 0 0% 98%;
-    --foreground: 220 13% 13%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 220 13% 13%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 13%;
-
-    /* Primary - Red/Orange (99acres style) */
-    --primary: 13 90% 50%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 13 90% 45%;
-
-    /* Secondary - Professional Gray */
-    --secondary: 220 9% 46%;
-    --secondary-foreground: 0 0% 100%;
-
-    /* Muted - Subtle Backgrounds */
-    --muted: 220 13% 95%;
-    --muted-foreground: 220 9% 46%;
-
-    /* Accent - Gold for Premium/Featured */
-    --accent: 45 93% 47%;
-    --accent-foreground: 0 0% 100%;
-    --accent-glow: 45 93% 47%;
-
-    /* Status Colors */
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    /* UI Elements */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 13 90% 50%;
-
-    /* Dashboard Specific */
-    --dashboard-sidebar: 220 13% 13%;
-    --dashboard-sidebar-foreground: 0 0% 98%;
-    --dashboard-card: 0 0% 100%;
-    --dashboard-border: 220 13% 91%;
-
-    /* 99acres Style Elements */
-    --featured-bg: 255 237 213;
-    --premium-border: 45 93% 47%;
-    --verified-bg: 142 71% 96%;
-    --verified-border: 142 71% 45%;
-
-    /* Shadows - Subtle and professional */
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
-    --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-elevated: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
-    --shadow-floating: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
-
-    --radius: 0.375rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 220 13% 13%;
-    --sidebar-primary: 13 90% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 13% 95%;
-    --sidebar-accent-foreground: 220 13% 13%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 13 90% 50%;
+  /* Prevent horizontal scroll on all devices */
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
   }
 
-  .dark {
-    /* Dark theme - 99acres inspired dark mode */
-    --background: 220 13% 9%;
-    --foreground: 0 0% 98%;
+  /* Ensure all containers respect viewport width */
+  * {
+    box-sizing: border-box;
+  }
 
-    --card: 220 13% 12%;
-    --card-foreground: 0 0% 98%;
+  /* Light Theme - Muted Glassmorphism */
+  :root,
+  .theme-light {
+    /* Background: #F5F6FA */
+    --background: 225 20% 97%;
+    --foreground: 225 47% 15%;
 
-    --popover: 220 13% 12%;
-    --popover-foreground: 0 0% 98%;
+    /* Glass backgrounds and borders */
+    --glass-bg: rgba(245, 246, 250, 0.85);
+    --glass-border: rgba(225, 230, 240, 0.6);
+    --glass-shadow: 0 4px 16px rgba(47, 143, 157, 0.08);
+    --glass-backdrop: blur(10px);
 
-    /* Primary - Brighter red for dark mode */
-    --primary: 13 90% 55%;
+    /* Primary: #2F8F9D */
+    --primary: 188 54% 40%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 13 90% 60%;
+    --primary-hover: 188 54% 35%;
 
-    /* Secondary - Lighter gray */
-    --secondary: 220 9% 30%;
-    --secondary-foreground: 0 0% 98%;
+    /* Secondary: #A8DADC */
+    --secondary: 182 25% 76%;
+    --secondary-foreground: 225 47% 15%;
 
-    /* Muted - Subtle dark backgrounds */
-    --muted: 220 13% 16%;
-    --muted-foreground: 220 9% 65%;
+    /* CTA: #14B8A6 */
+    --cta: 173 80% 40%;
+    --cta-foreground: 0 0% 100%;
+    --cta-hover: 173 80% 35%;
 
-    /* Accent - Gold remains vibrant */
-    --accent: 45 93% 52%;
+    /* Text Colors */
+    --text-primary: 225 47% 15%;
+    --text-secondary: 218 11% 48%;
+
+    /* Card */
+    --card: rgba(245, 246, 250, 0.85);
+    --card-foreground: 225 47% 15%;
+
+    /* Muted */
+    --muted: 225 20% 92%;
+    --muted-foreground: 218 11% 48%;
+
+    /* Accent (using primary) */
+    --accent: 188 54% 40%;
     --accent-foreground: 0 0% 100%;
-    --accent-glow: 45 93% 52%;
 
     /* Status Colors */
-    --success: 142 71% 50%;
+    --success: 173 80% 40%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 55%;
+    --warning: 35 95% 55%;
     --warning-foreground: 0 0% 100%;
-    --destructive: 0 84% 65%;
+    --destructive: 0 80% 58%;
     --destructive-foreground: 0 0% 100%;
 
     /* UI Elements */
-    --border: 220 13% 20%;
-    --input: 220 13% 20%;
-    --ring: 13 90% 55%;
+    --border: rgba(225, 230, 240, 0.6);
+    --input: rgba(245, 246, 250, 0.85);
+    --ring: 188 54% 40%;
 
-    /* Dashboard Specific */
-    --dashboard-sidebar: 220 13% 9%;
-    --dashboard-sidebar-foreground: 0 0% 98%;
-    --dashboard-card: 220 13% 12%;
-    --dashboard-border: 220 13% 20%;
+    /* Popover */
+    --popover: rgba(245, 246, 250, 0.95);
+    --popover-foreground: 225 47% 15%;
 
-    /* Dark Mode Featured/Premium */
-    --featured-bg: 45 93% 15%;
-    --premium-border: 45 93% 52%;
-    --verified-bg: 142 71% 15%;
-    --verified-border: 142 71% 50%;
+    /* Dashboard */
+    --dashboard-sidebar: rgba(245, 246, 250, 0.7);
+    --dashboard-sidebar-foreground: 225 47% 15%;
+    --dashboard-card: rgba(245, 246, 250, 0.85);
+    --dashboard-border: rgba(225, 230, 240, 0.6);
 
-    /* Dark Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
-    --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.4), 0 1px 2px -1px hsl(0 0% 0% / 0.4);
-    --shadow-elevated: 0 4px 6px -1px hsl(0 0% 0% / 0.5), 0 2px 4px -2px hsl(0 0% 0% / 0.5);
-    --shadow-floating: 0 10px 15px -3px hsl(0 0% 0% / 0.6), 0 4px 6px -4px hsl(0 0% 0% / 0.6);
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(47, 143, 157, 0.05);
+    --shadow-card: 0 4px 16px rgba(47, 143, 157, 0.08);
+    --shadow-elevated: 0 8px 24px rgba(47, 143, 157, 0.12);
+    --shadow-floating: 0 16px 48px rgba(47, 143, 157, 0.15);
+
+    --radius: 1rem;
 
     /* Sidebar */
-    --sidebar-background: 220 13% 9%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 13 90% 55%;
+    --sidebar-background: rgba(245, 246, 250, 0.7);
+    --sidebar-foreground: 225 47% 15%;
+    --sidebar-primary: 188 54% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 13% 16%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 220 13% 20%;
-    --sidebar-ring: 13 90% 55%;
+    --sidebar-accent: 225 20% 90%;
+    --sidebar-accent-foreground: 225 47% 15%;
+    --sidebar-border: rgba(225, 230, 240, 0.6);
+    --sidebar-ring: 188 54% 40%;
+  }
+
+  /* Dark Theme - Muted Glassmorphism */
+  .dark,
+  .theme-dark {
+    /* Background: #0F1724 */
+    --background: 214 39% 10%;
+    --foreground: 213 27% 95%;
+
+    /* Glass backgrounds and borders */
+    --glass-bg: rgba(17, 24, 39, 0.5);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --glass-backdrop: blur(10px);
+
+    /* Primary: #4DD0E1 */
+    --primary: 187 65% 59%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 187 65% 65%;
+
+    /* Secondary: #64748B */
+    --secondary: 215 16% 47%;
+    --secondary-foreground: 213 27% 95%;
+
+    /* CTA: #14B8A6 */
+    --cta: 173 80% 40%;
+    --cta-foreground: 0 0% 100%;
+    --cta-hover: 173 80% 45%;
+
+    /* Text Colors */
+    --text-primary: 213 27% 95%;
+    --text-secondary: 214 15% 60%;
+
+    /* Card */
+    --card: rgba(17, 24, 39, 0.5);
+    --card-foreground: 213 27% 95%;
+
+    /* Muted */
+    --muted: 214 39% 15%;
+    --muted-foreground: 214 15% 60%;
+
+    /* Accent (using primary) */
+    --accent: 187 65% 59%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Status Colors */
+    --success: 173 80% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 35 95% 60%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 80% 63%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* UI Elements */
+    --border: rgba(255, 255, 255, 0.06);
+    --input: rgba(17, 24, 39, 0.5);
+    --ring: 187 65% 59%;
+
+    /* Popover */
+    --popover: rgba(17, 24, 39, 0.5);
+    --popover-foreground: 213 27% 95%;
+
+    /* Dashboard */
+    --dashboard-sidebar: rgba(17, 24, 39, 0.4);
+    --dashboard-sidebar-foreground: 213 27% 95%;
+    --dashboard-card: rgba(17, 24, 39, 0.5);
+    --dashboard-border: rgba(255, 255, 255, 0.06);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-floating: 0 16px 48px rgba(0, 0, 0, 0.6);
+
+    /* Sidebar */
+    --sidebar-background: rgba(17, 24, 39, 0.4);
+    --sidebar-foreground: 213 27% 95%;
+    --sidebar-primary: 187 65% 59%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 214 39% 15%;
+    --sidebar-accent-foreground: 213 27% 95%;
+    --sidebar-border: rgba(255, 255, 255, 0.06);
+    --sidebar-ring: 187 65% 59%;
   }
 }
 
@@ -157,7 +195,19 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply text-foreground antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+    /* Muted background for professional look */
+    background: hsl(var(--background));
+    min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Smooth theme transitions */
+  * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 0.3s;
+    transition-timing-function: ease;
   }
 }
 
@@ -272,13 +322,461 @@
     @apply border-t border-border my-4;
   }
 
-  /* Contact Button - 99acres style */
+  /* Contact Button - iOS style */
   .btn-contact {
-    @apply bg-success hover:bg-success/90 text-success-foreground font-semibold px-6 py-2.5 rounded transition-colors duration-200;
+    @apply bg-success hover:bg-success/90 text-success-foreground font-semibold px-6 py-2.5 rounded-xl transition-all duration-300;
+  }
+
+  /* === Enhanced Glassmorphism Utilities === */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    border: 1.5px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 0 8px 32px rgba(47, 143, 157, 0.15), 
+                0 2px 8px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Inner glow for depth */
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+      transparent, 
+      rgba(255, 255, 255, 0.4) 50%, 
+      transparent);
+    opacity: 0.8;
+  }
+
+  .glass-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 16px 48px rgba(47, 143, 157, 0.2), 
+                0 4px 16px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    border-color: rgba(47, 143, 157, 0.3);
+  }
+
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 0.75rem;
+    padding: 1rem;
+  }
+
+  .glass-button {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    color: hsl(var(--foreground));
+  }
+
+  .glass-button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .glass-input {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    color: hsl(var(--foreground));
+  }
+
+  .glass-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2), var(--glass-shadow);
+    border: 1px solid hsl(var(--primary));
+  }
+
+  /* === iOS/macOS Specific Styles === */
+  .ios-shadow {
+    box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.1);
+  }
+
+  .dark .ios-shadow {
+    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  .macos-border {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .macos-border {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Floating Animation */
+  .floating {
+    animation: floating 3s ease-in-out infinite;
+  }
+
+  @keyframes floating {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  /* Smooth Transitions */
+  .smooth-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Blur Background */
+  .blur-bg {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Frosted Glass Navbar */
+  .frosted-nav {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    border-bottom: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
   }
 
   /* Search Bar */
   .search-bar {
-    @apply w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.75rem;
+    box-shadow: var(--glass-shadow);
+    transition: all 0.3s ease;
+    color: hsl(var(--foreground));
+  }
+
+  .search-bar:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2), var(--glass-shadow);
+    border: 1px solid hsl(var(--primary));
+  }
+
+  /* Text Contrast Enhancement for Glassmorphism */
+  .text-glass-contrast {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    color: hsl(var(--foreground));
+    font-weight: 500;
+  }
+
+  .dark .text-glass-contrast {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    color: hsl(var(--foreground));
+  }
+
+  /* Heading styles with better contrast */
+  h1, h2, h3, h4, h5, h6 {
+    color: hsl(var(--foreground));
+    font-weight: 600;
+  }
+
+  .glass h1, .glass-card h1,
+  .glass h2, .glass-card h2,
+  .glass h3, .glass-card h3,
+  .glass h4, .glass-card h4 {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .glass h1, .dark .glass-card h1,
+  .dark .glass h2, .dark .glass-card h2,
+  .dark .glass h3, .dark .glass-card h3,
+  .dark .glass h4, .dark .glass-card h4 {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Label text enhancement */
+  label {
+    font-weight: 500;
+    color: hsl(var(--foreground));
+  }
+
+  /* Custom Scrollbar Styling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.3) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 10px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.3);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.5);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  /* Dialog scrollbar - more prominent */
+  .dialog-scroll::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .dialog-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.4);
+  }
+
+  .dialog-scroll::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.6);
+  }
+
+  /* Force all dialogs to center on all screen sizes */
+  [role="dialog"],
+  [data-radix-dialog-content] {
+    position: fixed !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+  }
+
+  /* Mobile Responsive Utilities */
+  @media (max-width: 768px) {
+    /* Prevent horizontal scroll */
+    body {
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ensure all elements respect viewport */
+    * {
+      max-width: 100vw;
+    }
+
+    /* Fix container overflow */
+    .container {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    /* Mobile-friendly touch targets */
+    button, a, input, select, textarea {
+      min-height: 44px;
+    }
+
+    /* Reduce padding on mobile */
+    .glass-card {
+      padding: 1rem;
+      max-width: 100%;
+    }
+
+    /* Stack layouts on mobile */
+    .desktop-flex {
+      flex-direction: column;
+    }
+
+    /* Full width buttons on mobile */
+    .mobile-full-width {
+      width: 100%;
+    }
+
+    /* Better spacing on mobile */
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+      max-width: 100%;
+    }
+
+    /* Prevent grid overflow */
+    .grid {
+      max-width: 100%;
+    }
+
+    /* Fix flex overflow */
+    .flex {
+      flex-wrap: wrap;
+      max-width: 100%;
+    }
+
+    /* Fix images */
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Fix tables */
+    table {
+      max-width: 100%;
+      overflow-x: auto;
+      display: block;
+    }
+
+    /* Dialog adjustments for mobile */
+    [role="dialog"] {
+      position: fixed !important;
+      left: 50% !important;
+      top: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      max-width: 92vw !important;
+      max-height: 85vh !important;
+      margin: 0 !important;
+      padding: 1rem !important;
+    }
+    
+    /* Dialog overlay - ensure full coverage on mobile */
+    [data-radix-dialog-overlay] {
+      position: fixed !important;
+      inset: 0 !important;
+    }
+
+    /* Card adjustments - all cards responsive */
+    .glass-card,
+    [class*="card"],
+    [data-state] {
+      border-radius: 0.75rem;
+      max-width: 100%;
+      width: 100%;
+    }
+
+    /* Card content padding */
+    [class*="CardContent"],
+    [class*="card-content"] {
+      padding: 0.75rem !important;
+    }
+
+    /* Card headers */
+    [class*="CardHeader"],
+    [class*="card-header"] {
+      padding: 0.75rem !important;
+    }
+
+    /* Font size adjustments */
+    h1 {
+      font-size: 1.75rem;
+      line-height: 1.2;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      line-height: 1.3;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      line-height: 1.4;
+    }
+
+    h4 {
+      font-size: 1.125rem;
+    }
+
+    /* Mobile menu specific styles */
+    .mobile-menu-item {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Ensure buttons fit on screen */
+    button {
+      max-width: 100%;
+      word-wrap: break-word;
+    }
+
+    /* Fix long text overflow */
+    p, span, div {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Optimize images for mobile */
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Better touch feedback */
+    button:active,
+    a:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+
+    /* Accordion mobile styling */
+    [data-radix-accordion-content] {
+      overflow-x: hidden;
+    }
+
+    [data-radix-accordion-trigger] {
+      min-height: 48px;
+      padding: 0.75rem 1rem;
+    }
+
+    /* Better card spacing on mobile */
+    .space-y-6 > * + * {
+      margin-top: 1rem;
+    }
+
+    .space-y-4 > * + * {
+      margin-top: 0.75rem;
+    }
+
+    /* Dialog content padding */
+    [data-radix-dialog-content] {
+      padding: 1rem !important;
+    }
+
+    /* Make all cards responsive */
+    .glass-card,
+    [class*="card"] {
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+
+  /* Tablet adjustments */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .glass-card {
+      padding: 1.25rem;
+    }
   }
 }

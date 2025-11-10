@@ -87,7 +87,7 @@ const PropertyDetails = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button asChild variant="ghost" size="sm">
-                <Link to="/projects">
+                <Link to="/explore-projects">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Projects
                 </Link>
@@ -310,7 +310,7 @@ const PropertyDetails = () => {
                   </div>
                 </div>
 
-                <Button className="w-full btn-hero">
+                <Button variant="cta" className="w-full">
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Invest Now
                 </Button>
@@ -327,7 +327,7 @@ const PropertyDetails = () => {
 
       {/* Floating AI Chatbot */}
       <div className="fixed bottom-6 right-6 z-50">
-        <Button size="lg" className="rounded-full bg-gradient-primary shadow-floating hover:shadow-elevated hover:scale-110 transition-all">
+        <Button variant="cta" size="lg" className="rounded-full shadow-floating hover:shadow-elevated hover:scale-110 transition-all">
           <MessageCircle className="h-6 w-6" />
         </Button>
       </div>

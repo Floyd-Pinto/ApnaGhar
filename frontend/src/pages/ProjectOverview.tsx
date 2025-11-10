@@ -10,6 +10,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   Loader2,
   MapPin,
@@ -25,6 +32,7 @@ import {
   Phone,
   Mail,
   Heart,
+  Info,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -61,6 +69,11 @@ interface Property {
   status: string;
   features: string[];
   floor_plan_image: string;
+  unit_photos: Array<{
+    url: string;
+    description: string;
+    uploaded_at: string;
+  }>;
 }
 
 interface Milestone {
@@ -73,7 +86,18 @@ interface Milestone {
   target_date: string;
   completion_date: string;
   verified: boolean;
-  images: string[];
+  images: Array<{
+    sha256?: string;
+    url: string;
+    uploaded_at?: string;
+    description?: string;
+  }>;
+  videos: Array<{
+    sha256?: string;
+    url: string;
+    uploaded_at?: string;
+    description?: string;
+  }>;
 }
 
 interface Review {
@@ -134,21 +158,56 @@ export default function ProjectOverview() {
   const [savingProject, setSavingProject] = useState(false);
 
   useEffect(() => {
+    // Fetch project details (critical - blocks page load)
     fetchProjectDetails();
-    checkIfSaved();
-    trackProjectView();
+    
+    // These are non-critical, run in background without blocking
+    checkIfSaved().catch(err => console.error("checkIfSaved failed:", err));
+    trackProjectView().catch(err => console.error("trackProjectView failed:", err));
   }, [id]);
 
   const fetchProjectDetails = async () => {
     setLoading(true);
+    const apiUrl = `${API_BASE_URL}/api/projects/projects/${id}/`;
+    console.log(`ProjectOverview: Fetching from URL: ${apiUrl}`);
+    console.log(`ProjectOverview: Project ID: ${id}`);
+    
+    // Timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.error("ProjectOverview: Fetch timeout after 10 seconds");
+      setLoading(false);
+      toast({
+        title: "Connection Timeout",
+        description: "Server is not responding. Please check if backend is running.",
+        variant: "destructive",
+      });
+    }, 10000);
+    
     try {
-      const response = await fetch(`${API_BASE_URL}/api/projects/projects/${id}/`);
-      if (!response.ok) throw new Error("Failed to fetch project");
+      const response = await fetch(apiUrl);
+      clearTimeout(timeoutId);
+      console.log(`ProjectOverview: Response received - Status: ${response.status}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`ProjectOverview: Error response:`, errorText);
+        throw new Error(`Failed to fetch project: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log("ProjectOverview: Project data loaded successfully:", data.name);
       setProject(data);
     } catch (error) {
-      console.error("Error fetching project:", error);
+      clearTimeout(timeoutId);
+      console.error("ProjectOverview: Error fetching project:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load project details",
+        variant: "destructive",
+      });
     } finally {
+      clearTimeout(timeoutId);
+      console.log("ProjectOverview: Setting loading to false");
       setLoading(false);
     }
   };
@@ -158,6 +217,8 @@ export default function ProjectOverview() {
     
     try {
       const token = localStorage.getItem("access_token");
+      if (!token) return;
+      
       const response = await fetch(
         `${API_BASE_URL}/api/projects/user/projects/saved_projects/`,
         {
@@ -172,6 +233,7 @@ export default function ProjectOverview() {
       }
     } catch (error) {
       console.error("Error checking if saved:", error);
+      // Fail silently - this is not critical
     }
   };
 
@@ -381,12 +443,111 @@ export default function ProjectOverview() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 md:py-8">
+        {/* Mobile: Quick Info Accordion - Only visible on mobile */}
+        <div className="lg:hidden mb-4">
+          <Card className="shadow-md">
+            <Accordion type="single" collapsible className="w-full" defaultValue="info">
+              <AccordionItem value="info" className="border-0">
+                <AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-muted/50 rounded-t-lg transition-colors">
+                  <div className="flex items-center gap-2 w-full">
+                    <div className="flex items-center gap-2 flex-1">
+                      <Info className="h-4 w-4 text-primary flex-shrink-0" />
+                      <span className="font-semibold text-sm">Quick Info & Actions</span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 pt-1">
+                  <div className="space-y-3">
+                    {/* Contact/Buy Section */}
+                    {user?.role === "buyer" || !user ? (
+                      <div className="space-y-2">
+                        <div className="text-center">
+                          <h4 className="font-semibold text-sm mb-0.5">Interested in This Property?</h4>
+                          <p className="text-xs text-muted-foreground">
+                            Contact us for more information
+                          </p>
+                        </div>
+                        <Button variant="cta" className="w-full h-11" size="default">
+                          <Phone className="h-4 w-4 mr-2" />
+                          Schedule Site Visit
+                        </Button>
+                        <Button variant="outline" className="w-full h-10">
+                          <Mail className="h-4 w-4 mr-2" />
+                          Get Brochure
+                        </Button>
+                      </div>
+                    ) : null}
+
+                    {/* Quick Summary */}
+                    <div className="pt-2.5 border-t">
+                      <h4 className="font-semibold mb-2 text-xs">Quick Summary</h4>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Price Range</span>
+                          <span className="font-medium">
+                            {formatPrice(project.starting_price)}+
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Available Units</span>
+                          <span className="font-medium">{project.available_units}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Possession</span>
+                          <span className="font-medium">
+                            {new Date(project.expected_completion).toLocaleDateString("en-US", {
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress Summary */}
+                    {project.milestones && project.milestones.length > 0 && (
+                      <div className="pt-2.5 border-t">
+                        <h4 className="font-semibold mb-2 text-xs">Construction Progress</h4>
+                        <div className="space-y-2">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-primary mb-0.5">
+                              {(
+                                project.milestones.reduce(
+                                  (sum, m) => sum + parseFloat(m.progress_percentage),
+                                  0
+                                ) / project.milestones.length
+                              ).toFixed(0)}%
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">Overall Completion</div>
+                          </div>
+                          <Progress 
+                            value={
+                              project.milestones.reduce(
+                                (sum, m) => sum + parseFloat(m.progress_percentage),
+                                0
+                              ) / project.milestones.length
+                            } 
+                            className="h-1.5"
+                          />
+                          <div className="text-[10px] text-center text-muted-foreground">
+                            {project.milestones.filter(m => m.status === 'completed').length} of {project.milestones.length} milestones completed
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Key Stats */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <Card>
                 <CardContent className="pt-6 text-center">
                   <div className="text-2xl font-bold text-primary">
@@ -419,22 +580,24 @@ export default function ProjectOverview() {
 
             {/* Tabs */}
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="properties">
-                  Properties ({project.properties?.length || 0})
-                </TabsTrigger>
-                <TabsTrigger value="progress">
-                  Progress ({project.milestones?.length || 0})
-                </TabsTrigger>
-                <TabsTrigger value="amenities">Amenities</TabsTrigger>
-                <TabsTrigger value="reviews">
-                  Reviews ({project.reviews?.length || 0})
-                </TabsTrigger>
-                <TabsTrigger value="location">Location</TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                <TabsList className="inline-flex md:grid w-auto md:w-full grid-cols-6 min-w-max md:min-w-0">
+                  <TabsTrigger value="overview" className="text-xs sm:text-sm whitespace-nowrap">Overview</TabsTrigger>
+                  <TabsTrigger value="properties" className="text-xs sm:text-sm whitespace-nowrap">
+                    Properties ({project.properties?.length || 0})
+                  </TabsTrigger>
+                  <TabsTrigger value="progress" className="text-xs sm:text-sm whitespace-nowrap">
+                    Progress ({project.milestones?.length || 0})
+                  </TabsTrigger>
+                  <TabsTrigger value="amenities" className="text-xs sm:text-sm whitespace-nowrap">Amenities</TabsTrigger>
+                  <TabsTrigger value="reviews" className="text-xs sm:text-sm whitespace-nowrap">
+                    Reviews ({project.reviews?.length || 0})
+                  </TabsTrigger>
+                  <TabsTrigger value="location" className="text-xs sm:text-sm whitespace-nowrap">Location</TabsTrigger>
+                </TabsList>
+              </div>
 
-              <TabsContent value="overview" className="space-y-6">
+              <TabsContent value="overview" className="mt-6 space-y-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>About This Project</CardTitle>
@@ -514,65 +677,136 @@ export default function ProjectOverview() {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="properties" className="space-y-4">
+              <TabsContent value="properties" className="mt-6 space-y-4">
                 {project.properties && project.properties.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {project.properties.map((property) => (
                       <Card
                         key={property.id}
-                        className={`cursor-pointer transition-shadow hover:shadow-lg ${
-                          selectedProperty?.id === property.id ? "ring-2 ring-primary" : ""
+                        className={`group overflow-hidden transition-all duration-300 hover:shadow-xl ${
+                          selectedProperty?.id === property.id ? "ring-2 ring-primary shadow-lg" : ""
                         }`}
-                        onClick={() => setSelectedProperty(property)}
                       >
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg">
-                              Unit {property.unit_number}
-                            </CardTitle>
+                        {/* Property Image/Floor Plan Thumbnail */}
+                        <div className="relative h-48 overflow-hidden bg-muted">
+                          {property.unit_photos && property.unit_photos.length > 0 ? (
+                            <img
+                              src={property.unit_photos[0].url}
+                              alt={`Unit ${property.unit_number}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                // Fallback to floor plan if unit photo fails to load
+                                if (property.floor_plan_image) {
+                                  e.currentTarget.src = property.floor_plan_image;
+                                }
+                              }}
+                            />
+                          ) : property.floor_plan_image ? (
+                            <img
+                              src={property.floor_plan_image}
+                              alt={`Unit ${property.unit_number} Floor Plan`}
+                              className="w-full h-full object-contain bg-muted/50 group-hover:scale-105 transition-transform duration-300 p-4"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                              <Home className="h-16 w-16 text-muted-foreground/30" />
+                            </div>
+                          )}
+                          
+                          {/* Status Badge Overlay */}
+                          <div className="absolute top-3 right-3">
                             <Badge className={getStatusColor(property.status)}>
                               {property.status}
                             </Badge>
                           </div>
-                          <CardDescription>
-                            {getPropertyTypeDisplay(property.property_type)}
-                            {property.tower && ` • Tower ${property.tower}`}
-                            {property.floor_number && ` • Floor ${property.floor_number}`}
-                          </CardDescription>
+                          
+                          {/* Property Type Badge */}
+                          <div className="absolute top-3 left-3">
+                            <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm">
+                              {getPropertyTypeDisplay(property.property_type)}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <CardHeader className="pb-3">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-base font-bold truncate">
+                              Unit {property.unit_number}
+                            </CardTitle>
+                            <CardDescription className="text-xs mt-1 truncate">
+                              {property.tower && `Tower ${property.tower}`}
+                              {property.tower && property.floor_number && ' • '}
+                              {property.floor_number && `Floor ${property.floor_number}`}
+                            </CardDescription>
+                          </div>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div className="text-2xl font-bold text-primary">
-                            {formatPrice(property.price)}
+                        
+                        <CardContent className="space-y-3 pt-0">
+                          {/* Price */}
+                          <div className="border-b pb-3">
+                            <div className="text-xl font-bold text-primary truncate">
+                              {formatPrice(property.price)}
+                            </div>
+                            {property.price_per_sqft && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                ₹{parseFloat(property.price_per_sqft).toLocaleString()}/sq.ft
+                              </div>
+                            )}
                           </div>
                           
-                          <div className="grid grid-cols-3 gap-2 text-sm">
-                            <div className="flex items-center gap-1">
-                              <Bed className="h-4 w-4 text-muted-foreground" />
-                              <span>{property.bedrooms} Beds</span>
+                          {/* Property Details Grid */}
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="text-center p-2 bg-muted/50 rounded-lg">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <Bed className="h-3.5 w-3.5 text-muted-foreground" />
+                              </div>
+                              <div className="text-sm font-semibold">{property.bedrooms}</div>
+                              <div className="text-[10px] text-muted-foreground">Beds</div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Bath className="h-4 w-4 text-muted-foreground" />
-                              <span>{property.bathrooms} Baths</span>
+                            <div className="text-center p-2 bg-muted/50 rounded-lg">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <Bath className="h-3.5 w-3.5 text-muted-foreground" />
+                              </div>
+                              <div className="text-sm font-semibold">{property.bathrooms}</div>
+                              <div className="text-[10px] text-muted-foreground">Baths</div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Maximize className="h-4 w-4 text-muted-foreground" />
-                              <span>{property.carpet_area} sq.ft</span>
+                            <div className="text-center p-2 bg-muted/50 rounded-lg">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <Maximize className="h-3.5 w-3.5 text-muted-foreground" />
+                              </div>
+                              <div className="text-xs font-semibold leading-tight">
+                                {parseFloat(property.carpet_area).toLocaleString()}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground">sq.ft</div>
                             </div>
                           </div>
 
-                          {property.price_per_sqft && (
-                            <div className="text-sm text-muted-foreground">
-                              ₹{parseFloat(property.price_per_sqft).toLocaleString()}/sq.ft
+                          {/* Features */}
+                          {property.features && property.features.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-1">
+                              {property.features.slice(0, 2).map((feature, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs">
+                                  {feature}
+                                </Badge>
+                              ))}
+                              {property.features.length > 2 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{property.features.length - 2} more
+                                </Badge>
+                              )}
                             </div>
                           )}
 
-                          <Link to={`/property/${property.id}`} className="w-full">
+                          {/* Action Button */}
+                          <Link to={`/property/${property.id}`} className="block w-full">
                             <Button 
-                              className="w-full" 
+                              className="w-full group-hover:shadow-md transition-shadow" 
                               size="sm"
                               variant={property.status === "available" ? "default" : "outline"}
+                              disabled={property.status === "sold"}
                             >
-                              View Details
+                              {property.status === "available" ? "View Details" : 
+                               property.status === "booked" ? "View Booking" : "Sold Out"}
                             </Button>
                           </Link>
                         </CardContent>
@@ -591,10 +825,11 @@ export default function ProjectOverview() {
                 )}
               </TabsContent>
 
-              <TabsContent value="progress">
+              <TabsContent value="progress" className="mt-6">
                 <ProgressTracker
                   milestones={project.milestones || []}
                   projectName={project.name}
+                  projectId={project.id}
                   overallProgress={
                     project.milestones && project.milestones.length > 0
                       ? project.milestones.reduce(
@@ -603,10 +838,11 @@ export default function ProjectOverview() {
                         ) / project.milestones.length
                       : 0
                   }
+                  onMilestoneUpdate={fetchProjectDetails}
                 />
               </TabsContent>
 
-              <TabsContent value="amenities">
+              <TabsContent value="amenities" className="mt-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>Amenities & Features</CardTitle>
@@ -633,7 +869,7 @@ export default function ProjectOverview() {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="reviews">
+              <TabsContent value="reviews" className="mt-6">
                 <ProjectReviews
                   projectId={project.id}
                   reviews={project.reviews || []}
@@ -642,7 +878,7 @@ export default function ProjectOverview() {
                 />
               </TabsContent>
 
-              <TabsContent value="location">
+              <TabsContent value="location" className="mt-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>Location</CardTitle>
@@ -673,19 +909,19 @@ export default function ProjectOverview() {
             </Tabs>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
+          {/* Sidebar - Hidden on mobile, visible on desktop */}
+          <div className="hidden lg:block space-y-6 lg:sticky lg:top-20">
             {/* Buy/Contact Card for Buyers */}
             {user?.role === "buyer" || !user ? (
               <Card>
-                <CardHeader>
-                  <CardTitle>Interested in This Property?</CardTitle>
-                  <CardDescription>
+                <CardHeader className="text-center space-y-2">
+                  <CardTitle className="text-center">Interested in This Property?</CardTitle>
+                  <CardDescription className="text-center">
                     Contact us to schedule a site visit or get more information
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <Button className="w-full" size="lg">
+                <CardContent className="space-y-4 flex flex-col items-center">
+                  <Button variant="cta" className="w-full" size="lg">
                     <Phone className="h-4 w-4 mr-2" />
                     Schedule Site Visit
                   </Button>
@@ -694,20 +930,20 @@ export default function ProjectOverview() {
                     Get Brochure
                   </Button>
                   
-                  <div className="pt-4 border-t">
-                    <h4 className="font-semibold mb-3">Quick Summary</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
+                  <div className="pt-4 border-t w-full">
+                    <h4 className="font-semibold mb-3 text-center">Quick Summary</h4>
+                    <div className="space-y-2 text-sm w-full">
+                      <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Price Range</span>
                         <span className="font-medium">
                           {formatPrice(project.starting_price)}+
                         </span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Available Units</span>
                         <span className="font-medium">{project.available_units}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Possession</span>
                         <span className="font-medium">
                           {new Date(project.expected_completion).toLocaleDateString("en-US", {
@@ -722,49 +958,86 @@ export default function ProjectOverview() {
               </Card>
             ) : null}
 
-            {/* Construction Progress Tracker - Placeholder for Cloudinary */}
+            {/* Project Progress Summary */}
             <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Live Progress Tracker</CardTitle>
-                  <Badge variant="outline" className="text-xs">
-                    Coming Soon
-                  </Badge>
-                </div>
-                <CardDescription>Real-time construction updates</CardDescription>
+              <CardHeader className="text-center space-y-2">
+                <CardTitle className="text-center">Project Progress</CardTitle>
+                <CardDescription className="text-center">Construction milestone status</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="text-center py-8 bg-muted rounded-lg">
-                    <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Construction tracking coming soon
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      We'll show real-time photos and videos from Cloudinary
-                    </p>
-                  </div>
-                  
-                  {/* Milestone placeholder */}
+              <CardContent className="flex flex-col items-center">
+                <div className="space-y-4 w-full">
+                  {/* Overall Progress */}
                   {project.milestones && project.milestones.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="font-semibold text-sm">Upcoming Milestones</h4>
-                      {project.milestones.slice(0, 3).map((milestone) => (
-                        <div
-                          key={milestone.id}
-                          className="p-3 bg-muted rounded-lg flex items-center justify-between"
-                        >
-                          <div>
-                            <p className="text-sm font-medium">{milestone.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Phase {milestone.phase_number}
-                            </p>
-                          </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {parseFloat(milestone.progress_percentage).toFixed(0)}%
-                          </Badge>
+                    <>
+                      <div className="space-y-2">
+                        <div className="flex flex-col items-center gap-2">
+                          <span className="text-sm font-medium text-center">Overall Completion</span>
+                          <span className="text-3xl font-bold text-primary text-center">
+                            {(
+                              project.milestones.reduce(
+                                (sum, m) => sum + parseFloat(m.progress_percentage),
+                                0
+                              ) / project.milestones.length
+                            ).toFixed(0)}%
+                          </span>
                         </div>
-                      ))}
+                        <Progress 
+                          value={
+                            project.milestones.reduce(
+                              (sum, m) => sum + parseFloat(m.progress_percentage),
+                              0
+                            ) / project.milestones.length
+                          } 
+                          className="h-2"
+                        />
+                      </div>
+
+                      {/* Milestone List */}
+                      <div className="space-y-2 w-full">
+                        <h4 className="font-semibold text-sm flex items-center justify-center gap-2">
+                          <TrendingUp className="h-4 w-4" />
+                          Active Milestones
+                        </h4>
+                        {project.milestones.slice(0, 3).map((milestone) => (
+                          <div
+                            key={milestone.id}
+                            className="p-3 bg-muted/50 rounded-lg space-y-2"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{milestone.title}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Phase {milestone.phase_number}
+                                </p>
+                              </div>
+                              <Badge 
+                                variant={milestone.status === 'completed' ? 'default' : 'secondary'} 
+                                className="text-xs"
+                              >
+                                {parseFloat(milestone.progress_percentage).toFixed(0)}%
+                              </Badge>
+                            </div>
+                            <Progress 
+                              value={parseFloat(milestone.progress_percentage)} 
+                              className="h-1"
+                            />
+                          </div>
+                        ))}
+                        {project.milestones.length > 3 && (
+                          <p className="text-xs text-muted-foreground text-center pt-2">
+                            + {project.milestones.length - 3} more milestones
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  
+                  {(!project.milestones || project.milestones.length === 0) && (
+                    <div className="text-center py-8">
+                      <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground">
+                        No milestones available yet
+                      </p>
                     </div>
                   )}
                 </div>
@@ -774,7 +1047,7 @@ export default function ProjectOverview() {
             {/* Gallery Preview */}
             {project.gallery_images && project.gallery_images.length > 0 && (
               <Card>
-                <CardHeader>
+                <CardHeader className="text-center">
                   <CardTitle>Gallery</CardTitle>
                 </CardHeader>
                 <CardContent>

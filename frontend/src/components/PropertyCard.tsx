@@ -112,7 +112,7 @@ const PropertyCard = ({
 
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <Button asChild className="flex-1 bg-primary hover:bg-primary-hover" size="sm">
+          <Button asChild className="flex-1" size="sm">
             <Link to={`/projects/${id}`}>
               View Details
             </Link>

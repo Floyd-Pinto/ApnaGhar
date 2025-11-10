@@ -66,7 +66,16 @@ class IsBuilderOrReadOnly(permissions.BasePermission):
             try:
                 from .models import Developer
                 developer = Developer.objects.get(user=request.user)
-                return obj.developer == developer
+                
+                # Handle different object types
+                if hasattr(obj, 'developer'):
+                    # For Project objects
+                    return obj.developer == developer
+                elif hasattr(obj, 'project'):
+                    # For ConstructionMilestone, Property, etc. that have a project FK
+                    return obj.project.developer == developer
+                else:
+                    return False
             except Developer.DoesNotExist:
                 return False
         

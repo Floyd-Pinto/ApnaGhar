@@ -193,7 +193,7 @@ const Projects = () => {
             We'll notify you when matching verified properties become available.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button className="btn-hero">
+            <Button variant="cta">
               <MapPin className="h-4 w-4 mr-2" />
               Set Location Alert
             </Button>

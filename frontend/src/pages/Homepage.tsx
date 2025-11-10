@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import PropertyCard from '@/components/PropertyCard';
+import LoginDialog from '@/components/LoginDialog';
+import RegisterDialog from '@/components/RegisterDialog';
 import { Shield, TrendingUp, Bot, Eye, Zap, Clock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -38,6 +40,8 @@ const Homepage = () => {
   const [propertyType, setPropertyType] = useState('all');
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
   const [stats, setStats] = useState({
     totalProjects: 0,
     totalValue: '500Cr+',
@@ -115,8 +119,8 @@ const Homepage = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section - 99acres Style */}
-      <section className="relative bg-gradient-to-br from-primary/5 via-background to-accent/5 py-12 lg:py-20">
+      {/* Hero Section - Muted Glassmorphism Style */}
+      <section className="relative py-12 lg:py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             {/* Heading */}
@@ -133,14 +137,14 @@ const Homepage = () => {
 
             {/* Search Box - Only show for authenticated users */}
             {isAuthenticated && (
-              <form onSubmit={handleSearch} className="bg-white dark:bg-card shadow-elevated rounded-lg p-6 mt-8">
+              <form onSubmit={handleSearch} className="glass-card mt-8">
                 <div className="flex flex-col md:flex-row gap-3">
                   {/* Search Input */}
                   <div className="flex-1">
                     <input
                       type="text"
                       placeholder="Search by city, locality, builder or project..."
-                      className="w-full px-4 py-3 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                      className="glass-input w-full"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -149,7 +153,7 @@ const Homepage = () => {
                   {/* Property Type Dropdown */}
                   <div className="w-full md:w-48">
                     <select 
-                      className="w-full px-4 py-3 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-background"
+                      className="glass-input w-full"
                       value={propertyType}
                       onChange={(e) => setPropertyType(e.target.value)}
                     >
@@ -161,15 +165,15 @@ const Homepage = () => {
                   </div>
 
                   {/* Search Button */}
-                  <Button type="submit" className="bg-primary hover:bg-primary-hover h-12 px-8 text-base font-semibold">
+                  <Button type="submit" variant="cta" size="lg" className="h-12 px-8 text-base font-semibold">
                     <Eye className="h-5 w-5 mr-2" />
                     Search
                   </Button>
                 </div>
 
                 {/* Quick Links */}
-                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
-                  <span className="text-sm text-muted-foreground mr-2">Popular:</span>
+                <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
+                  <span className="text-sm text-muted-foreground font-medium">Popular:</span>
                   {['Mumbai', 'Bangalore', 'Pune', 'Delhi', 'Hyderabad'].map((city) => (
                     <button
                       key={city}
@@ -177,7 +181,7 @@ const Homepage = () => {
                       onClick={() => {
                         setSearchQuery(city);
                       }}
-                      className="px-3 py-1 text-sm font-medium text-primary hover:bg-primary/10 rounded transition-colors"
+                      className="px-3 py-1 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
                     >
                       {city}
                     </button>
@@ -188,16 +192,16 @@ const Homepage = () => {
 
             {/* CTA for non-authenticated users */}
             {!isAuthenticated && (
-              <div className="bg-white dark:bg-card shadow-elevated rounded-lg p-8 mt-8">
+              <div className="glass-card mt-8">
                 <p className="text-lg text-muted-foreground mb-4">
                   Sign in to search and explore verified properties
                 </p>
                 <div className="flex gap-4 justify-center">
-                  <Button asChild className="bg-primary hover:bg-primary-hover">
-                    <Link to="/login">Sign In</Link>
+                  <Button variant="cta" onClick={() => setLoginDialogOpen(true)}>
+                    Sign In
                   </Button>
-                  <Button asChild variant="outline">
-                    <Link to="/register">Create Account</Link>
+                  <Button variant="outline" onClick={() => setRegisterDialogOpen(true)}>
+                    Create Account
                   </Button>
                 </div>
               </div>
@@ -223,7 +227,7 @@ const Homepage = () => {
       </section>
 
       {/* The ApnaGhar Difference Section */}
-      <section className="py-16 bg-white dark:bg-card">
+      <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="text-center space-y-3 mb-12">
             <h2 className="text-3xl font-extrabold text-foreground">
@@ -236,7 +240,7 @@ const Homepage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Real-Time Verified Tracking */}
-            <div className="border border-border rounded-lg p-6 hover:shadow-md transition-shadow">
+            <div className="glass-card hover:transform hover:-translate-y-1 transition-all">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <Eye className="h-6 w-6 text-primary" />
               </div>
@@ -250,7 +254,7 @@ const Homepage = () => {
             </div>
 
             {/* Blockchain-Secured Contracts */}
-            <div className="border border-border rounded-lg p-6 hover:shadow-md transition-shadow">
+            <div className="glass-card hover:transform hover:-translate-y-1 transition-all">
               <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-4">
                 <Shield className="h-6 w-6 text-success" />
               </div>
@@ -264,7 +268,7 @@ const Homepage = () => {
             </div>
 
             {/* AI-Powered Assistance */}
-            <div className="border border-border rounded-lg p-6 hover:shadow-md transition-shadow">
+            <div className="glass-card hover:transform hover:-translate-y-1 transition-all">
               <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
                 <Bot className="h-6 w-6 text-accent" />
               </div>
@@ -281,7 +285,7 @@ const Homepage = () => {
       </section>
 
       {/* Featured Projects Section */}
-      <section className="py-16 bg-muted/30">
+      <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -307,16 +311,16 @@ const Homepage = () => {
             {loading ? (
               // Loading skeleton - show 3 for guests, 6 for authenticated
               [...Array(isAuthenticated ? 6 : 3)].map((_, i) => (
-                <div key={i} className="bg-card rounded-lg p-4 animate-pulse">
-                  <div className="bg-muted h-48 rounded mb-4"></div>
-                  <div className="bg-muted h-6 rounded mb-2"></div>
-                  <div className="bg-muted h-4 rounded w-2/3"></div>
+                <div key={i} className="glass-card p-4 animate-pulse">
+                  <div className="bg-muted/50 h-48 rounded mb-4"></div>
+                  <div className="bg-muted/50 h-6 rounded mb-2"></div>
+                  <div className="bg-muted/50 h-4 rounded w-2/3"></div>
                 </div>
               ))
             ) : featuredProjects.length > 0 ? (
               featuredProjects.map((project) => (
                 <Link key={project.id} to={`/projects/${project.id}`} className="block">
-                  <div className="bg-card hover:shadow-lg transition-shadow rounded-lg overflow-hidden">
+                  <div className="glass-card overflow-hidden">
                     <div className="relative h-48">
                       <img 
                         src={project.cover_image || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=500'} 
@@ -358,8 +362,8 @@ const Homepage = () => {
           </div>
 
           <div className="text-center md:hidden">
-            <Button asChild className="w-full sm:w-auto bg-primary hover:bg-primary-hover">
-              <Link to="/projects">
+            <Button asChild className="w-full sm:w-auto">
+              <Link to="/explore-projects">
                 View All Properties
               </Link>
             </Button>
@@ -379,22 +383,47 @@ const Homepage = () => {
               and secure real estate investments
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Button asChild size="lg" className="bg-white text-primary hover:bg-gray-100 font-semibold">
-                <Link to="/projects">
-                  <Eye className="h-5 w-5 mr-2" />
-                  Browse Properties
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white hover:text-primary font-semibold">
-                <Link to="/register">
-                  <TrendingUp className="h-5 w-5 mr-2" />
-                  Register Now
-                </Link>
-              </Button>
+              {isAuthenticated ? (
+                <Button asChild size="lg" className="bg-white text-primary hover:bg-gray-100 font-semibold shadow-xl">
+                  <Link to="/explore-projects">
+                    <Eye className="h-5 w-5 mr-2" />
+                    Browse Properties
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <Button size="lg" onClick={() => setLoginDialogOpen(true)} className="bg-white text-primary hover:bg-gray-100 font-semibold shadow-xl">
+                    <Eye className="h-5 w-5 mr-2" />
+                    Sign In to Browse
+                  </Button>
+                  <Button size="lg" onClick={() => setRegisterDialogOpen(true)} variant="outline" className="border-2 border-white text-white hover:bg-white hover:text-primary font-semibold shadow-lg">
+                    <TrendingUp className="h-5 w-5 mr-2" />
+                    Register Now
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
       </section>
+
+      {/* Auth Dialogs */}
+      <LoginDialog 
+        open={loginDialogOpen} 
+        onOpenChange={setLoginDialogOpen}
+        onSwitchToRegister={() => {
+          setLoginDialogOpen(false);
+          setRegisterDialogOpen(true);
+        }}
+      />
+      <RegisterDialog 
+        open={registerDialogOpen} 
+        onOpenChange={setRegisterDialogOpen}
+        onSwitchToLogin={() => {
+          setRegisterDialogOpen(false);
+          setLoginDialogOpen(true);
+        }}
+      />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import Developer, Project, Property, ConstructionMilestone, Review
+from .models import Developer, Project, Property, ConstructionMilestone, Review, ConstructionUpdate
 from django.contrib.auth import get_user_model
+import cloudinary.utils
 
 User = get_user_model()
 
@@ -43,18 +44,31 @@ class ProjectListSerializer(serializers.ModelSerializer):
         ]
     
     def get_average_rating(self, obj):
-        reviews = obj.reviews.all()
-        if reviews:
-            return round(sum(r.rating for r in reviews) / len(reviews), 2)
+        # Use prefetched reviews if available, otherwise query
+        if hasattr(obj, '_prefetched_objects_cache') and 'reviews' in obj._prefetched_objects_cache:
+            reviews = obj.reviews.all()
+            if reviews:
+                return round(sum(r.rating for r in reviews) / len(reviews), 2)
+        elif hasattr(obj, 'avg_rating') and obj.avg_rating is not None:
+            # Use annotated average if available
+            return round(obj.avg_rating, 2)
         return 0
     
     def get_total_reviews(self, obj):
+        # Use prefetched reviews count if available
+        if hasattr(obj, '_prefetched_objects_cache') and 'reviews' in obj._prefetched_objects_cache:
+            return len(obj.reviews.all())
+        elif hasattr(obj, 'review_count'):
+            # Use annotated count if available
+            return obj.review_count
         return obj.reviews.count()
 
 
 class MilestoneSerializer(serializers.ModelSerializer):
     """Serializer for Construction Milestones"""
     verified_by_name = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
+    videos = serializers.SerializerMethodField()
     
     class Meta:
         model = ConstructionMilestone
@@ -63,7 +77,7 @@ class MilestoneSerializer(serializers.ModelSerializer):
             'target_date', 'start_date', 'completion_date', 'status',
             'progress_percentage', 'verified', 'verified_by', 'verified_by_name',
             'verified_at', 'ai_verification_score', 'images', 'videos',
-            'blockchain_hash', 'ipfs_hash', 'notes', 'created_at', 'updated_at'
+            'blockchain_hash', 'ipfs_hash', 'notes', 'qr_code_data', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'verified_by_name', 'created_at', 'updated_at']
     
@@ -71,6 +85,65 @@ class MilestoneSerializer(serializers.ModelSerializer):
         if obj.verified_by:
             return f"{obj.verified_by.first_name} {obj.verified_by.last_name}".strip() or obj.verified_by.email
         return None
+
+    def _build_media_url(self, sha256: str, resource_type: str):
+        if not sha256:
+            return None
+        try:
+            # Use full path with folder as public_id
+            public_id = f"estate_platform/milestones/{sha256}"
+            url, opts = cloudinary.utils.cloudinary_url(public_id, resource_type=resource_type, secure=True)
+            return url
+        except Exception:
+            # Fallback to None if URL build fails
+            return None
+
+    def get_images(self, obj):
+        # obj.images is a list of dicts stored in DB; each dict should contain 'sha256', 'uploaded_at', 'description'
+        out = []
+        for entry in obj.images or []:
+            # Handle both dict and string formats (backward compatibility)
+            if isinstance(entry, dict):
+                sha = entry.get('sha256')
+                url = self._build_media_url(sha, 'image') if sha else None
+                out.append({
+                    'sha256': sha,
+                    'url': url,
+                    'uploaded_at': entry.get('uploaded_at'),
+                    'description': entry.get('description', '')
+                })
+            elif isinstance(entry, str):
+                # If it's just a string (URL), wrap it in the expected format
+                out.append({
+                    'sha256': None,
+                    'url': entry,
+                    'uploaded_at': None,
+                    'description': ''
+                })
+        return out
+
+    def get_videos(self, obj):
+        out = []
+        for entry in obj.videos or []:
+            # Handle both dict and string formats (backward compatibility)
+            if isinstance(entry, dict):
+                sha = entry.get('sha256')
+                url = self._build_media_url(sha, 'video') if sha else None
+                out.append({
+                    'sha256': sha,
+                    'url': url,
+                    'uploaded_at': entry.get('uploaded_at'),
+                    'description': entry.get('description', '')
+                })
+            elif isinstance(entry, str):
+                # If it's just a string (URL), wrap it in the expected format
+                out.append({
+                    'sha256': None,
+                    'url': entry,
+                    'uploaded_at': None,
+                    'description': ''
+                })
+        return out
 
 
 class PropertySerializer(serializers.ModelSerializer):
@@ -83,7 +156,8 @@ class PropertySerializer(serializers.ModelSerializer):
             'id', 'project', 'unit_number', 'property_type', 'floor_number',
             'tower', 'carpet_area', 'built_up_area', 'super_built_up_area',
             'bedrooms', 'bathrooms', 'balconies', 'price', 'price_per_sqft',
-            'status', 'buyer', 'features', 'floor_plan_image',
+            'status', 'buyer', 'features', 'floor_plan_image', 'unit_photos',
+            'unit_videos', 'unit_progress_percentage', 'qr_code_data',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -184,3 +258,73 @@ class ProjectCreateUpdateSerializer(serializers.ModelSerializer):
         elif not instance and Project.objects.filter(slug=value).exists():
             raise serializers.ValidationError("Project with this slug already exists.")
         return value
+
+
+class UnitProgressSerializer(serializers.ModelSerializer):
+    """Serializer to expose unit-specific progress data (photos/videos/updates)"""
+    unit_photos = serializers.SerializerMethodField()
+    unit_videos = serializers.SerializerMethodField()
+
+    def _build_media_url(self, sha256: str, resource_type: str):
+        if not sha256:
+            return None
+        try:
+            # Use full path with folder as public_id
+            public_id = f"estate_platform/units/{sha256}"
+            url, opts = cloudinary.utils.cloudinary_url(public_id, resource_type=resource_type, secure=True)
+            return url
+        except Exception:
+            return None
+
+    def get_unit_photos(self, obj):
+        out = []
+        for entry in obj.unit_photos or []:
+            sha = entry.get('sha256') if isinstance(entry, dict) else None
+            url = self._build_media_url(sha, 'image') if sha else None
+            out.append({
+                'sha256': sha,
+                'url': url,
+                'uploaded_at': entry.get('uploaded_at'),
+                'description': entry.get('description', '')
+            })
+        return out
+
+    def get_unit_videos(self, obj):
+        out = []
+        for entry in obj.unit_videos or []:
+            sha = entry.get('sha256') if isinstance(entry, dict) else None
+            url = self._build_media_url(sha, 'video') if sha else None
+            out.append({
+                'sha256': sha,
+                'url': url,
+                'uploaded_at': entry.get('uploaded_at'),
+                'description': entry.get('description', '')
+            })
+        return out
+    class Meta:
+        model = Property
+        fields = [
+            'id', 'project', 'unit_number', 'unit_progress_percentage',
+            'unit_progress_updates', 'unit_photos', 'unit_videos', 'qr_code_data'
+        ]
+        read_only_fields = ['id']
+
+
+class ConstructionUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for Construction Updates"""
+    created_by_name = serializers.SerializerMethodField()
+    project_name = serializers.CharField(source='project.name', read_only=True)
+    
+    class Meta:
+        model = ConstructionUpdate
+        fields = [
+            'id', 'project', 'project_name', 'created_by', 'created_by_name',
+            'update_type', 'title', 'description', 'update_date',
+            'images', 'videos', 'completion_percentage', 'milestone_achieved',
+            'property_unit_number', 'visible_to_owner_only',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_by', 'created_by_name', 'project_name', 'created_at', 'updated_at']
+    
+    def get_created_by_name(self, obj):
+        return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.email
