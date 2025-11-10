@@ -213,10 +213,12 @@ export default function BuyerDashboard() {
     },
   ];
 
+  console.log("BuyerDashboard: Rendering, loading:", loading, "user:", user?.first_name);
+
   return (
-    <div className="min-h-screen bg-background w-full max-w-full overflow-x-hidden">
-      <div className="bg-primary text-primary-foreground py-8 sm:py-12 w-full">
-        <div className="container mx-auto px-4 max-w-full">
+    <div className="min-h-screen bg-background">
+      <div className="bg-primary text-primary-foreground py-8 sm:py-12">
+        <div className="container mx-auto px-4">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 break-words">My Dashboard</h1>
           <p className="text-sm sm:text-base md:text-lg opacity-90 break-words">
             Welcome back, {user?.first_name || "Buyer"}!
@@ -224,7 +226,7 @@ export default function BuyerDashboard() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-full">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8 w-full">
           {stats.map((stat) => (
@@ -242,7 +244,7 @@ export default function BuyerDashboard() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="properties" className="w-full max-w-full">
+        <Tabs defaultValue="properties" className="w-full">
           <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
             <TabsList className="inline-flex md:grid w-auto md:w-full grid-cols-3 min-w-max md:min-w-0">
               <TabsTrigger value="properties" className="text-xs sm:text-sm whitespace-nowrap">

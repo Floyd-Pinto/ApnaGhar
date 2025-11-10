@@ -89,126 +89,72 @@ export default function BuilderDashboard() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   useEffect(() => {
-    fetchBuilderData();
+    console.log("BuilderDashboard: useEffect triggered");
+    
+    // Add a safety timeout for mobile
+    const safetyTimeout = setTimeout(() => {
+      console.log("BuilderDashboard: Safety timeout triggered - forcing loading to false");
+      setLoading(false);
+    }, 3000); // 3 seconds max wait
+    
+    fetchBuilderData().finally(() => {
+      clearTimeout(safetyTimeout);
+    });
+    
+    return () => clearTimeout(safetyTimeout);
   }, []);
 
   const fetchBuilderData = async () => {
-    setLoading(true);
-    console.log("BuilderDashboard: Starting to fetch data...");
-    
-    // Set a timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.error("BuilderDashboard: Fetch timeout - forcing loading to false");
-      setLoading(false);
-      toast({
-        title: "Connection Timeout",
-        description: "Unable to load projects. Please check your connection and try refreshing the page.",
-        variant: "destructive",
-      });
-    }, 10000); // 10 second timeout
+    console.log("BuilderDashboard: fetchBuilderData START");
     
     try {
       const token = localStorage.getItem("access_token");
-      console.log("BuilderDashboard: Token exists:", !!token);
+      console.log("BuilderDashboard: token exists?", !!token);
       
       if (!token) {
-        console.error("BuilderDashboard: No access token found");
-        clearTimeout(timeoutId);
-        toast({
-          title: "Authentication required",
-          description: "Please login to continue",
-          variant: "destructive",
-        });
+        console.log("BuilderDashboard: No token");
+        setProjects([]);
+        setMilestones([]);
+        setInquiries([]);
         setLoading(false);
         return;
       }
 
-      // Fetch builder's projects (using my_projects endpoint to get only this builder's projects)
-      console.log(`BuilderDashboard: Fetching from ${API_BASE_URL}/api/projects/projects/my_projects/`);
-      const projectsRes = await fetch(`${API_BASE_URL}/api/projects/projects/my_projects/`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const url = `${API_BASE_URL}/api/projects/projects/my_projects/`;
+      console.log("BuilderDashboard: Fetching from", url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
-      console.log("BuilderDashboard: Response status:", projectsRes.status);
+      console.log("BuilderDashboard: Response received, status:", response.status);
 
-      if (!projectsRes.ok) {
-        const errorData = await projectsRes.json().catch(() => ({ detail: 'Unknown error' }));
-        console.error("BuilderDashboard: API Error:", errorData);
-        
-        if (projectsRes.status === 403) {
-          toast({
-            title: "Access Denied",
-            description: errorData.detail || "Only builders can access this page. Please ensure your account is set up as a builder.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: `Failed to load projects: ${errorData.detail || projectsRes.statusText}`,
-            variant: "destructive",
-          });
-        }
-        setProjects([]);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("BuilderDashboard: Data parsed successfully, items:", data.results?.length || data.length || 0);
+        const projectsArray = Array.isArray(data.results) ? data.results : Array.isArray(data) ? data : [];
+        setProjects(projectsArray);
         setMilestones([]);
         setInquiries([]);
       } else {
-        const allProjects = await projectsRes.json();
-        console.log("BuilderDashboard: Fetched projects:", allProjects);
-        
-        // Backend now filters by developer, so these are all this builder's projects
-        const projectsList = allProjects.results || allProjects;
-        const projectsArray = Array.isArray(projectsList) ? projectsList : [];
-        console.log(`BuilderDashboard: Setting ${projectsArray.length} projects for this builder`);
-        setProjects(projectsArray);
-
-        // Don't fetch milestones on initial load - they're loaded per-project when needed
-        // This makes the dashboard load instantly
-        console.log("BuilderDashboard: Skipping milestone fetch for faster load");
+        console.error("BuilderDashboard: Response not OK:", response.status, response.statusText);
+        setProjects([]);
         setMilestones([]);
-
-        // Mock inquiries data (you can create a real API endpoint)
-        // Only create if there are projects
-        if (projectsArray.length > 0) {
-          setInquiries([
-            {
-              id: "1",
-              project_id: projectsArray[0]?.id || "",
-              project_name: projectsArray[0]?.name || "Sample Project",
-              buyer_name: "John Doe",
-              buyer_email: "john@example.com",
-              buyer_phone: "+91 98765 43210",
-              message: "I'm interested in 3BHK units. Can you share more details?",
-              status: "new",
-              created_at: new Date().toISOString(),
-            },
-          ]);
-        } else {
-          // No projects, no inquiries
-          setInquiries([]);
-        }
+        setInquiries([]);
       }
-    } catch (error: any) {
-      console.error("BuilderDashboard: Failed to fetch builder data:", error);
-      clearTimeout(timeoutId);
-      
-      let errorMessage = "Failed to load dashboard data. ";
-      
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        errorMessage += "Cannot connect to server. Please ensure the backend is running on port 8000.";
-      } else if (error.message) {
-        errorMessage += error.message;
-      } else {
-        errorMessage += "Please try again later.";
-      }
-      
-      toast({
-        title: "Error Loading Dashboard",
-        description: errorMessage,
-        variant: "destructive",
-      });
+    } catch (error) {
+      console.error("BuilderDashboard: CATCH ERROR:", error);
+      console.error("BuilderDashboard: Error name:", error?.name);
+      console.error("BuilderDashboard: Error message:", error?.message);
+      setProjects([]);
+      setMilestones([]);
+      setInquiries([]);
     } finally {
-      clearTimeout(timeoutId);
-      console.log("BuilderDashboard: Data fetch complete - setting loading to false");
+      console.log("BuilderDashboard: Finally - setting loading to FALSE");
       setLoading(false);
     }
   };
@@ -243,6 +189,8 @@ export default function BuilderDashboard() {
       description: "Views to interest",
     },
   ];
+
+  console.log("BuilderDashboard: Rendering, loading:", loading, "user role:", user?.role, "projects count:", projects.length);
 
   if (loading) {
     return (
@@ -287,29 +235,29 @@ export default function BuilderDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="bg-primary text-primary-foreground py-12">
+      <div className="bg-primary text-primary-foreground py-8 sm:py-12">
         <div className="container mx-auto px-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Builder Dashboard</h1>
-            <p className="text-lg opacity-90">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">Builder Dashboard</h1>
+            <p className="text-base sm:text-lg opacity-90">
               Welcome back, {user?.first_name || "Builder"}!
             </p>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
           {stats.map((stat) => (
             <Card key={stat.title}>
-              <CardContent className="pt-6 flex flex-col items-center text-center">
-                <div className="flex flex-col items-center gap-2 mb-3 w-full">
-                  <stat.icon className="h-8 w-8 text-primary" />
-                  <span className="text-3xl font-bold">{stat.value}</span>
+              <CardContent className="pt-4 sm:pt-6 flex flex-col items-center text-center">
+                <div className="flex flex-col items-center gap-2 mb-3">
+                  <stat.icon className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                  <span className="text-xl sm:text-2xl md:text-3xl font-bold">{stat.value}</span>
                 </div>
-                <h3 className="font-semibold">{stat.title}</h3>
-                <p className="text-sm text-muted-foreground">{stat.description}</p>
+                <h3 className="font-semibold text-xs sm:text-sm md:text-base">{stat.title}</h3>
+                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">{stat.description}</p>
               </CardContent>
             </Card>
           ))}
@@ -381,10 +329,10 @@ export default function BuilderDashboard() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-4 md:space-y-6 w-full max-w-full overflow-hidden">
+                  <div className="space-y-4 md:space-y-6">
                     {projects.map((project) => (
-                      <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-shadow w-full max-w-full">
-                        <div className="flex flex-col md:flex-row w-full">
+                      <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                        <div className="flex flex-col md:flex-row">
                           {/* Project Image */}
                           {project.cover_image && (
                             <div className="w-full md:w-64 h-48 md:h-auto flex-shrink-0">
@@ -397,7 +345,7 @@ export default function BuilderDashboard() {
                           )}
                           
                           {/* Project Content */}
-                          <div className="flex-1 p-4 sm:p-6 w-full max-w-full overflow-hidden">
+                          <div className="flex-1 p-4 sm:p-6">
                             {/* Header Section */}
                             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
                               <div className="flex-1 min-w-0">
