@@ -1,61 +1,68 @@
 """
 Hyperledger Fabric Client for ApnaGhar
-This module provides functions to interact with the Fabric network
+This module communicates with the Node.js Fabric Gateway microservice
+Uses the official Fabric Gateway SDK via HTTP REST API
 """
 
 import os
 import json
 import logging
+import requests
 from typing import Dict, List, Optional
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-# Fabric SDK imports (will be installed via requirements.txt)
-try:
-    from hfc.fabric import Client as FabricClient
-    from hfc.fabric.user import create_user
-    from hfc.util.crypto.crypto import ecies
-    FABRIC_AVAILABLE = True
-except ImportError:
-    FABRIC_AVAILABLE = False
-    logger.warning("Fabric SDK not available. Install with: pip install fabric-sdk-py")
+# Fabric Gateway Service configuration
+FABRIC_GATEWAY_URL = os.getenv('FABRIC_GATEWAY_URL', 'http://localhost:3001')
+FABRIC_API_KEY = os.getenv('FABRIC_API_KEY', '')
+
+def check_fabric_availability():
+    """Check if Fabric Gateway service is available"""
+    try:
+        response = requests.get(f"{FABRIC_GATEWAY_URL}/health", timeout=2)
+        return response.status_code == 200
+    except:
+        return False
+
+FABRIC_AVAILABLE = check_fabric_availability()
+if FABRIC_AVAILABLE:
+    logger.info(f"✅ Fabric Gateway service available at {FABRIC_GATEWAY_URL}")
+else:
+    logger.warning(f"⚠️  Fabric Gateway service not available at {FABRIC_GATEWAY_URL}")
 
 
 class FabricService:
     """
-    Service class to interact with Hyperledger Fabric network
+    Service class to interact with Hyperledger Fabric network via Node.js Gateway
     """
     
     def __init__(self):
-        if not FABRIC_AVAILABLE:
-            raise ImportError("Fabric SDK not installed. Please install fabric-sdk-py")
-        
-        self.client = None
-        self.network = None
-        self.channel = None
-        self.chaincode = None
-        self._initialize_client()
+        self.gateway_url = FABRIC_GATEWAY_URL
+        self.api_key = FABRIC_API_KEY
+        self.headers = {
+            'Content-Type': 'application/json'
+        }
+        if self.api_key:
+            self.headers['X-API-Key'] = self.api_key
     
-    def _initialize_client(self):
-        """Initialize Fabric client with network configuration"""
+    def _make_request(self, method: str, endpoint: str, data: Optional[Dict] = None) -> Dict:
+        """Make HTTP request to Fabric Gateway service"""
         try:
-            # Get configuration from environment
-            network_config_path = os.getenv(
-                'FABRIC_NETWORK_CONFIG',
-                os.path.join(os.path.dirname(__file__), 'network-config.json')
-            )
+            url = f"{self.gateway_url}{endpoint}"
             
-            self.client = FabricClient(network_profile=network_config_path)
+            if method == 'GET':
+                response = requests.get(url, headers=self.headers, timeout=30)
+            elif method == 'POST':
+                response = requests.post(url, json=data, headers=self.headers, timeout=30)
+            else:
+                raise ValueError(f"Unsupported method: {method}")
             
-            # Get channel and chaincode names from environment
-            self.channel_name = os.getenv('FABRIC_CHANNEL_NAME', 'mychannel')
-            self.chaincode_name = os.getenv('FABRIC_CHAINCODE_NAME', 'apnaghar-contract')
+            response.raise_for_status()
+            return response.json()
             
-            logger.info(f"Fabric client initialized - Channel: {self.channel_name}, Chaincode: {self.chaincode_name}")
-            
-        except Exception as e:
-            logger.error(f"Failed to initialize Fabric client: {str(e)}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Fabric Gateway request failed: {str(e)}")
             raise
     
     async def store_progress_update(
@@ -85,42 +92,37 @@ class FabricService:
         Returns:
             Dictionary with transaction details
         """
+        if not FABRIC_AVAILABLE:
+            logger.warning("Fabric Gateway not available - skipping blockchain storage")
+            return {
+                'success': False,
+                'progress_id': progress_id,
+                'message': 'Blockchain storage unavailable - using IPFS only'
+            }
+        
         try:
-            # Prepare metadata
-            metadata_str = json.dumps(metadata or {})
-            timestamp = datetime.utcnow().isoformat()
+            # Prepare request data
+            data = {
+                'progressId': progress_id,
+                'projectId': project_id,
+                'propertyId': property_id,
+                'milestoneId': milestone_id or '',
+                'ipfsHash': ipfs_hash,
+                'description': description,
+                'uploadedBy': uploaded_by,
+                'metadata': metadata or {}
+            }
             
-            # Prepare chaincode arguments
-            args = [
-                progress_id,
-                project_id,
-                property_id,
-                milestone_id or '',
-                ipfs_hash,
-                description,
-                uploaded_by,
-                timestamp,
-                metadata_str
-            ]
-            
-            # Invoke chaincode
-            response = await self.client.chaincode_invoke(
-                requestor=self._get_user(),
-                channel_name=self.channel_name,
-                peers=['peer0.org1.example.com', 'peer0.org2.example.com'],
-                args=args,
-                cc_name=self.chaincode_name,
-                fcn='StoreProgressUpdate',
-                wait_for_event=True
-            )
+            # Call Fabric Gateway service
+            response = self._make_request('POST', '/api/progress-update', data)
             
             logger.info(f"Progress update stored on blockchain: {progress_id}")
             
             return {
                 'success': True,
                 'progress_id': progress_id,
-                'tx_id': response.get('tx_id'),
-                'timestamp': timestamp
+                'data': response.get('data', {}),
+                'timestamp': datetime.utcnow().isoformat()
             }
             
         except Exception as e:
@@ -154,42 +156,37 @@ class FabricService:
         Returns:
             Dictionary with transaction details
         """
+        if not FABRIC_AVAILABLE:
+            logger.warning("Fabric Gateway not available - skipping blockchain storage")
+            return {
+                'success': False,
+                'document_id': document_id,
+                'message': 'Blockchain storage unavailable - using IPFS only'
+            }
+        
         try:
-            # Prepare metadata
-            metadata_str = json.dumps(metadata or {})
-            timestamp = datetime.utcnow().isoformat()
+            # Prepare request data
+            data = {
+                'documentId': document_id,
+                'projectId': project_id,
+                'propertyId': property_id or '',
+                'documentName': document_name,
+                'documentType': document_type,
+                'ipfsHash': ipfs_hash,
+                'uploadedBy': uploaded_by,
+                'metadata': metadata or {}
+            }
             
-            # Prepare chaincode arguments
-            args = [
-                document_id,
-                project_id,
-                property_id or '',
-                document_name,
-                document_type,
-                ipfs_hash,
-                uploaded_by,
-                timestamp,
-                metadata_str
-            ]
-            
-            # Invoke chaincode
-            response = await self.client.chaincode_invoke(
-                requestor=self._get_user(),
-                channel_name=self.channel_name,
-                peers=['peer0.org1.example.com', 'peer0.org2.example.com'],
-                args=args,
-                cc_name=self.chaincode_name,
-                fcn='StoreDocument',
-                wait_for_event=True
-            )
+            # Call Fabric Gateway service
+            response = self._make_request('POST', '/api/document', data)
             
             logger.info(f"Document stored on blockchain: {document_id}")
             
             return {
                 'success': True,
                 'document_id': document_id,
-                'tx_id': response.get('tx_id'),
-                'timestamp': timestamp
+                'data': response.get('data', {}),
+                'timestamp': datetime.utcnow().isoformat()
             }
             
         except Exception as e:
@@ -198,17 +195,12 @@ class FabricService:
     
     async def get_progress_update(self, progress_id: str) -> Dict:
         """Query a progress update from the blockchain"""
+        if not FABRIC_AVAILABLE:
+            return {'error': 'Blockchain not available'}
+        
         try:
-            response = await self.client.chaincode_query(
-                requestor=self._get_user(),
-                channel_name=self.channel_name,
-                peers=['peer0.org1.example.com'],
-                args=[progress_id],
-                cc_name=self.chaincode_name,
-                fcn='GetProgressUpdate'
-            )
-            
-            return json.loads(response)
+            response = self._make_request('GET', f'/api/progress-update/{progress_id}')
+            return response.get('data', {})
             
         except Exception as e:
             logger.error(f"Failed to query progress update: {str(e)}")
@@ -216,17 +208,12 @@ class FabricService:
     
     async def get_document(self, document_id: str) -> Dict:
         """Query a document from the blockchain"""
+        if not FABRIC_AVAILABLE:
+            return {'error': 'Blockchain not available'}
+        
         try:
-            response = await self.client.chaincode_query(
-                requestor=self._get_user(),
-                channel_name=self.channel_name,
-                peers=['peer0.org1.example.com'],
-                args=[document_id],
-                cc_name=self.chaincode_name,
-                fcn='GetDocument'
-            )
-            
-            return json.loads(response)
+            response = self._make_request('GET', f'/api/document/{document_id}')
+            return response.get('data', {})
             
         except Exception as e:
             logger.error(f"Failed to query document: {str(e)}")
@@ -234,17 +221,12 @@ class FabricService:
     
     async def query_progress_updates_by_property(self, property_id: str) -> List[Dict]:
         """Query all progress updates for a property"""
+        if not FABRIC_AVAILABLE:
+            return []
+        
         try:
-            response = await self.client.chaincode_query(
-                requestor=self._get_user(),
-                channel_name=self.channel_name,
-                peers=['peer0.org1.example.com'],
-                args=[property_id],
-                cc_name=self.chaincode_name,
-                fcn='QueryProgressUpdatesByProperty'
-            )
-            
-            return json.loads(response)
+            response = self._make_request('GET', f'/api/progress-updates/property/{property_id}')
+            return response.get('data', [])
             
         except Exception as e:
             logger.error(f"Failed to query progress updates: {str(e)}")
@@ -252,34 +234,16 @@ class FabricService:
     
     async def query_documents_by_project(self, project_id: str) -> List[Dict]:
         """Query all documents for a project"""
+        if not FABRIC_AVAILABLE:
+            return []
+        
         try:
-            response = await self.client.chaincode_query(
-                requestor=self._get_user(),
-                channel_name=self.channel_name,
-                peers=['peer0.org1.example.com'],
-                args=[project_id],
-                cc_name=self.chaincode_name,
-                fcn='QueryDocumentsByProject'
-            )
-            
-            return json.loads(response)
+            response = self._make_request('GET', f'/api/documents/project/{project_id}')
+            return response.get('data', [])
             
         except Exception as e:
             logger.error(f"Failed to query documents: {str(e)}")
             raise
-    
-    def _get_user(self):
-        """Get Fabric user context (simplified - should be configured properly)"""
-        # This is a placeholder - in production, you'd load user credentials properly
-        # For test-network, you might use Admin@org1.example.com
-        try:
-            user = self.client.get_user('org1', 'Admin')
-            return user
-        except:
-            # Fallback - create a basic user context
-            # In production, implement proper user management
-            logger.warning("Using fallback user context")
-            return None
 
 
 # Singleton instance
@@ -291,4 +255,3 @@ def get_fabric_service() -> FabricService:
     if _fabric_service is None:
         _fabric_service = FabricService()
     return _fabric_service
-
