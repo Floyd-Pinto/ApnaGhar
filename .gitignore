@@ -45,3 +45,6 @@ logs/
 *.log
 *.env
 .env.*
+
+# RAG Pipeline (excluded from git)
+rag-pipeline/
