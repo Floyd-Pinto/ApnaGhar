@@ -199,6 +199,30 @@ class Property(models.Model):
             self.qr_code_secret = hashlib.sha256(secret_string.encode()).hexdigest()
             # Save again with QR code data (use update_fields to avoid recursion)
             super().save(update_fields=['qr_code_data', 'qr_code_secret'])
+            
+            # Store property creation on blockchain (after save to get ID)
+            try:
+                from blockchain.blockchain_service import get_blockchain_service
+                blockchain_service = get_blockchain_service()
+                blockchain_service.store_property_creation_on_blockchain(
+                    property_id=str(self.id),
+                    project_id=str(self.project.id),
+                    unit_number=self.unit_number,
+                    property_data={
+                        'unit_number': self.unit_number,
+                        'property_type': self.property_type,
+                        'carpet_area': str(self.carpet_area),
+                        'price': str(self.price),
+                        'status': self.status,
+                        'floor_number': self.floor_number,
+                        'tower': self.tower or '',
+                    },
+                    created_by=str(self.project.developer.user.id) if hasattr(self.project.developer, 'user') else ''
+                )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Blockchain storage failed (non-critical): {str(e)}")
         else:
             super().save(*args, **kwargs)
 

@@ -15,6 +15,7 @@ import Projects from "./pages/Projects";
 import PropertyDetails from "./pages/PropertyDetails";
 import PropertyUnitDetails from "./pages/PropertyUnitDetails";
 import Dashboard from "./pages/Dashboard";
+import BlockchainRecords from "./pages/BlockchainRecords";
 import BuyerDashboard from "./pages/BuyerDashboard";
 import BuilderDashboard from "./pages/BuilderDashboard";
 import ManageQRCodes from "./pages/ManageQRCodes";
@@ -48,6 +49,14 @@ const Layout = () => {
           {/* Protected routes */}
           <Route path="/projects/:id" element={<ProjectOverview />} />
           <Route path="/property/:propertyId" element={<PropertyUnitDetails />} />
+          <Route 
+            path="/projects/:projectId/blockchain" 
+            element={
+              <ProtectedRoute>
+                <BlockchainRecords />
+              </ProtectedRoute>
+            } 
+          />
           <Route 
             path="/dashboard" 
             element={

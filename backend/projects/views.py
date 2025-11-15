@@ -112,7 +112,32 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Set developer to current user's developer profile"""
         developer = Developer.objects.get(user=self.request.user)
-        serializer.save(developer=developer)
+        project = serializer.save(developer=developer)
+        
+        # Store project creation on blockchain
+        try:
+            from blockchain.blockchain_service import get_blockchain_service
+            blockchain_service = get_blockchain_service()
+            blockchain_service.store_property_creation_on_blockchain(
+                property_id=str(project.id),
+                project_id=str(project.id),
+                unit_number='project',
+                property_data={
+                    'name': project.name,
+                    'slug': project.slug,
+                    'description': project.description,
+                    'project_type': project.project_type,
+                    'status': project.status,
+                    'city': project.city,
+                    'state': project.state,
+                    'starting_price': str(project.starting_price),
+                    'total_units': project.total_units,
+                },
+                created_by=str(self.request.user.id)
+            )
+            logger.info(f"Project creation stored on blockchain: {project.id}")
+        except Exception as e:
+            logger.warning(f"Blockchain storage failed (non-critical): {str(e)}")
     
     @action(detail=True, methods=['get'])
     def milestones(self, request, pk=None):
@@ -628,6 +653,32 @@ class PropertyViewSet(viewsets.ModelViewSet):
                 logger.error(f"Failed to create ConstructionUpdate: {str(e)}", exc_info=True)
                 # Don't fail the upload if ConstructionUpdate creation fails
             
+            # Store on blockchain (images/videos are on Cloudinary, store hash on blockchain)
+            try:
+                from blockchain.blockchain_service import get_blockchain_service
+                blockchain_service = get_blockchain_service()
+                
+                # Extract Cloudinary URLs
+                cloudinary_urls = [img['url'] for img in uploaded_images] + [vid['url'] for vid in uploaded_videos]
+                
+                blockchain_service.store_progress_update_on_blockchain(
+                    project_id=str(prop.project.id),
+                    property_id=str(prop.id),
+                    milestone_id=None,
+                    description=description or f"Construction progress update for Unit {prop.unit_number}",
+                    cloudinary_urls=cloudinary_urls,
+                    uploaded_by=str(request.user.id),
+                    metadata={
+                        'unit_number': prop.unit_number,
+                        'progress_percentage': prop.unit_progress_percentage,
+                        'update_type': 'property_specific'
+                    }
+                )
+                logger.info(f"Progress update stored on blockchain for property: {prop.id}")
+            except Exception as e:
+                logger.warning(f"Blockchain storage failed (non-critical): {str(e)}")
+                # Don't fail the upload if blockchain storage fails
+            
             logger.info(f"Secure property upload completed - Unit: {prop.unit_number}")
             
             return Response({
@@ -809,6 +860,33 @@ class MilestoneViewSet(viewsets.ModelViewSet):
             milestone.save()
 
             logger.info(f"Milestone updated successfully: {milestone.id}")
+            
+            # Store on blockchain (images/videos are on Cloudinary, store hash on blockchain)
+            try:
+                from blockchain.blockchain_service import get_blockchain_service
+                blockchain_service = get_blockchain_service()
+                
+                # Extract Cloudinary URLs
+                cloudinary_urls = [img['url'] for img in uploaded_images] + [vid['url'] for vid in uploaded_videos]
+                
+                blockchain_service.store_progress_update_on_blockchain(
+                    project_id=str(milestone.project.id),
+                    property_id=None,
+                    milestone_id=str(milestone.id),
+                    description=description or f"Construction progress update for {milestone.title}",
+                    cloudinary_urls=cloudinary_urls,
+                    uploaded_by=str(request.user.id),
+                    metadata={
+                        'milestone_title': milestone.title,
+                        'phase_number': milestone.phase_number,
+                        'progress_percentage': float(milestone.progress_percentage),
+                        'update_type': 'project_level'
+                    }
+                )
+                logger.info(f"Progress update stored on blockchain for milestone: {milestone.id}")
+            except Exception as e:
+                logger.warning(f"Blockchain storage failed (non-critical): {str(e)}")
+                # Don't fail the upload if blockchain storage fails
 
             serializer = self.get_serializer(milestone)
             return Response({

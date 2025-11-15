@@ -33,6 +33,8 @@ import {
   Mail,
   Heart,
   Info,
+  Shield,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -581,7 +583,7 @@ export default function ProjectOverview() {
             {/* Tabs */}
             <Tabs defaultValue="overview" className="w-full">
               <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-                <TabsList className="inline-flex md:grid w-auto md:w-full grid-cols-6 min-w-max md:min-w-0">
+                <TabsList className="inline-flex md:grid w-auto md:w-full grid-cols-7 min-w-max md:min-w-0">
                   <TabsTrigger value="overview" className="text-xs sm:text-sm whitespace-nowrap">Overview</TabsTrigger>
                   <TabsTrigger value="properties" className="text-xs sm:text-sm whitespace-nowrap">
                     Properties ({project.properties?.length || 0})
@@ -594,6 +596,10 @@ export default function ProjectOverview() {
                     Reviews ({project.reviews?.length || 0})
                   </TabsTrigger>
                   <TabsTrigger value="location" className="text-xs sm:text-sm whitespace-nowrap">Location</TabsTrigger>
+                  <TabsTrigger value="blockchain" className="text-xs sm:text-sm whitespace-nowrap">
+                    <Shield className="h-3 w-3 mr-1 inline" />
+                    Blockchain
+                  </TabsTrigger>
                 </TabsList>
               </div>
 
@@ -840,6 +846,56 @@ export default function ProjectOverview() {
                   }
                   onMilestoneUpdate={fetchProjectDetails}
                 />
+              </TabsContent>
+
+              <TabsContent value="blockchain" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      Blockchain Records
+                    </CardTitle>
+                    <CardDescription>
+                      View and manage immutable records stored on Hyperledger Fabric blockchain
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Upload construction progress updates and legal documents to the blockchain for immutable verification.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Link to={`/projects/${project.id}/blockchain`} className="flex-1">
+                          <Button className="w-full">
+                            <Shield className="h-4 w-4 mr-2" />
+                            View Blockchain Records
+                          </Button>
+                        </Link>
+                        {user?.role === "builder" && (
+                          <Button 
+                            variant="outline" 
+                            className="flex-1"
+                            onClick={() => {
+                              // Navigate to first property or show dialog
+                              if (project.properties && project.properties.length > 0) {
+                                window.location.href = `/property/${project.properties[0].id}`;
+                              } else {
+                                toast({
+                                  title: "No Properties",
+                                  description: "Please create a property first to upload documents",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Upload Document
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="amenities" className="mt-6">

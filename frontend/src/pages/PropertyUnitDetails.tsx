@@ -40,12 +40,16 @@ import {
   QrCode,
   Smartphone,
   ChevronDown,
+  FileText,
+  ExternalLink,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/services/api";
 import QRCodeDisplay from "@/components/QRCodeDisplay";
 import SecureUpload from "@/components/SecureUpload";
+import BlockchainDocumentUpload from "@/components/BlockchainDocumentUpload";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -104,12 +108,19 @@ export default function PropertyUnitDetails() {
   const [booking, setBooking] = useState(false);
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [showSecureUploadDialog, setShowSecureUploadDialog] = useState(false);
+  const [showDocumentUploadDialog, setShowDocumentUploadDialog] = useState(false);
+  const [blockchainDocuments, setBlockchainDocuments] = useState<any[]>([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
 
   useEffect(() => {
     fetchPropertyDetails();
     // fetch progress separately (will be permission-protected)
     fetchProgress();
-  }, [propertyId]);
+    // Fetch blockchain documents for this property
+    if (propertyId && (user?.role === "builder" || user?.role === "buyer")) {
+      fetchBlockchainDocuments();
+    }
+  }, [propertyId, user]);
 
   const fetchPropertyDetails = async () => {
     setLoading(true);
@@ -185,6 +196,27 @@ export default function PropertyUnitDetails() {
       console.error("Error fetching progress:", err);
     } finally {
       setProgressLoading(false);
+    }
+  };
+
+  const fetchBlockchainDocuments = async () => {
+    if (!propertyId) return;
+    setLoadingDocuments(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const headers: HeadersInit = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      // Fetch documents filtered by property_id
+      const res = await fetch(`${API_BASE_URL}/api/blockchain/documents/?property_id=${propertyId}`, { headers });
+      if (!res.ok) throw new Error("Failed to fetch blockchain documents");
+      const data = await res.json();
+      setBlockchainDocuments(data.results || data || []);
+    } catch (err) {
+      console.error("Error fetching blockchain documents:", err);
+      setBlockchainDocuments([]);
+    } finally {
+      setLoadingDocuments(false);
     }
   };
 
@@ -652,6 +684,151 @@ export default function PropertyUnitDetails() {
               </Card>
             )}
 
+            {/* Blockchain Documents - Visible to Buyers and Builders */}
+            {(user?.role === "builder" || user?.role === "buyer") && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Blockchain Documents
+                      </CardTitle>
+                      <CardDescription>
+                        Legal documents, contracts, certificates, and permits stored on IPFS and blockchain
+                      </CardDescription>
+                    </div>
+                    {user?.role === "builder" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowDocumentUploadDialog(true)}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Upload
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {loadingDocuments ? (
+                    <div className="text-center py-6">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                      <p className="text-sm text-muted-foreground mt-2">Loading documents...</p>
+                    </div>
+                  ) : blockchainDocuments.length > 0 ? (
+                    <div className="space-y-3">
+                      {blockchainDocuments.map((doc: any) => (
+                        <div
+                          key={doc.id}
+                          className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                                <h4 className="font-semibold">{doc.document_name}</h4>
+                                <Badge variant="secondary" className="text-xs">
+                                  {doc.document_type}
+                                </Badge>
+                                {doc.blockchain_tx_id && (
+                                  <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                    <Shield className="h-3 w-3" />
+                                    Verified
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                <p>Uploaded by: {doc.uploaded_by_username || 'Unknown'}</p>
+                                <p>Date: {new Date(doc.created_at).toLocaleDateString()}</p>
+                                {doc.ipfs_hash && (
+                                  <p className="font-mono text-xs break-all">
+                                    IPFS Hash: {doc.ipfs_hash.substring(0, 20)}...
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              {doc.ipfs_url && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(doc.ipfs_url, '_blank')}
+                                >
+                                  <ExternalLink className="h-4 w-4 mr-2" />
+                                  View
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground mb-2">
+                        No documents uploaded yet for this property
+                      </p>
+                      {user?.role === "builder" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowDocumentUploadDialog(true)}
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Upload First Document
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Document Upload Card - Builders Only */}
+            {user?.role === "builder" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Upload Documents to IPFS</CardTitle>
+                  <CardDescription>
+                    Upload legal documents, contracts, certificates, and permits. Documents are stored on IPFS and hashes are recorded on blockchain.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <FileText className="h-5 w-5 text-green-600 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-medium text-green-900 dark:text-green-100 mb-1">
+                          Blockchain-Verified Documents
+                        </h4>
+                        <p className="text-sm text-green-700 dark:text-green-300">
+                          Upload documents like contracts, permits, certificates, and agreements. Files are stored on IPFS (decentralized storage) and their hashes are immutably recorded on blockchain.
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button 
+                      onClick={() => setShowDocumentUploadDialog(true)} 
+                      className="w-full min-h-[44px]"
+                      size="lg"
+                      variant="outline"
+                    >
+                      <FileText className="h-5 w-5 mr-2" />
+                      Upload Document to IPFS
+                    </Button>
+
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>• Documents are stored on IPFS (decentralized storage)</p>
+                      <p>• Document hash is recorded on blockchain</p>
+                      <p>• Immutable and tamper-proof record</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Project Amenities */}
             {property.project.amenities && property.project.amenities.length > 0 && (
               <Card>
@@ -1000,6 +1177,45 @@ export default function PropertyUnitDetails() {
                 setShowSecureUploadDialog(false);
               }}
             />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Upload Dialog */}
+      <Dialog 
+        open={showDocumentUploadDialog} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowDocumentUploadDialog(false);
+          }
+        }}
+      >
+        <DialogContent 
+          className="max-w-2xl max-h-[90vh] !translate-x-[-50%] !translate-y-[-50%]"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Upload Document to IPFS</DialogTitle>
+            <DialogDescription>
+              Upload legal documents, contracts, certificates, or permits. Files are stored on IPFS and hashes are recorded on blockchain.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+            {property && (
+              <BlockchainDocumentUpload
+                projectId={property.project.id}
+                propertyId={property.id}
+                onSuccess={() => {
+                  toast({
+                    title: 'Upload Successful',
+                    description: 'Document uploaded to IPFS and blockchain successfully',
+                  });
+                  setShowDocumentUploadDialog(false);
+                  fetchBlockchainDocuments(); // Refresh documents list
+                }}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
