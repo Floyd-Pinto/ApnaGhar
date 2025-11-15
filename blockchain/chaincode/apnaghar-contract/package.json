@@ -1,0 +1,21 @@
+{
+  "name": "apnaghar-contract",
+  "version": "1.0.0",
+  "description": "ApnaGhar Smart Contract for Hyperledger Fabric",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "hyperledger",
+    "fabric",
+    "blockchain",
+    "smart-contract"
+  ],
+  "author": "ApnaGhar",
+  "license": "ISC",
+  "dependencies": {
+    "fabric-contract-api": "^2.2.0"
+  }
+}
+

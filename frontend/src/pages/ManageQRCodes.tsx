@@ -197,7 +197,7 @@ export default function ManageQRCodes() {
     <div className="container py-8">
       {/* Header */}
       <div className="mb-6">
-        <Link to="/builder-dashboard">
+        <Link to="/dashboard/builder">
           <Button variant="ghost" size="sm" className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
@@ -359,8 +359,20 @@ export default function ManageQRCodes() {
       </Dialog>
 
       {/* Secure Upload Dialog */}
-      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog 
+        open={showUploadDialog} 
+        onOpenChange={(open) => {
+          // Only allow closing via X button or explicit close
+          if (!open) {
+            setShowUploadDialog(false);
+          }
+        }}
+      >
+        <DialogContent 
+          className="max-w-4xl max-h-[90vh] !translate-x-[-50%] !translate-y-[-50%]"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Secure Upload</DialogTitle>
             <DialogDescription>
@@ -368,16 +380,20 @@ export default function ManageQRCodes() {
             </DialogDescription>
           </DialogHeader>
 
-          <SecureUpload
-            onSuccess={() => {
-              toast({
-                title: 'Upload Successful',
-                description: 'Construction updates uploaded successfully',
-              });
-              handleCloseUploadDialog();
-              fetchProjectData(); // Refresh data
-            }}
-          />
+          <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+            <SecureUpload
+              onSuccess={() => {
+                toast({
+                  title: 'Upload Successful',
+                  description: 'Construction updates uploaded successfully',
+                });
+                fetchProjectData(); // Refresh data
+              }}
+              onClose={() => {
+                setShowUploadDialog(false);
+              }}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

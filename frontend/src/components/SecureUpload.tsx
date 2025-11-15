@@ -6,15 +6,22 @@ import { useToast } from '@/hooks/use-toast';
 import { Camera, Upload, QrCode, Check, X, AlertCircle, Smartphone } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Html5Qrcode } from 'html5-qrcode';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface SecureUploadProps {
   onSuccess?: () => void;
+  onClose?: () => void;
 }
 
-export default function SecureUpload({ onSuccess }: SecureUploadProps) {
+type Step = 'scan' | 'capture' | 'upload';
+
+export default function SecureUpload({ onSuccess, onClose }: SecureUploadProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [step, setStep] = useState<'scan' | 'verify' | 'capture' | 'upload' | 'success'>('scan');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [step, setStep] = useState<Step>('scan');
+  const [completedSteps, setCompletedSteps] = useState<Step[]>([]);
   const [qrData, setQrData] = useState<string>('');
   const [verificationData, setVerificationData] = useState<any>(null);
   const [capturedImages, setCapturedImages] = useState<File[]>([]);
@@ -23,6 +30,7 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [sourcePath, setSourcePath] = useState<string>('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -31,6 +39,9 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
+    // Store the current path when component mounts
+    setSourcePath(location.pathname);
+    
     // Check if device is mobile
     const checkMobile = () => {
       const userAgent = navigator.userAgent.toLowerCase();
@@ -47,7 +58,7 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
     };
     
     checkMobile();
-  }, []);
+  }, [location.pathname]);
 
   // Cleanup scanner on unmount
   useEffect(() => {
@@ -57,6 +68,36 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
       }
     };
   }, []);
+
+  const markStepComplete = (stepToComplete: Step) => {
+    if (!completedSteps.includes(stepToComplete)) {
+      setCompletedSteps([...completedSteps, stepToComplete]);
+    }
+  };
+
+  const checkCameraSupport = (): { supported: boolean; error?: string } => {
+    // Check if running on HTTPS or localhost (required for camera access)
+    const isSecure = window.location.protocol === 'https:' || 
+                     window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+    
+    if (!isSecure) {
+      return {
+        supported: false,
+        error: 'Camera access requires HTTPS. Please use HTTPS or localhost.'
+      };
+    }
+
+    // Check if MediaDevices API is available
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      return {
+        supported: false,
+        error: 'Camera API not supported in this browser. Please use a modern browser.'
+      };
+    }
+
+    return { supported: true };
+  };
 
   const startQRScanner = async () => {
     if (!isMobile) {
@@ -68,37 +109,167 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
       return;
     }
 
+    // Check camera support first
+    const cameraCheck = checkCameraSupport();
+    if (!cameraCheck.supported) {
+      toast({
+        title: 'Camera Not Available',
+        description: cameraCheck.error || 'Camera is not available on this device.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Set scanning state first so the qr-reader element gets rendered
     setIsScanning(true);
     
-    try {
-      const scanner = new Html5Qrcode('qr-reader');
-      scannerRef.current = scanner;
-
-      await scanner.start(
-        { facingMode: 'environment' }, // Use rear camera
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
-        (decodedText) => {
-          // Success callback
-          scanner.stop().then(() => {
-            setIsScanning(false);
-            handleQRScan(decodedText);
-          }).catch(console.error);
-        },
-        (errorMessage) => {
-          // Error callback - can be ignored for continuous scanning
-          console.log('QR scan error:', errorMessage);
-        }
-      );
-    } catch (error: any) {
-      console.error('Error starting scanner:', error);
+    // Wait for React to render the element
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Now check if qr-reader element exists
+    let qrReaderElement = document.getElementById('qr-reader');
+    if (!qrReaderElement) {
       setIsScanning(false);
       toast({
         title: 'Scanner Error',
-        description: error.message || 'Failed to start camera. Please check permissions.',
+        description: 'QR scanner container not found. Please refresh the page.',
         variant: 'destructive',
+      });
+      return;
+    }
+
+    // Ensure element is visible and has dimensions
+    if (qrReaderElement.offsetWidth === 0 || qrReaderElement.offsetHeight === 0) {
+      console.warn('QR reader element has zero dimensions, waiting a bit more...');
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    try {
+      // Clean up any existing scanner
+      if (scannerRef.current) {
+        try {
+          await scannerRef.current.stop();
+        } catch (e) {
+          // Ignore stop errors
+        }
+        scannerRef.current = null;
+      }
+
+      const scanner = new Html5Qrcode('qr-reader');
+      scannerRef.current = scanner;
+
+      // Try different camera configurations as fallback
+      const cameraConfigs = [
+        { facingMode: 'environment' }, // Rear camera (preferred)
+        { facingMode: 'user' }, // Front camera (fallback)
+        { video: true }, // Any available camera
+      ];
+
+      let lastError: any = null;
+      let started = false;
+
+      for (const cameraConfig of cameraConfigs) {
+        try {
+          console.log('Attempting to start camera with config:', cameraConfig);
+          
+          await scanner.start(
+            cameraConfig,
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
+              disableFlip: false,
+            },
+            (decodedText) => {
+              // Success callback
+              console.log('QR code scanned:', decodedText);
+              scanner.stop().then(() => {
+                setIsScanning(false);
+                handleQRScan(decodedText);
+              }).catch((err) => {
+                console.error('Error stopping scanner:', err);
+                setIsScanning(false);
+              });
+            },
+            (errorMessage) => {
+              // Error callback - can be ignored for continuous scanning
+              // Only log actual errors, not scan failures
+              if (!errorMessage.includes('NotFoundException') && 
+                  !errorMessage.includes('No QR code found') &&
+                  !errorMessage.includes('QR code parse error')) {
+                console.log('QR scan error:', errorMessage);
+              }
+            },
+            undefined // verbose - not needed
+          );
+          
+          started = true;
+          console.log('Camera started successfully with config:', cameraConfig);
+          break; // Success, exit loop
+        } catch (configError: any) {
+          console.log('Camera config failed:', cameraConfig, 'Error:', configError);
+          lastError = configError;
+          
+          // Try to stop if partially started
+          try {
+            await scanner.stop();
+          } catch (stopError) {
+            // Ignore
+          }
+          
+          // Continue to next config
+          continue;
+        }
+      }
+
+      if (!started) {
+        throw lastError || new Error('Failed to start camera with any configuration');
+      }
+    } catch (error: any) {
+      console.error('Error starting scanner - Full error details:', {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack,
+        error: error
+      });
+      setIsScanning(false);
+      
+      let errorMessage = 'Failed to start camera. ';
+      let errorTitle = 'Camera Error';
+      
+      // Check for specific error types
+      const errorName = error?.name || '';
+      const errorMsg = error?.message || error?.toString() || '';
+      
+      console.log('Error details:', { errorName, errorMsg, fullError: error });
+      
+      if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError' || 
+          errorMsg.includes('Permission denied') || errorMsg.includes('permission')) {
+        errorTitle = 'Camera Permission Denied';
+        errorMessage += 'Please allow camera access in your browser settings. ';
+        errorMessage += 'On mobile: Settings > Privacy > Camera > Enable for this website. ';
+        errorMessage += 'Then refresh the page and try again.';
+      } else if (errorName === 'NotFoundError' || errorName === 'DevicesNotFoundError' ||
+                 errorMsg.includes('No camera') || errorMsg.includes('not found')) {
+        errorTitle = 'Camera Not Found';
+        errorMessage += 'No camera found on this device.';
+      } else if (errorName === 'NotReadableError' || errorName === 'TrackStartError' ||
+                 errorMsg.includes('in use') || errorMsg.includes('busy')) {
+        errorTitle = 'Camera In Use';
+        errorMessage += 'Camera is being used by another application. Please close other apps using the camera and try again.';
+      } else if (errorMsg.includes('Could not start video stream') || 
+                 errorMsg.includes('getUserMedia')) {
+        errorTitle = 'Camera Access Error';
+        errorMessage += 'Unable to access camera. Please check permissions and try again.';
+      } else {
+        errorMessage += `Error: ${errorMsg || 'Unknown error'}. Please check permissions and try again.`;
+      }
+      
+      toast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: 'destructive',
+        duration: 6000,
       });
     }
   };
@@ -117,7 +288,6 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
   const handleQRScan = async (scannedData: string) => {
     try {
       setQrData(scannedData);
-      setStep('verify');
       
       const token = localStorage.getItem('access_token');
       const response = await fetch(`${API_BASE_URL}/api/projects/milestones/verify_qr/`, {
@@ -143,6 +313,7 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
 
       const data = await response.json();
       setVerificationData(data);
+      markStepComplete('scan');
       setStep('capture');
       
       toast({
@@ -159,14 +330,20 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
     }
   };
 
-  const handleManualQRInput = () => {
-    const input = prompt('Enter QR code data manually:');
-    if (input) {
-      handleQRScan(input);
-    }
-  };
 
   const handleCameraCapture = (type: 'image' | 'video') => {
+    // Check camera support
+    const cameraCheck = checkCameraSupport();
+    if (!cameraCheck.supported) {
+      toast({
+        title: 'Camera Not Available',
+        description: cameraCheck.error || 'Camera is not available on this device.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // File input with capture attribute will handle permission request
     if (type === 'image') {
       fileInputRef.current?.click();
     } else {
@@ -177,6 +354,7 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
     const files = Array.from(event.target.files || []);
     
+    // Ensure only camera capture (no gallery)
     if (type === 'image') {
       const maxImages = verificationData?.restrictions?.max_images || 10;
       if (capturedImages.length + files.length > maxImages) {
@@ -200,6 +378,24 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
       }
       setCapturedVideos([...capturedVideos, ...files]);
     }
+    
+    // Clear the input so same file can be selected again
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const handleContinueToUpload = () => {
+    if (!description.trim() && capturedImages.length === 0 && capturedVideos.length === 0) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please add a description or capture at least one image/video',
+        variant: 'destructive',
+      });
+      return;
+    }
+    markStepComplete('capture');
+    setStep('upload');
   };
 
   const handleUpload = async () => {
@@ -213,7 +409,6 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
     }
 
     setUploading(true);
-    setStep('upload');
 
     try {
       const token = localStorage.getItem('access_token');
@@ -232,7 +427,7 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
       
       // Add capture metadata (indicating camera capture)
       formData.append('capture_metadata', JSON.stringify({
-        camera_captured: true,  // In production, verify this from file metadata
+        camera_captured: true,
         capture_time: new Date().toISOString(),
         location: null,  // Can add GPS if permitted
       }));
@@ -267,21 +462,67 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
       }
 
       const result = await response.json();
-      setStep('success');
+      markStepComplete('upload');
       
       toast({
         title: 'Upload Successful',
-        description: `${result.uploaded_images || 0} images and ${result.uploaded_videos || 0} videos uploaded`,
+        description: `${result.uploaded_images || 0} images and ${result.uploaded_videos || 0} videos uploaded successfully`,
       });
 
+      // Call onSuccess callback first
       if (onSuccess) {
         onSuccess();
       }
 
-      // Reset after success
-      setTimeout(() => {
-        resetUpload();
-      }, 3000);
+      // Close the popup
+      if (onClose) {
+        onClose();
+      }
+
+      // Reset state
+      resetUpload();
+
+      // Redirect to property page based on verification data
+      if (verificationData) {
+        if (verificationData.entity_type === 'property' && verificationData.entity_id) {
+          // Redirect to property page
+          setTimeout(() => {
+            navigate(`/property/${verificationData.entity_id}`);
+            // Refresh the page to show updated data
+            setTimeout(() => {
+              window.location.reload();
+            }, 300);
+          }, 500);
+        } else if (verificationData.entity_type === 'milestone' && verificationData.entity_id) {
+          // For milestones, redirect to source page or project page
+          if (sourcePath) {
+            setTimeout(() => {
+              navigate(sourcePath);
+              setTimeout(() => {
+                window.location.reload();
+              }, 300);
+            }, 500);
+          }
+        } else {
+          // Fallback: redirect to source page
+          if (sourcePath) {
+            setTimeout(() => {
+              navigate(sourcePath);
+              setTimeout(() => {
+                window.location.reload();
+              }, 300);
+            }, 500);
+          }
+        }
+      } else if (sourcePath) {
+        // Fallback: redirect to source page
+        setTimeout(() => {
+          navigate(sourcePath);
+          setTimeout(() => {
+            window.location.reload();
+          }, 300);
+        }, 500);
+      }
       
     } catch (error: any) {
       toast({
@@ -290,18 +531,39 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
         variant: 'destructive',
       });
       setStep('capture');
-    } finally {
       setUploading(false);
+    }
+  };
+
+  const handleClose = () => {
+    // Stop scanner if running
+    if (scannerRef.current) {
+      scannerRef.current.stop().catch(console.error);
+    }
+    
+    // Reset state
+    resetUpload();
+    
+    // Call onClose if provided
+    if (onClose) {
+      onClose();
+    }
+    
+    // Redirect to source page
+    if (sourcePath) {
+      navigate(sourcePath);
     }
   };
 
   const resetUpload = () => {
     setStep('scan');
+    setCompletedSteps([]);
     setQrData('');
     setVerificationData(null);
     setCapturedImages([]);
     setCapturedVideos([]);
     setDescription('');
+    setIsScanning(false);
   };
 
   if (!isMobile) {
@@ -326,42 +588,59 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
     );
   }
 
+  const steps: { key: Step; label: string }[] = [
+    { key: 'scan', label: 'Scan QR' },
+    { key: 'capture', label: 'Capture & Describe' },
+    { key: 'upload', label: 'Upload' },
+  ];
+
   return (
     <div className="space-y-4 w-full max-w-full overflow-hidden">
-      {/* Progress Indicator */}
+      {/* Progress Indicator - 3 Steps */}
       <div className="flex items-center justify-between mb-4 sm:mb-6 overflow-x-auto pb-2">
-        {['scan', 'verify', 'capture', 'upload', 'success'].map((s, idx) => (
-          <div key={s} className="flex items-center flex-shrink-0">
-            <div
-              className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm ${
-                step === s
-                  ? 'bg-primary text-primary-foreground'
-                  : ['verify', 'capture', 'upload', 'success'].indexOf(step) >= idx
-                  ? 'bg-primary/20 text-primary'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {['verify', 'capture', 'upload', 'success'].indexOf(step) > idx ? (
-                <Check className="h-3 w-3 sm:h-4 sm:w-4" />
-              ) : (
-                idx + 1
+        {steps.map((s, idx) => {
+          const isCompleted = completedSteps.includes(s.key);
+          const isCurrent = step === s.key;
+          const currentStepIndex = steps.findIndex(st => st.key === step);
+          const isPast = idx < currentStepIndex;
+          
+          return (
+            <div key={s.key} className="flex items-center flex-shrink-0">
+              <div
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold transition-all ${
+                  isCompleted
+                    ? 'bg-green-500 text-white'
+                    : isCurrent
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {isCompleted ? (
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5" />
+                ) : (
+                  idx + 1
+                )}
+              </div>
+              {idx < steps.length - 1 && (
+                <div className={`w-8 sm:w-16 h-0.5 mx-1 sm:mx-2 transition-colors ${
+                  isPast || isCompleted ? 'bg-green-500' : 'bg-muted'
+                }`} />
               )}
             </div>
-            {idx < 4 && <div className="w-6 sm:w-12 h-0.5 bg-muted mx-1 sm:mx-2" />}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Step 1: Scan QR */}
+      {/* Step 1: Scan QR Code */}
       {step === 'scan' && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <QrCode className="h-5 w-5" />
-              Scan QR Code
+              Step 1: Scan QR Code
             </CardTitle>
             <CardDescription>
-              Scan the QR code on the property or milestone site to begin upload
+              Scan the QR code on the property or milestone site to fetch all information
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -389,53 +668,33 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
             )}
             
             {!isScanning && (
-              <div className="flex flex-col gap-2">
-                <Button 
-                  onClick={startQRScanner} 
-                  className="w-full min-h-[44px]"
-                >
-                  <Camera className="mr-2 h-4 w-4" />
-                  Open Camera to Scan
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleManualQRInput} 
-                  className="w-full min-h-[44px]"
-                >
-                  Enter QR Code Manually
-                </Button>
-              </div>
+              <Button 
+                onClick={startQRScanner} 
+                className="w-full min-h-[44px]"
+              >
+                <Camera className="mr-2 h-4 w-4" />
+                Open Camera to Scan QR Code
+              </Button>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* Step 2: Verification */}
-      {step === 'verify' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Verifying QR Code...</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center p-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 3: Capture Media */}
+      {/* Step 2: Capture Media & Describe Progress */}
       {step === 'capture' && verificationData && (
         <Card>
           <CardHeader>
-            <CardTitle>Capture Construction Updates</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Step 2: Capture & Describe Progress
+            </CardTitle>
             <CardDescription>
               {verificationData.entity_type === 'milestone'
                 ? `${verificationData.title} - Phase ${verificationData.phase_number}`
                 : `Unit ${verificationData.unit_number} - ${verificationData.property_type}`}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pb-6 max-h-[60vh] overflow-y-auto">
             <Alert>
               <Camera className="h-4 w-4" />
               <AlertDescription>
@@ -445,29 +704,37 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
 
             {/* Description Input */}
             <div className="w-full">
-              <label className="block text-xs sm:text-sm font-medium mb-2">Description</label>
+              <label className="block text-xs sm:text-sm font-medium mb-2 text-foreground">Progress Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full p-2 sm:p-3 border rounded-md text-sm max-w-full"
-                rows={3}
-                placeholder="Describe the construction progress..."
+                className="w-full p-2 sm:p-3 border border-border rounded-md text-sm max-w-full resize-none bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0"
+                rows={4}
+                placeholder="Describe the construction progress, milestones achieved, or any updates..."
               />
             </div>
 
             {/* Capture Buttons */}
             <div className="grid grid-cols-2 gap-2 w-full">
-              <Button onClick={() => handleCameraCapture('image')} variant="outline" className="w-full text-xs sm:text-sm">
+              <Button 
+                onClick={() => handleCameraCapture('image')} 
+                variant="outline" 
+                className="w-full text-xs sm:text-sm min-h-[44px]"
+              >
                 <Camera className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="truncate">Photos ({capturedImages.length})</span>
               </Button>
-              <Button onClick={() => handleCameraCapture('video')} variant="outline" className="w-full text-xs sm:text-sm">
+              <Button 
+                onClick={() => handleCameraCapture('video')} 
+                variant="outline" 
+                className="w-full text-xs sm:text-sm min-h-[44px]"
+              >
                 <Camera className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="truncate">Videos ({capturedVideos.length})</span>
               </Button>
             </div>
 
-            {/* Hidden File Inputs (camera only) */}
+            {/* Hidden File Inputs (camera only - no gallery) */}
             <input
               ref={fileInputRef}
               type="file"
@@ -489,11 +756,11 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
 
             {/* Captured Media Preview */}
             {(capturedImages.length > 0 || capturedVideos.length > 0) && (
-              <div className="border rounded-lg p-3 sm:p-4 w-full max-w-full overflow-hidden">
-                <h4 className="font-medium mb-2 text-sm sm:text-base">Captured Media</h4>
+              <div className="border border-border rounded-lg p-3 sm:p-4 w-full max-w-full overflow-hidden bg-background">
+                <h4 className="font-medium mb-2 text-sm sm:text-base text-foreground">Captured Media</h4>
                 <div className="space-y-2 max-h-[200px] overflow-y-auto">
                   {capturedImages.map((img, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs sm:text-sm gap-2">
+                    <div key={idx} className="flex items-center justify-between text-xs sm:text-sm gap-2 text-foreground">
                       <span className="truncate flex-1">📷 {img.name}</span>
                       <Button
                         size="sm"
@@ -506,7 +773,7 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
                     </div>
                   ))}
                   {capturedVideos.map((vid, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs sm:text-sm gap-2">
+                    <div key={idx} className="flex items-center justify-between text-xs sm:text-sm gap-2 text-foreground">
                       <span className="truncate flex-1">🎥 {vid.name}</span>
                       <Button
                         size="sm"
@@ -522,58 +789,77 @@ export default function SecureUpload({ onSuccess }: SecureUploadProps) {
               </div>
             )}
 
-            {/* Upload Button */}
-            <div className="flex flex-col sm:flex-row gap-2 w-full">
-              <Button onClick={resetUpload} variant="outline" className="w-full sm:flex-1">
-                Cancel
-              </Button>
+            {/* Continue Button */}
+            <div className="w-full pt-2">
               <Button
-                onClick={handleUpload}
-                className="w-full sm:flex-1 text-xs sm:text-sm"
-                disabled={capturedImages.length === 0 && capturedVideos.length === 0}
+                onClick={handleContinueToUpload}
+                className="w-full min-h-[44px]"
+                disabled={!description.trim() && capturedImages.length === 0 && capturedVideos.length === 0}
               >
-                <Upload className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="truncate">Upload ({capturedImages.length + capturedVideos.length} files)</span>
+                Continue to Upload
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Step 4: Uploading */}
+      {/* Step 3: Upload */}
       {step === 'upload' && (
         <Card>
           <CardHeader>
-            <CardTitle>Uploading...</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center p-8 space-y-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              <p className="text-muted-foreground">Uploading your construction updates...</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 5: Success */}
-      {step === 'success' && (
-        <Card className="border-green-500">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-600">
-              <Check className="h-5 w-5" />
-              Upload Successful
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Step 3: Upload to Cloudinary
             </CardTitle>
+            <CardDescription>
+              Upload images and videos to Cloudinary. Metadata and hash will be stored in database.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
-              <Check className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-900 dark:text-green-100">
-                Your construction updates have been uploaded successfully with QR verification.
-              </AlertDescription>
-            </Alert>
-            <Button onClick={resetUpload} className="w-full mt-4">
-              Upload More
-            </Button>
+          <CardContent className="space-y-4">
+            {uploading ? (
+              <div className="flex flex-col items-center justify-center p-8 space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground text-center">Uploading to Cloudinary...</p>
+                <p className="text-sm text-muted-foreground text-center">
+                  Uploading {capturedImages.length} images and {capturedVideos.length} videos
+                </p>
+              </div>
+            ) : (
+              <>
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Ready to upload {capturedImages.length} image(s) and {capturedVideos.length} video(s).
+                    This will upload to Cloudinary and store metadata in the database.
+                  </AlertDescription>
+                </Alert>
+
+                {description && (
+                  <div className="border border-border rounded-lg p-3 bg-background">
+                    <p className="text-sm font-medium mb-1 text-foreground">Description:</p>
+                    <p className="text-sm text-foreground">{description}</p>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                  <Button 
+                    onClick={() => setStep('capture')} 
+                    variant="outline" 
+                    className="w-full sm:flex-1 min-h-[44px]"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleUpload}
+                    className="w-full sm:flex-1 min-h-[44px]"
+                    disabled={capturedImages.length === 0 && capturedVideos.length === 0}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload to Cloudinary
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}

@@ -30,3 +30,6 @@ sqlparse==0.5.3
 typing_extensions==4.15.0
 urllib3==2.5.0
 whitenoise==6.11.0
+# Blockchain and IPFS dependencies
+fabric-sdk-py==0.8.0
+ipfshttpclient==0.8.0a2

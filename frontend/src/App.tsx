@@ -15,6 +15,7 @@ import Projects from "./pages/Projects";
 import PropertyDetails from "./pages/PropertyDetails";
 import PropertyUnitDetails from "./pages/PropertyUnitDetails";
 import Dashboard from "./pages/Dashboard";
+import BlockchainRecords from "./pages/BlockchainRecords";
 import BuyerDashboard from "./pages/BuyerDashboard";
 import BuilderDashboard from "./pages/BuilderDashboard";
 import ManageQRCodes from "./pages/ManageQRCodes";
@@ -24,6 +25,7 @@ import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
 import OAuthCallback from "./pages/OAuthCallback";
 import NotFound from "./pages/NotFound";
+import AIChatbot from "./components/AIChatbot";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +49,14 @@ const Layout = () => {
           {/* Protected routes */}
           <Route path="/projects/:id" element={<ProjectOverview />} />
           <Route path="/property/:propertyId" element={<PropertyUnitDetails />} />
+          <Route 
+            path="/projects/:projectId/blockchain" 
+            element={
+              <ProtectedRoute>
+                <BlockchainRecords />
+              </ProtectedRoute>
+            } 
+          />
           <Route 
             path="/dashboard" 
             element={
@@ -101,6 +111,8 @@ const Layout = () => {
         </Routes>
       </main>
       {showFooter && <Footer />}
+      {/* AI Chatbot - Available on all pages */}
+      <AIChatbot />
     </div>
   );
 };

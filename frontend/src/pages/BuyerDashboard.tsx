@@ -12,13 +12,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Heart,
-  Calendar,
-  FileText,
   TrendingUp,
   MapPin,
   Building2,
   Eye,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -51,84 +50,91 @@ interface PurchasedProperty {
 }
 
 export default function BuyerDashboard() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<SavedProject[]>([]);
   const [purchasedProperties, setPurchasedProperties] = useState<PurchasedProperty[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUserData();
-  }, []);
+    // Only load when auth is complete and user exists
+    if (!authLoading && user) {
+      fetchUserData();
+    }
+  }, [authLoading, user]);
 
   const fetchUserData = async () => {
     setLoading(true);
-    console.log("BuyerDashboard: Starting to fetch data...");
-    
+    setError(null);
+
     try {
       const token = localStorage.getItem("access_token");
-      console.log("BuyerDashboard: Token exists:", !!token);
-      
       if (!token) {
-        console.error("BuyerDashboard: No access token found");
+        setError("No authentication token found");
         setLoading(false);
         return;
       }
-      
+
       const headers = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       };
 
       // Fetch purchased properties
-      console.log("BuyerDashboard: Fetching purchased properties...");
-      const propertiesRes = await fetch(
-        `${API_BASE_URL}/api/projects/user/properties/my_properties/`,
-        { headers }
-      );
-      console.log("BuyerDashboard: Properties response status:", propertiesRes.status);
-      if (propertiesRes.ok) {
-        const propertiesData = await propertiesRes.json();
-        console.log("BuyerDashboard: Purchased properties:", propertiesData);
-        setPurchasedProperties(propertiesData);
-      } else {
-        console.error("BuyerDashboard: Failed to fetch properties:", await propertiesRes.text());
+      try {
+        const propertiesRes = await fetch(
+          `${API_BASE_URL}/api/projects/user/properties/my_properties/`,
+          { headers }
+        );
+        if (propertiesRes.ok) {
+          const propertiesData = await propertiesRes.json().catch(() => []);
+          setPurchasedProperties(Array.isArray(propertiesData) ? propertiesData : []);
+        } else {
+          setPurchasedProperties([]);
+        }
+      } catch (error: any) {
+        setPurchasedProperties([]);
       }
 
       // Fetch saved projects
-      console.log("BuyerDashboard: Fetching saved projects...");
-      const savedRes = await fetch(
-        `${API_BASE_URL}/api/projects/user/projects/saved_projects/`,
-        { headers }
-      );
-      console.log("BuyerDashboard: Saved projects response status:", savedRes.status);
-      if (savedRes.ok) {
-        const savedData = await savedRes.json();
-        console.log("BuyerDashboard: Saved projects:", savedData);
-        setSavedProjects(savedData);
-      } else {
-        console.error("BuyerDashboard: Failed to fetch saved projects:", await savedRes.text());
+      try {
+        const savedRes = await fetch(
+          `${API_BASE_URL}/api/projects/user/projects/saved_projects/`,
+          { headers }
+        );
+        if (savedRes.ok) {
+          const savedData = await savedRes.json().catch(() => []);
+          setSavedProjects(Array.isArray(savedData) ? savedData : []);
+        } else {
+          setSavedProjects([]);
+        }
+      } catch (error: any) {
+        setSavedProjects([]);
       }
 
       // Fetch recently viewed projects
-      console.log("BuyerDashboard: Fetching recently viewed projects...");
-      const viewedRes = await fetch(
-        `${API_BASE_URL}/api/projects/user/projects/recently_viewed/`,
-        { headers }
-      );
-      console.log("BuyerDashboard: Recently viewed response status:", viewedRes.status);
-      if (viewedRes.ok) {
-        const viewedData = await viewedRes.json();
-        console.log("BuyerDashboard: Recently viewed:", viewedData);
-        setRecentlyViewed(viewedData);
-      } else {
-        console.error("BuyerDashboard: Failed to fetch recently viewed:", await viewedRes.text());
+      try {
+        const viewedRes = await fetch(
+          `${API_BASE_URL}/api/projects/user/projects/recently_viewed/`,
+          { headers }
+        );
+        if (viewedRes.ok) {
+          const viewedData = await viewedRes.json().catch(() => []);
+          setRecentlyViewed(Array.isArray(viewedData) ? viewedData : []);
+        } else {
+          setRecentlyViewed([]);
+        }
+      } catch (error: any) {
+        setRecentlyViewed([]);
       }
-    } catch (error) {
-      console.error("BuyerDashboard: Error fetching user data:", error);
+    } catch (error: any) {
+      setError(error.message || "Failed to load dashboard data");
+      setPurchasedProperties([]);
+      setSavedProjects([]);
+      setRecentlyViewed([]);
     } finally {
-      console.log("BuyerDashboard: Data fetch complete");
       setLoading(false);
     }
   };
@@ -151,7 +157,7 @@ export default function BuyerDashboard() {
         setRecentlyViewed([]);
       }
     } catch (error) {
-      console.error("Error clearing recently viewed:", error);
+      // Silent fail
     }
   };
 
@@ -213,8 +219,44 @@ export default function BuyerDashboard() {
     },
   ];
 
-  console.log("BuyerDashboard: Rendering, loading:", loading, "user:", user?.first_name);
+  // Show loading only during auth or data loading - single condition
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-6 w-6" />
+              Error Loading Dashboard
+            </CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button onClick={fetchUserData} className="w-full">
+              Retry Loading
+            </Button>
+            <Button variant="outline" onClick={() => window.location.reload()} className="w-full">
+              Refresh Page
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Main dashboard content - only render when everything is ready
   return (
     <div className="min-h-screen bg-background">
       <div className="bg-primary text-primary-foreground py-8 sm:py-12">
@@ -266,24 +308,14 @@ export default function BuyerDashboard() {
             <Card>
               <CardHeader className="text-center space-y-2">
                 <CardTitle>My Properties</CardTitle>
-                <CardDescription>
-                  Properties you've purchased or booked
-                </CardDescription>
+                <CardDescription>Properties you've purchased or booked</CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <div className="text-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                  </div>
-                ) : purchasedProperties.length === 0 ? (
+                {purchasedProperties.length === 0 ? (
                   <div className="text-center py-12">
                     <Building2 className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">
-                      No properties yet
-                    </h3>
-                    <p className="text-muted-foreground mb-6">
-                      Start exploring and book your dream property
-                    </p>
+                    <h3 className="text-xl font-semibold mb-2">No properties yet</h3>
+                    <p className="text-muted-foreground mb-6">Start exploring and book your dream property</p>
                     <Link to="/explore-projects">
                       <Button>Explore Projects</Button>
                     </Link>
@@ -297,15 +329,14 @@ export default function BuyerDashboard() {
                             src={property.project.cover_image}
                             alt={property.project.name}
                             className="w-full h-40 object-cover"
+                            loading="lazy"
                           />
                           <Badge className="absolute top-2 right-2 bg-green-600">
                             {property.status}
                           </Badge>
                         </div>
                         <CardContent className="pt-4">
-                          <h3 className="font-semibold mb-1">
-                            {property.project.name}
-                          </h3>
+                          <h3 className="font-semibold mb-1">{property.project.name}</h3>
                           <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
                             {property.project.city}
@@ -338,24 +369,14 @@ export default function BuyerDashboard() {
             <Card>
               <CardHeader className="text-center space-y-2">
                 <CardTitle>Saved Projects</CardTitle>
-                <CardDescription>
-                  Projects you've marked as favorites
-                </CardDescription>
+                <CardDescription>Projects you've marked as favorites</CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <div className="text-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                  </div>
-                ) : savedProjects.length === 0 ? (
+                {savedProjects.length === 0 ? (
                   <div className="text-center py-12">
                     <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">
-                      No saved projects yet
-                    </h3>
-                    <p className="text-muted-foreground mb-6">
-                      Start exploring and save projects you like
-                    </p>
+                    <h3 className="text-xl font-semibold mb-2">No saved projects yet</h3>
+                    <p className="text-muted-foreground mb-6">Start exploring and save projects you like</p>
                     <Link to="/explore-projects">
                       <Button>Explore Projects</Button>
                     </Link>
@@ -369,11 +390,10 @@ export default function BuyerDashboard() {
                             src={project.cover_image}
                             alt={project.name}
                             className="w-full h-40 object-cover"
+                            loading="lazy"
                           />
                           {project.verified && (
-                            <Badge className="absolute top-2 left-2 bg-green-600">
-                              Verified
-                            </Badge>
+                            <Badge className="absolute top-2 left-2 bg-green-600">Verified</Badge>
                           )}
                         </div>
                         <CardContent className="pt-4">
@@ -422,19 +442,11 @@ export default function BuyerDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <div className="text-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                  </div>
-                ) : recentlyViewed.length === 0 ? (
+                {recentlyViewed.length === 0 ? (
                   <div className="text-center py-12">
                     <Eye className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">
-                      No viewing history yet
-                    </h3>
-                    <p className="text-muted-foreground mb-6">
-                      Your recently viewed projects will appear here
-                    </p>
+                    <h3 className="text-xl font-semibold mb-2">No viewing history yet</h3>
+                    <p className="text-muted-foreground mb-6">Your recently viewed projects will appear here</p>
                     <Link to="/explore-projects">
                       <Button>Start Exploring</Button>
                     </Link>
@@ -448,11 +460,10 @@ export default function BuyerDashboard() {
                             src={project.cover_image}
                             alt={project.name}
                             className="w-full h-40 object-cover"
+                            loading="lazy"
                           />
                           {project.verified && (
-                            <Badge className="absolute top-2 left-2 bg-green-600">
-                              Verified
-                            </Badge>
+                            <Badge className="absolute top-2 left-2 bg-green-600">Verified</Badge>
                           )}
                         </div>
                         <CardContent className="pt-4">
@@ -477,10 +488,9 @@ export default function BuyerDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-
-
         </Tabs>
       </div>
     </div>
   );
 }
+

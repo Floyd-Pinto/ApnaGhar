@@ -67,6 +67,31 @@ class RegisterView(generics.CreateAPIView):
         
         user = serializer.save()
         
+        # Store user registration on blockchain (non-blocking, async)
+        # Use a separate thread to avoid blocking the response
+        import threading
+        def store_on_blockchain():
+            try:
+                from blockchain.blockchain_service import get_blockchain_service
+                blockchain_service = get_blockchain_service()
+                blockchain_service.store_user_registration_on_blockchain(
+                    user_id=str(user.id),
+                    username=user.username,
+                    email=user.email,
+                    role=user.role,
+                    metadata={
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'created_at': user.created_at.isoformat() if hasattr(user, 'created_at') else None
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Blockchain storage failed (non-critical): {str(e)}")
+                # Don't fail registration if blockchain storage fails
+        
+        # Start blockchain storage in background thread
+        threading.Thread(target=store_on_blockchain, daemon=True).start()
+        
         # Generate tokens for the new user
         refresh = RefreshToken.for_user(user)
         

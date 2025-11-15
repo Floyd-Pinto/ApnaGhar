@@ -36,35 +36,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check if user is logged in on app start
   useEffect(() => {
     const initializeAuth = async () => {
-      console.log('AuthContext: Initializing authentication...');
+      console.log('🔐 AuthContext: Initializing...');
       const accessToken = localStorage.getItem('access_token');
       const refreshToken = localStorage.getItem('refresh_token');
 
       if (accessToken && refreshToken) {
-        console.log('AuthContext: Found tokens, fetching user profile...');
+        console.log('🔑 AuthContext: Tokens found, fetching profile...');
         try {
-          // Try to get user profile with 5 second timeout
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+          // Try to get user profile with 3 second timeout
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Profile fetch timeout after 3s')), 3000)
           );
           
           const userData = await Promise.race([
             authAPI.getProfile(),
             timeoutPromise
-          ]) as User;
+          ]);
           
-          console.log('AuthContext: User profile fetched successfully');
+          console.log('✅ AuthContext: Profile loaded:', userData);
           setUser(userData);
-        } catch (error) {
-          console.error('AuthContext: Profile fetch failed', error);
-          // If profile fetch fails, clear tokens
+        } catch (error: any) {
+          console.error('❌ AuthContext: Profile fetch failed:', error.message);
+          // If profile fetch fails, clear tokens and reset
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
           setUser(null);
         }
       } else {
-        console.log('AuthContext: No tokens, skipping profile fetch');
+        console.log('⚠️ AuthContext: No tokens found');
       }
+      console.log('✅ AuthContext: Initialization complete');
       setIsLoading(false);
     };
 

@@ -1,7 +1,8 @@
 # Builder Accounts Information
 
-## Overview
-This document contains all builder account credentials for the ApnaGhar platform. There are 10 builder accounts with a total of 75 projects distributed among them.
+## ⚠️ UPDATED: All Builder Passwords Standardized!
+
+**ALL builder accounts now use the SAME password for easier testing:** `Builder@123`
 
 ---
 
@@ -9,70 +10,70 @@ This document contains all builder account credentials for the ApnaGhar platform
 
 ### 1. Prestige Estates
 - **Username:** `prestige.builder`
-- **Password:** `Prestige@123`
+- **Password:** `Builder@123` ✅
 - **Email:** prestige.builder@apnaghar.com
 - **Projects:** 10
 - **Company:** Leading real estate developer known for quality construction and timely delivery
 
 ### 2. Godrej Properties
 - **Username:** `godrej.builder`
-- **Password:** `Godrej@123`
+- **Password:** `Builder@123` ✅
 - **Email:** godrej.builder@apnaghar.com
 - **Projects:** 8
 - **Company:** Leading real estate developer known for quality construction and timely delivery
 
 ### 3. Brigade Group
 - **Username:** `brigade.builder`
-- **Password:** `Brigade@123`
+- **Password:** `Builder@123` ✅
 - **Email:** brigade.builder@apnaghar.com
 - **Projects:** 8
 - **Company:** Leading real estate developer known for quality construction and timely delivery
 
 ### 4. Sobha Limited
 - **Username:** `sobha.builder`
-- **Password:** `Sobha@123`
+- **Password:** `Builder@123` ✅
 - **Email:** sobha.builder@apnaghar.com
 - **Projects:** 7
 - **Company:** Leading real estate developer known for quality construction and timely delivery
 
 ### 5. Puravankara Limited
 - **Username:** `puravankara.builder`
-- **Password:** `Puravankara@123`
+- **Password:** `Builder@123` ✅
 - **Email:** puravankara.builder@apnaghar.com
 - **Projects:** 7
 - **Company:** Leading real estate developer known for quality construction and timely delivery
 
 ### 6. Embassy Group
 - **Username:** `embassy.builder`
-- **Password:** `Embassy@123`
+- **Password:** `Builder@123` ✅
 - **Email:** embassy.builder@apnaghar.com
 - **Projects:** 7
 - **Company:** Leading real estate developer known for quality construction and timely delivery
 
 ### 7. Mantri Developers
 - **Username:** `mantri.builder`
-- **Password:** `Mantri@123`
+- **Password:** `Builder@123` ✅
 - **Email:** mantri.builder@apnaghar.com
 - **Projects:** 7
 - **Company:** Leading real estate developer known for quality construction and timely delivery
 
 ### 8. Shriram Properties
 - **Username:** `shriram.builder`
-- **Password:** `Shriram@123`
+- **Password:** `Builder@123` ✅
 - **Email:** shriram.builder@apnaghar.com
 - **Projects:** 7
 - **Company:** Leading real estate developer known for quality construction and timely delivery
 
 ### 9. Mahindra Lifespaces
 - **Username:** `mahindra.builder`
-- **Password:** `Mahindra@123`
+- **Password:** `Builder@123` ✅
 - **Email:** mahindra.builder@apnaghar.com
 - **Projects:** 7
 - **Company:** Leading real estate developer known for quality construction and timely delivery
 
 ### 10. L&T Realty
 - **Username:** `lnt.builder`
-- **Password:** `LnT@123`
+- **Password:** `Builder@123` ✅
 - **Email:** lnt.builder@apnaghar.com
 - **Projects:** 7
 - **Company:** Leading real estate developer known for quality construction and timely delivery
@@ -83,16 +84,16 @@ This document contains all builder account credentials for the ApnaGhar platform
 
 | # | Company | Username | Password | Projects |
 |---|---------|----------|----------|----------|
-| 1 | Prestige Estates | prestige.builder | Prestige@123 | 10 |
-| 2 | Godrej Properties | godrej.builder | Godrej@123 | 8 |
-| 3 | Brigade Group | brigade.builder | Brigade@123 | 8 |
-| 4 | Sobha Limited | sobha.builder | Sobha@123 | 7 |
-| 5 | Puravankara Limited | puravankara.builder | Puravankara@123 | 7 |
-| 6 | Embassy Group | embassy.builder | Embassy@123 | 7 |
-| 7 | Mantri Developers | mantri.builder | Mantri@123 | 7 |
-| 8 | Shriram Properties | shriram.builder | Shriram@123 | 7 |
-| 9 | Mahindra Lifespaces | mahindra.builder | Mahindra@123 | 7 |
-| 10 | L&T Realty | lnt.builder | LnT@123 | 7 |
+| 1 | Prestige Estates | prestige.builder | **Builder@123** | 10 |
+| 2 | Godrej Properties | godrej.builder | **Builder@123** | 8 |
+| 3 | Brigade Group | brigade.builder | **Builder@123** | 8 |
+| 4 | Sobha Limited | sobha.builder | **Builder@123** | 7 |
+| 5 | Puravankara Limited | puravankara.builder | **Builder@123** | 7 |
+| 6 | Embassy Group | embassy.builder | **Builder@123** | 7 |
+| 7 | Mantri Developers | mantri.builder | **Builder@123** | 7 |
+| 8 | Shriram Properties | shriram.builder | **Builder@123** | 7 |
+| 9 | Mahindra Lifespaces | mahindra.builder | **Builder@123** | 7 |
+| 10 | L&T Realty | lnt.builder | **Builder@123** | 7 |
 
 ---
 

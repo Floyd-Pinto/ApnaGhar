@@ -124,12 +124,12 @@ const Homepage = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             {/* Heading */}
-            <div className="space-y-3">
-              <h1 className="text-3xl lg:text-5xl font-extrabold text-foreground leading-tight">
+            <div className="space-y-3 flex flex-col items-center">
+              <h1 className="text-3xl lg:text-5xl font-extrabold text-foreground leading-tight text-center">
                 Find Your Dream Property with{' '}
                 <span className="text-primary">Blockchain Verification</span>
               </h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-center">
                 India's most transparent real estate platform with verified properties, 
                 real-time tracking, and guaranteed authenticity
               </p>
@@ -137,10 +137,10 @@ const Homepage = () => {
 
             {/* Search Box - Only show for authenticated users */}
             {isAuthenticated && (
-              <form onSubmit={handleSearch} className="glass-card mt-8">
-                <div className="flex flex-col md:flex-row gap-3">
+              <form onSubmit={handleSearch} className="glass-card mt-8 mx-auto max-w-3xl">
+                <div className="flex flex-col md:flex-row gap-3 justify-center items-center">
                   {/* Search Input */}
-                  <div className="flex-1">
+                  <div className="flex-1 w-full">
                     <input
                       type="text"
                       placeholder="Search by city, locality, builder or project..."
@@ -165,14 +165,14 @@ const Homepage = () => {
                   </div>
 
                   {/* Search Button */}
-                  <Button type="submit" variant="cta" size="lg" className="h-12 px-8 text-base font-semibold">
+                  <Button type="submit" variant="cta" size="lg" className="h-12 px-8 text-base font-semibold w-full md:w-auto">
                     <Eye className="h-5 w-5 mr-2" />
                     Search
                   </Button>
                 </div>
 
                 {/* Quick Links */}
-                <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-4 pt-4 border-t border-border">
                   <span className="text-sm text-muted-foreground font-medium">Popular:</span>
                   {['Mumbai', 'Bangalore', 'Pune', 'Delhi', 'Hyderabad'].map((city) => (
                     <button
@@ -192,8 +192,8 @@ const Homepage = () => {
 
             {/* CTA for non-authenticated users */}
             {!isAuthenticated && (
-              <div className="glass-card mt-8">
-                <p className="text-lg text-muted-foreground mb-4">
+              <div className="glass-card mt-8 mx-auto max-w-2xl">
+                <p className="text-lg text-muted-foreground mb-4 text-center">
                   Sign in to search and explore verified properties
                 </p>
                 <div className="flex gap-4 justify-center">
@@ -230,52 +230,52 @@ const Homepage = () => {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="text-center space-y-3 mb-12">
-            <h2 className="text-3xl font-extrabold text-foreground">
+            <h2 className="text-3xl font-extrabold text-foreground text-center">
               Why Choose ApnaGhar?
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-center">
               India's first blockchain-verified real estate platform with complete transparency
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-items-center max-w-5xl mx-auto">
             {/* Real-Time Verified Tracking */}
-            <div className="glass-card hover:transform hover:-translate-y-1 transition-all">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+            <div className="glass-card hover:transform hover:-translate-y-1 transition-all w-full max-w-sm">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <Eye className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">
+              <h3 className="text-lg font-bold text-foreground mb-2 text-center">
                 Real-Time Tracking
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground text-center">
                 Live construction updates with geo-tagged photos and blockchain-verified 
                 progress reports for complete transparency.
               </p>
             </div>
 
             {/* Blockchain-Secured Contracts */}
-            <div className="glass-card hover:transform hover:-translate-y-1 transition-all">
-              <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-4">
+            <div className="glass-card hover:transform hover:-translate-y-1 transition-all w-full max-w-sm">
+              <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <Shield className="h-6 w-6 text-success" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">
+              <h3 className="text-lg font-bold text-foreground mb-2 text-center">
                 Blockchain Verified
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground text-center">
                 Every transaction recorded on blockchain for complete transparency 
                 and fraud prevention. Your investment is secure.
               </p>
             </div>
 
             {/* AI-Powered Assistance */}
-            <div className="glass-card hover:transform hover:-translate-y-1 transition-all">
-              <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+            <div className="glass-card hover:transform hover:-translate-y-1 transition-all w-full max-w-sm">
+              <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <Bot className="h-6 w-6 text-accent" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">
+              <h3 className="text-lg font-bold text-foreground mb-2 text-center">
                 AI-Powered Insights
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground text-center">
                 Get intelligent market analysis, investment recommendations, 
                 and personalized property suggestions from our AI.
               </p>
@@ -287,8 +287,8 @@ const Homepage = () => {
       {/* Featured Projects Section */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
+          <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
+            <div className="text-center md:text-left w-full md:w-auto">
               <h2 className="text-2xl font-extrabold text-foreground">
                 {isAuthenticated ? 'Featured Verified Properties' : 'Top Reviewed Properties'}
               </h2>
@@ -299,7 +299,7 @@ const Homepage = () => {
               </p>
             </div>
             {isAuthenticated && (
-              <Button asChild variant="link" className="hidden md:flex text-primary font-semibold">
+              <Button asChild variant="link" className="text-primary font-semibold">
                 <Link to="/explore-projects">
                   View All Properties →
                 </Link>
@@ -307,7 +307,7 @@ const Homepage = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6 justify-items-center">
             {loading ? (
               // Loading skeleton - show 3 for guests, 6 for authenticated
               [...Array(isAuthenticated ? 6 : 3)].map((_, i) => (
@@ -319,34 +319,36 @@ const Homepage = () => {
               ))
             ) : featuredProjects.length > 0 ? (
               featuredProjects.map((project) => (
-                <Link key={project.id} to={`/projects/${project.id}`} className="block">
-                  <div className="glass-card overflow-hidden">
+                <Link key={project.id} to={`/projects/${project.id}`} className="block w-full max-w-sm">
+                  <div className="glass-card overflow-hidden h-full flex flex-col">
                     <div className="relative h-48">
                       <img 
                         src={project.cover_image || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=500'} 
                         alt={project.name}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                       {project.verified && (
-                        <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">
-                          ✓ Verified
+                        <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
+                          <Shield className="h-3 w-3" />
+                          Verified
                         </div>
                       )}
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-lg mb-1">{project.name}</h3>
-                      <p className="text-sm text-muted-foreground mb-2">{project.city}</p>
+                    <div className="p-4 flex flex-col flex-1">
+                      <h3 className="font-bold text-lg mb-1 text-center md:text-left">{project.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-2 text-center md:text-left">{project.city}, {project.state}</p>
                       
                       {/* Rating display */}
                       {project.average_rating > 0 && (
-                        <div className="flex items-center gap-1 mb-2">
+                        <div className="flex items-center justify-center md:justify-start gap-1 mb-2">
                           <span className="text-yellow-500">★</span>
                           <span className="text-sm font-semibold">{project.average_rating.toFixed(1)}</span>
                           <span className="text-xs text-muted-foreground">({project.total_reviews} reviews)</span>
                         </div>
                       )}
                       
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center mt-auto">
                         <span className="text-primary font-bold">{formatPrice(project.starting_price)}</span>
                         <span className="text-xs text-muted-foreground capitalize">{project.status.replace('_', ' ')}</span>
                       </div>

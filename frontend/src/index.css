@@ -334,6 +334,24 @@
     -webkit-backdrop-filter: var(--glass-backdrop);
     border: 1.5px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
+    color: hsl(var(--foreground));
+  }
+  
+  .glass input,
+  .glass textarea,
+  .glass select {
+    color: hsl(var(--foreground)) !important;
+  }
+  
+  /* Ensure select options are visible */
+  select {
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--background));
+  }
+  
+  select option {
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--background));
   }
 
   .glass-card {
@@ -411,7 +429,11 @@
     border-radius: 0.75rem;
     padding: 0.75rem 1rem;
     transition: all 0.3s ease;
-    color: hsl(var(--foreground));
+    color: hsl(var(--foreground)) !important;
+  }
+  
+  .glass-input::placeholder {
+    color: hsl(var(--muted-foreground));
   }
 
   .glass-input:focus {

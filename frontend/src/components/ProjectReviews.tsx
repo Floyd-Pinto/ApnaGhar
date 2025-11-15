@@ -220,7 +220,7 @@ export default function ProjectReviews({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Summarize your experience"
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
 
