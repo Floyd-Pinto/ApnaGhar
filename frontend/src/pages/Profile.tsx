@@ -708,7 +708,7 @@ const ProfilePage: React.FC = () => {
                           <Label htmlFor="theme_preference" className="text-base font-medium">Theme Preference</Label>
                           <select
                             id="theme_preference"
-                            className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                            className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm"
                             value={preferencesForm.theme_preference}
                             onChange={(e) => setPreferencesForm({ ...preferencesForm, theme_preference: e.target.value as 'light' | 'dark' })}
                           >
@@ -721,7 +721,7 @@ const ProfilePage: React.FC = () => {
                           <Label htmlFor="language" className="text-base font-medium">Language</Label>
                           <select
                             id="language"
-                            className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                            className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm"
                             value={preferencesForm.language}
                             onChange={(e) => setPreferencesForm({ ...preferencesForm, language: e.target.value })}
                           >

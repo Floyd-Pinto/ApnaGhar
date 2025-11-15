@@ -695,26 +695,42 @@ export default function ProgressTracker({
       </Dialog>
 
       {/* Secure Upload Dialog */}
-      <Dialog open={showSecureUploadDialog} onOpenChange={setShowSecureUploadDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog 
+        open={showSecureUploadDialog} 
+        onOpenChange={(open) => {
+          // Only allow closing via X button or explicit close
+          if (!open) {
+            setShowSecureUploadDialog(false);
+          }
+        }}
+      >
+        <DialogContent 
+          className="max-w-4xl max-h-[90vh] !translate-x-[-50%] !translate-y-[-50%]"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Secure Milestone Upload</DialogTitle>
             <DialogDescription>
               Scan QR code and upload construction updates from your mobile device
             </DialogDescription>
           </DialogHeader>
-          <SecureUpload
-            onSuccess={() => {
-              toast({
-                title: "Upload Successful",
-                description: "Milestone media has been uploaded successfully",
-              });
-              setShowSecureUploadDialog(false);
-              if (onMilestoneUpdate) {
-                onMilestoneUpdate();
-              }
-            }}
-          />
+          <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+            <SecureUpload
+              onSuccess={() => {
+                toast({
+                  title: "Upload Successful",
+                  description: "Milestone media has been uploaded successfully",
+                });
+                if (onMilestoneUpdate) {
+                  onMilestoneUpdate();
+                }
+              }}
+              onClose={() => {
+                setShowSecureUploadDialog(false);
+              }}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

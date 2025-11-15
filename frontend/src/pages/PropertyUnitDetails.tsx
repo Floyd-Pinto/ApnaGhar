@@ -966,24 +966,41 @@ export default function PropertyUnitDetails() {
       </Dialog>
 
       {/* Secure Upload Dialog */}
-      <Dialog open={showSecureUploadDialog} onOpenChange={setShowSecureUploadDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog 
+        open={showSecureUploadDialog} 
+        onOpenChange={(open) => {
+          // Only allow closing via X button or explicit close
+          if (!open) {
+            // User clicked X or explicitly closed
+            setShowSecureUploadDialog(false);
+          }
+        }}
+      >
+        <DialogContent 
+          className="max-w-4xl max-h-[90vh] !translate-x-[-50%] !translate-y-[-50%]"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Secure Upload - Construction Updates</DialogTitle>
             <DialogDescription>
               Upload construction progress photos/videos with QR code verification
             </DialogDescription>
           </DialogHeader>
-          <SecureUpload
-            onSuccess={() => {
-              toast({
-                title: 'Upload Successful',
-                description: 'Construction updates uploaded successfully',
-              });
-              setShowSecureUploadDialog(false);
-              fetchProgress(); // Refresh progress data
-            }}
-          />
+          <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+            <SecureUpload
+              onSuccess={() => {
+                toast({
+                  title: 'Upload Successful',
+                  description: 'Construction updates uploaded successfully',
+                });
+                fetchProgress(); // Refresh progress data
+              }}
+              onClose={() => {
+                setShowSecureUploadDialog(false);
+              }}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

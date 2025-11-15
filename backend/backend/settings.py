@@ -280,19 +280,29 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
+# Get Cloudinary credentials from environment or use provided defaults
+CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', 'dq1czuqhi')
+CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '592366112797912')
+CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', 'ivgsDMPP5X9ZQqjXlr-65PQEhxU')
+
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', ''),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
+    'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+    'API_KEY': CLOUDINARY_API_KEY,
+    'API_SECRET': CLOUDINARY_API_SECRET,
 }
 
 # Configure Cloudinary
 cloudinary.config(
-    cloud_name=CLOUDINARY_STORAGE['CLOUD_NAME'],
-    api_key=CLOUDINARY_STORAGE['API_KEY'],
-    api_secret=CLOUDINARY_STORAGE['API_SECRET'],
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET,
     secure=True
 )
+
+# Log Cloudinary configuration (without exposing secret)
+import logging
+logger = logging.getLogger(__name__)
+logger.info(f"Cloudinary configured - Cloud Name: {CLOUDINARY_CLOUD_NAME}, API Key: {CLOUDINARY_API_KEY[:10]}...")
 
 # Use Cloudinary for media files
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'

@@ -27,8 +27,8 @@ import {
   Clock,
   BarChart3,
   Loader2,
-  QrCode,
   MapPin,
+  QrCode,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -55,16 +55,29 @@ interface Project {
 interface Milestone {
   id: string;
   project: string;
-  project_name?: string;
   title: string;
   description: string;
   status: string;
   progress_percentage: string;
   images: any[];
   videos: any[];
-  target_date: string;
-  completion_date?: string;
   verified: boolean;
+}
+
+interface ConstructionUpdate {
+  id: string;
+  project: string;
+  project_name?: string;
+  title: string;
+  description: string;
+  update_date: string;
+  update_type: string;
+  images: any[];
+  videos: any[];
+  completion_percentage: string | null;
+  milestone_achieved: string | null;
+  property_unit_number: string | null;
+  created_at: string;
 }
 
 interface Inquiry {
@@ -80,82 +93,123 @@ interface Inquiry {
 }
 
 export default function BuilderDashboard() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [constructionUpdates, setConstructionUpdates] = useState<ConstructionUpdate[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   useEffect(() => {
-    console.log("BuilderDashboard: useEffect triggered");
-    
-    // Add a safety timeout for mobile
-    const safetyTimeout = setTimeout(() => {
-      console.log("BuilderDashboard: Safety timeout triggered - forcing loading to false");
-      setLoading(false);
-    }, 3000); // 3 seconds max wait
-    
-    fetchBuilderData().finally(() => {
-      clearTimeout(safetyTimeout);
-    });
-    
-    return () => clearTimeout(safetyTimeout);
-  }, []);
+    // Only load when auth is complete and user exists
+    if (!authLoading && user) {
+      loadProjects();
+    }
+  }, [authLoading, user]);
 
-  const fetchBuilderData = async () => {
-    console.log("BuilderDashboard: fetchBuilderData START");
-    
+  const loadProjects = async () => {
+    setLoading(true);
+    setError(null);
+
     try {
       const token = localStorage.getItem("access_token");
-      console.log("BuilderDashboard: token exists?", !!token);
-      
       if (!token) {
-        console.log("BuilderDashboard: No token");
-        setProjects([]);
-        setMilestones([]);
-        setInquiries([]);
+        setError("No authentication token found");
         setLoading(false);
         return;
       }
 
-      const url = `${API_BASE_URL}/api/projects/projects/my_projects/`;
-      console.log("BuilderDashboard: Fetching from", url);
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/projects/projects/my_projects/`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      console.log("BuilderDashboard: Response received, status:", response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("BuilderDashboard: Data parsed successfully, items:", data.results?.length || data.length || 0);
-        const projectsArray = Array.isArray(data.results) ? data.results : Array.isArray(data) ? data : [];
-        setProjects(projectsArray);
-        setMilestones([]);
-        setInquiries([]);
-      } else {
-        console.error("BuilderDashboard: Response not OK:", response.status, response.statusText);
+      if (response.status === 403) {
         setProjects([]);
         setMilestones([]);
         setInquiries([]);
+      } else if (!response.ok) {
+        throw new Error(`Failed to load projects: ${response.status}`);
+      } else {
+        const data = await response.json();
+        const projectsList = data.results || data;
+        const projectsArray = Array.isArray(projectsList) ? projectsList : [];
+        setProjects(projectsArray);
+        setMilestones([]);
+
+        // Fetch construction updates for all projects
+        if (projectsArray.length > 0) {
+          await loadConstructionUpdates(projectsArray.map(p => p.id));
+          
+          setInquiries([
+            {
+              id: "1",
+              project_id: projectsArray[0]?.id || "",
+              project_name: projectsArray[0]?.name || "Sample Project",
+              buyer_name: "John Doe",
+              buyer_email: "john@example.com",
+              buyer_phone: "+91 98765 43210",
+              message: "I'm interested in 3BHK units. Can you share more details?",
+              status: "new",
+              created_at: new Date().toISOString(),
+            },
+          ]);
+        } else {
+          setInquiries([]);
+          setConstructionUpdates([]);
+        }
       }
-    } catch (error) {
-      console.error("BuilderDashboard: CATCH ERROR:", error);
-      console.error("BuilderDashboard: Error name:", error?.name);
-      console.error("BuilderDashboard: Error message:", error?.message);
+    } catch (err: any) {
+      setError(err.message || "Failed to load projects");
       setProjects([]);
       setMilestones([]);
       setInquiries([]);
     } finally {
-      console.log("BuilderDashboard: Finally - setting loading to FALSE");
       setLoading(false);
+    }
+  };
+
+  const loadConstructionUpdates = async (projectIds: string[]) => {
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+
+      // Fetch updates for all projects
+      const updatePromises = projectIds.map(async (projectId) => {
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/api/projects/construction-updates/project/${projectId}/`,
+            { headers }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            return Array.isArray(data) ? data : [];
+          }
+          return [];
+        } catch (error) {
+          return [];
+        }
+      });
+
+      const allUpdates = await Promise.all(updatePromises);
+      const flattenedUpdates = allUpdates.flat();
+      setConstructionUpdates(flattenedUpdates);
+    } catch (error) {
+      console.error("Error loading construction updates:", error);
+      setConstructionUpdates([]);
     }
   };
 
@@ -190,20 +244,19 @@ export default function BuilderDashboard() {
     },
   ];
 
-  console.log("BuilderDashboard: Rendering, loading:", loading, "user role:", user?.role, "projects count:", projects.length);
-
-  if (loading) {
+  // Show loading only during auth or data loading - single condition
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading dashboard...</p>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
-  // Check if user has the correct role
+  // Check role after loading is complete
   if (user?.role !== 'builder') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -221,9 +274,6 @@ export default function BuilderDashboard() {
             <p className="text-sm text-muted-foreground">
               Your account role: <strong>{user?.role || 'Not set'}</strong>
             </p>
-            <p className="text-sm">
-              If you are a builder, please contact support to update your account role.
-            </p>
             <Link to="/">
               <Button className="w-full">Go to Home</Button>
             </Link>
@@ -233,16 +283,40 @@ export default function BuilderDashboard() {
     );
   }
 
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-6 w-6" />
+              Error Loading Dashboard
+            </CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button onClick={loadProjects} className="w-full">
+              Retry Loading
+            </Button>
+            <Button variant="outline" onClick={() => window.location.reload()} className="w-full">
+              Refresh Page
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Main dashboard content - only render when everything is ready
   return (
     <div className="min-h-screen bg-background">
       <div className="bg-primary text-primary-foreground py-8 sm:py-12">
         <div className="container mx-auto px-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">Builder Dashboard</h1>
-            <p className="text-base sm:text-lg opacity-90">
-              Welcome back, {user?.first_name || "Builder"}!
-            </p>
-          </div>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">Builder Dashboard</h1>
+          <p className="text-base sm:text-lg opacity-90">
+            Welcome back, {user?.first_name || "Builder"}!
+          </p>
         </div>
       </div>
 
@@ -304,25 +378,8 @@ export default function BuilderDashboard() {
                 {projects.length === 0 ? (
                   <div className="text-center py-12">
                     <Building2 className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">
-                      No projects yet
-                    </h3>
-                    <p className="text-muted-foreground mb-4">
-                      Start by posting your first project
-                    </p>
-                    
-                    {/* Debug Info */}
-                    <div className="mb-6 p-4 bg-muted/50 rounded-lg text-left max-w-md mx-auto">
-                      <p className="text-xs font-mono text-muted-foreground">
-                        <strong>Debug Info:</strong><br/>
-                        User Role: {user?.role || 'undefined'}<br/>
-                        User ID: {user?.id || 'undefined'}<br/>
-                        Email: {user?.email || 'undefined'}<br/>
-                        <br/>
-                        Check browser console (F12) for detailed API logs
-                      </p>
-                    </div>
-                    
+                    <h3 className="text-xl font-semibold mb-2">No projects yet</h3>
+                    <p className="text-muted-foreground mb-4">Start by posting your first project</p>
                     <Button size="lg" onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto">
                       <Plus className="h-5 w-5 mr-2" />
                       Post New Project
@@ -333,28 +390,23 @@ export default function BuilderDashboard() {
                     {projects.map((project) => (
                       <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                         <div className="flex flex-col md:flex-row">
-                          {/* Project Image */}
                           {project.cover_image && (
                             <div className="w-full md:w-64 h-48 md:h-auto flex-shrink-0">
                               <img
                                 src={project.cover_image}
                                 alt={project.name}
                                 className="w-full h-full object-cover"
+                                loading="lazy"
                               />
                             </div>
                           )}
                           
-                          {/* Project Content */}
                           <div className="flex-1 p-4 sm:p-6">
-                            {/* Header Section */}
                             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2 mb-2">
                                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold break-words">{project.name}</h3>
-                                  <Badge 
-                                    variant={project.status === "ongoing" ? "default" : "secondary"}
-                                    className="text-xs flex-shrink-0"
-                                  >
+                                  <Badge variant={project.status === "ongoing" ? "default" : "secondary"} className="text-xs flex-shrink-0">
                                     {project.status}
                                   </Badge>
                                   <Badge variant="outline" className="text-xs flex-shrink-0">
@@ -368,7 +420,6 @@ export default function BuilderDashboard() {
                               </div>
                             </div>
 
-                            {/* Stats Section */}
                             <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6 p-3 sm:p-4 bg-muted/30 rounded-lg">
                               <div className="text-center">
                                 <div className="flex items-center justify-center gap-1 mb-1">
@@ -393,30 +444,25 @@ export default function BuilderDashboard() {
                               </div>
                             </div>
 
-                            {/* Actions Section */}
-                            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full">
+                            <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2 w-full">
                               <Link to={`/projects/${project.id}`} className="w-full sm:flex-1 sm:min-w-[120px]">
-                                <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm">
+                                <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm min-h-[44px]">
                                   <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                  <span className="truncate">View</span>
+                                  <span className="truncate">View Project</span>
                                 </Button>
                               </Link>
                               <Link to={`/projects/${project.id}/qr-codes`} className="w-full sm:flex-1 sm:min-w-[120px]">
-                                <Button variant="secondary" size="sm" className="w-full text-xs sm:text-sm">
+                                <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm min-h-[44px]">
                                   <QrCode className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                  <span className="truncate">QR Codes</span>
+                                  <span className="truncate">Show QR</span>
                                 </Button>
                               </Link>
-                              <Link to={`/projects/${project.id}?tab=progress`} className="w-full sm:flex-1 sm:min-w-[120px]">
-                                <Button variant="default" size="sm" className="w-full text-xs sm:text-sm">
-                                  <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                  <span className="truncate">Upload</span>
+                              <Link to={`/projects/${project.id}?edit=true`} className="w-full sm:flex-1 sm:min-w-[100px]">
+                                <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm min-h-[44px]">
+                                  <Settings className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                  <span className="truncate">Edit</span>
                                 </Button>
                               </Link>
-                              <Button variant="outline" size="sm" disabled className="w-full sm:min-w-[100px] text-xs sm:text-sm">
-                                <Settings className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                <span className="truncate">Edit</span>
-                              </Button>
                             </div>
                           </div>
                         </div>
@@ -437,14 +483,12 @@ export default function BuilderDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {milestones.length === 0 ? (
+                {constructionUpdates.length === 0 ? (
                   <div className="text-center py-12">
                     <Upload className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">
-                      No construction updates yet
-                    </h3>
+                    <h3 className="text-xl font-semibold mb-2">No construction updates yet</h3>
                     <p className="text-muted-foreground mb-6">
-                      Construction milestones and updates from your projects will appear here
+                      Construction updates from your projects will appear here
                     </p>
                     <p className="text-sm text-muted-foreground">
                       To upload updates, go to the specific project's Progress tab
@@ -453,8 +497,8 @@ export default function BuilderDashboard() {
                 ) : (
                   <div className="space-y-6">
                     {projects.map((project) => {
-                      const projectMilestones = milestones.filter((m) => m.project === project.id);
-                      if (projectMilestones.length === 0) return null;
+                      const projectUpdates = constructionUpdates.filter((u) => u.project === project.id);
+                      if (projectUpdates.length === 0) return null;
 
                       return (
                         <div key={project.id} className="space-y-3">
@@ -472,58 +516,67 @@ export default function BuilderDashboard() {
                           </div>
 
                           <div className="space-y-3">
-                            {projectMilestones.map((milestone) => (
-                              <Card key={milestone.id} className="bg-muted/30">
+                            {projectUpdates.map((update) => (
+                              <Card key={update.id} className="bg-muted/30">
                                 <CardContent className="pt-4">
                                   <div className="flex items-start gap-4">
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-2">
-                                        <h4 className="font-semibold">{milestone.title}</h4>
-                                        <Badge variant={milestone.verified ? "default" : "secondary"}>
-                                          {milestone.verified ? (
-                                            <>
-                                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                                              Verified
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Clock className="h-3 w-3 mr-1" />
-                                              {milestone.status}
-                                            </>
-                                          )}
+                                        <h4 className="font-semibold">{update.title}</h4>
+                                        <Badge variant="outline" className="text-xs">
+                                          {update.update_type === 'project_level' ? 'Project Level' : 'Property Specific'}
                                         </Badge>
+                                        {update.property_unit_number && (
+                                          <Badge variant="secondary" className="text-xs">
+                                            Unit {update.property_unit_number}
+                                          </Badge>
+                                        )}
                                       </div>
-                                      <p className="text-sm text-muted-foreground mb-3">
-                                        {milestone.description}
-                                      </p>
+                                      <p className="text-sm text-muted-foreground mb-2">{update.description}</p>
+                                      <div className="text-xs text-muted-foreground mb-3">
+                                        {new Date(update.update_date).toLocaleDateString()}
+                                      </div>
                                       <div className="flex items-center gap-4 text-sm">
                                         <div className="flex items-center gap-2">
                                           <Camera className="h-4 w-4 text-primary" />
-                                          <span className="font-medium">{milestone.images?.length || 0}</span>
+                                          <span className="font-medium">{update.images?.length || 0}</span>
                                           <span className="text-muted-foreground">photos</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                           <FileText className="h-4 w-4 text-primary" />
-                                          <span className="font-medium">{milestone.videos?.length || 0}</span>
+                                          <span className="font-medium">{update.videos?.length || 0}</span>
                                           <span className="text-muted-foreground">videos</span>
                                         </div>
-                                        <div className="flex-1">
-                                          <Progress value={parseFloat(milestone.progress_percentage)} className="h-2" />
-                                        </div>
-                                        <span className="font-semibold text-primary">
-                                          {parseFloat(milestone.progress_percentage).toFixed(0)}%
-                                        </span>
+                                        {update.completion_percentage && (
+                                          <>
+                                            <div className="flex-1">
+                                              <Progress value={parseFloat(update.completion_percentage)} className="h-2" />
+                                            </div>
+                                            <span className="font-semibold text-primary">
+                                              {parseFloat(update.completion_percentage).toFixed(0)}%
+                                            </span>
+                                          </>
+                                        )}
                                       </div>
+                                      {update.milestone_achieved && (
+                                        <div className="mt-2">
+                                          <Badge variant="default" className="text-xs">
+                                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                                            {update.milestone_achieved}
+                                          </Badge>
+                                        </div>
+                                      )}
                                     </div>
 
-                                    {milestone.images && milestone.images.length > 0 && (
+                                    {update.images && update.images.length > 0 && (
                                       <div className="flex gap-2">
-                                        {milestone.images.slice(0, 3).map((image: any, idx: number) => (
+                                        {update.images.slice(0, 3).map((image: any, idx: number) => (
                                           <div key={idx} className="w-20 h-20 rounded overflow-hidden">
                                             <img
-                                              src={image.url}
+                                              src={image.url || image}
                                               alt={`Preview ${idx + 1}`}
                                               className="w-full h-full object-cover"
+                                              loading="lazy"
                                             />
                                           </div>
                                         ))}
@@ -547,20 +600,14 @@ export default function BuilderDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Buyer Inquiries</CardTitle>
-                <CardDescription>
-                  Messages and leads from interested buyers
-                </CardDescription>
+                <CardDescription>Messages and leads from interested buyers</CardDescription>
               </CardHeader>
               <CardContent>
                 {inquiries.length === 0 ? (
                   <div className="text-center py-12">
                     <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">
-                      No inquiries yet
-                    </h3>
-                    <p className="text-muted-foreground mb-6">
-                      Buyer inquiries will appear here
-                    </p>
+                    <h3 className="text-xl font-semibold mb-2">No inquiries yet</h3>
+                    <p className="text-muted-foreground mb-6">Buyer inquiries will appear here</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -585,9 +632,7 @@ export default function BuilderDashboard() {
                                   )}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground">
-                                {inquiry.project_name}
-                              </p>
+                              <p className="text-sm text-muted-foreground">{inquiry.project_name}</p>
                             </div>
                             <div className="text-left sm:text-right text-sm text-muted-foreground">
                               <Clock className="h-4 w-4 inline mr-1" />
@@ -638,13 +683,10 @@ export default function BuilderDashboard() {
 
           <TabsContent value="analytics" className="mt-6">
             <div className="space-y-6">
-              {/* Performance Overview */}
               <Card>
                 <CardHeader>
                   <CardTitle>Performance Overview</CardTitle>
-                  <CardDescription>
-                    Track engagement and conversion metrics across your projects
-                  </CardDescription>
+                  <CardDescription>Track engagement and conversion metrics across your projects</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
@@ -681,13 +723,10 @@ export default function BuilderDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Project Performance */}
               <Card>
                 <CardHeader>
                   <CardTitle>Project Performance</CardTitle>
-                  <CardDescription>
-                    Compare engagement across your projects
-                  </CardDescription>
+                  <CardDescription>Compare engagement across your projects</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {projects.length === 0 ? (
@@ -747,7 +786,6 @@ export default function BuilderDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Insights */}
               <Card>
                 <CardHeader>
                   <CardTitle>Insights & Recommendations</CardTitle>
@@ -791,12 +829,12 @@ export default function BuilderDashboard() {
         </Tabs>
       </div>
 
-      {/* Create Project Dialog */}
       <CreateProjectDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
-        onSuccess={fetchBuilderData}
+        onSuccess={loadProjects}
       />
     </div>
   );
 }
+

@@ -17,6 +17,7 @@ import cloudinary.uploader
 import cloudinary.api
 import hashlib
 import io
+import json
 from django.utils import timezone
 import logging
 
@@ -422,7 +423,16 @@ class PropertyViewSet(viewsets.ModelViewSet):
             # Check if request is from mobile device
             user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
             is_mobile = any(device in user_agent for device in ['mobile', 'android', 'iphone', 'ipad', 'tablet'])
-            device_info = request.data.get('device_info', {})
+            
+            # Parse device_info - handle both JSON string and dict
+            device_info_raw = request.data.get('device_info', {})
+            if isinstance(device_info_raw, str):
+                try:
+                    device_info = json.loads(device_info_raw)
+                except (json.JSONDecodeError, TypeError):
+                    device_info = {}
+            else:
+                device_info = device_info_raw or {}
             
             if not is_mobile and not device_info.get('is_mobile', False):
                 return Response({
@@ -430,8 +440,16 @@ class PropertyViewSet(viewsets.ModelViewSet):
                     'error_code': 'DESKTOP_UPLOAD_BLOCKED'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            # Verify camera capture metadata
-            capture_metadata = request.data.get('capture_metadata', {})
+            # Verify camera capture metadata - handle both JSON string and dict
+            capture_metadata_raw = request.data.get('capture_metadata', {})
+            if isinstance(capture_metadata_raw, str):
+                try:
+                    capture_metadata = json.loads(capture_metadata_raw)
+                except (json.JSONDecodeError, TypeError):
+                    capture_metadata = {}
+            else:
+                capture_metadata = capture_metadata_raw or {}
+            
             if not capture_metadata.get('camera_captured', False):
                 return Response({
                     'detail': 'Only camera-captured media is allowed. Gallery uploads are blocked.',
@@ -480,13 +498,19 @@ class PropertyViewSet(viewsets.ModelViewSet):
                         exists = False
                     
                     if not exists:
-                        res = cloudinary.uploader.upload(
-                            io.BytesIO(img_bytes), 
-                            resource_type='image',
-                            public_id=public_id,
-                            overwrite=False
-                        )
-                        cloudinary_url = res.get('secure_url')
+                        logger.info(f"Uploading image to Cloudinary: {public_id}")
+                        try:
+                            res = cloudinary.uploader.upload(
+                                io.BytesIO(img_bytes), 
+                                resource_type='image',
+                                public_id=public_id,
+                                overwrite=False
+                            )
+                            cloudinary_url = res.get('secure_url')
+                            logger.info(f"Image uploaded successfully: {cloudinary_url}")
+                        except Exception as upload_error:
+                            logger.error(f"Cloudinary upload error: {str(upload_error)}", exc_info=True)
+                            raise upload_error
                     else:
                         # Get URL for existing resource
                         cloudinary_url = cloudinary.CloudinaryImage(public_id).build_url(secure=True)
@@ -526,13 +550,19 @@ class PropertyViewSet(viewsets.ModelViewSet):
                         exists = False
                     
                     if not exists:
-                        res = cloudinary.uploader.upload(
-                            io.BytesIO(vid_bytes), 
-                            resource_type='video',
-                            public_id=public_id,
-                            overwrite=False
-                        )
-                        cloudinary_url = res.get('secure_url')
+                        logger.info(f"Uploading video to Cloudinary: {public_id}")
+                        try:
+                            res = cloudinary.uploader.upload(
+                                io.BytesIO(vid_bytes), 
+                                resource_type='video',
+                                public_id=public_id,
+                                overwrite=False
+                            )
+                            cloudinary_url = res.get('secure_url')
+                            logger.info(f"Video uploaded successfully: {cloudinary_url}")
+                        except Exception as upload_error:
+                            logger.error(f"Cloudinary upload error: {str(upload_error)}", exc_info=True)
+                            raise upload_error
                     else:
                         # Get URL for existing resource
                         cloudinary_url = cloudinary.CloudinaryVideo(public_id).build_url(secure=True)
@@ -574,7 +604,29 @@ class PropertyViewSet(viewsets.ModelViewSet):
                 }
                 prop.unit_progress_updates.append(update_entry)
             
+            # Save property with updated media
             prop.save()
+            
+            # Create ConstructionUpdate record for property-specific update
+            try:
+                from datetime import date
+                ConstructionUpdate.objects.create(
+                    project=prop.project,
+                    created_by=request.user,
+                    update_type='property_specific',
+                    title=f"Progress Update - Unit {prop.unit_number}",
+                    description=description or f"Construction progress update for Unit {prop.unit_number}",
+                    update_date=date.today(),
+                    images=[{'url': img['url'], 'caption': img.get('description', '')} for img in uploaded_images],
+                    videos=[{'url': vid['url'], 'caption': vid.get('description', '')} for vid in uploaded_videos],
+                    property_unit_number=prop.unit_number,
+                    visible_to_owner_only=True,
+                    completion_percentage=prop.unit_progress_percentage
+                )
+                logger.info(f"ConstructionUpdate created for property: {prop.id}")
+            except Exception as e:
+                logger.error(f"Failed to create ConstructionUpdate: {str(e)}", exc_info=True)
+                # Don't fail the upload if ConstructionUpdate creation fails
             
             logger.info(f"Secure property upload completed - Unit: {prop.unit_number}")
             
@@ -895,7 +947,16 @@ class MilestoneViewSet(viewsets.ModelViewSet):
             # Check if request is from mobile device
             user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
             is_mobile = any(device in user_agent for device in ['mobile', 'android', 'iphone', 'ipad', 'tablet'])
-            device_info = request.data.get('device_info', {})
+            
+            # Parse device_info - handle both JSON string and dict
+            device_info_raw = request.data.get('device_info', {})
+            if isinstance(device_info_raw, str):
+                try:
+                    device_info = json.loads(device_info_raw)
+                except (json.JSONDecodeError, TypeError):
+                    device_info = {}
+            else:
+                device_info = device_info_raw or {}
             
             if not is_mobile and not device_info.get('is_mobile', False):
                 return Response({
@@ -903,8 +964,16 @@ class MilestoneViewSet(viewsets.ModelViewSet):
                     'error_code': 'DESKTOP_UPLOAD_BLOCKED'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            # Verify camera capture metadata
-            capture_metadata = request.data.get('capture_metadata', {})
+            # Verify camera capture metadata - handle both JSON string and dict
+            capture_metadata_raw = request.data.get('capture_metadata', {})
+            if isinstance(capture_metadata_raw, str):
+                try:
+                    capture_metadata = json.loads(capture_metadata_raw)
+                except (json.JSONDecodeError, TypeError):
+                    capture_metadata = {}
+            else:
+                capture_metadata = capture_metadata_raw or {}
+            
             if not capture_metadata.get('camera_captured', False):
                 return Response({
                     'detail': 'Only camera-captured media is allowed. Gallery uploads are blocked.',
@@ -954,13 +1023,19 @@ class MilestoneViewSet(viewsets.ModelViewSet):
                         exists = False
                     
                     if not exists:
-                        res = cloudinary.uploader.upload(
-                            io.BytesIO(img_bytes), 
-                            resource_type='image',
-                            public_id=public_id,
-                            overwrite=False
-                        )
-                        cloudinary_url = res.get('secure_url')
+                        logger.info(f"Uploading image to Cloudinary: {public_id}")
+                        try:
+                            res = cloudinary.uploader.upload(
+                                io.BytesIO(img_bytes), 
+                                resource_type='image',
+                                public_id=public_id,
+                                overwrite=False
+                            )
+                            cloudinary_url = res.get('secure_url')
+                            logger.info(f"Image uploaded successfully: {cloudinary_url}")
+                        except Exception as upload_error:
+                            logger.error(f"Cloudinary upload error: {str(upload_error)}", exc_info=True)
+                            raise upload_error
                     else:
                         # Get URL for existing resource
                         cloudinary_url = cloudinary.CloudinaryImage(public_id).build_url(secure=True)
@@ -1000,13 +1075,19 @@ class MilestoneViewSet(viewsets.ModelViewSet):
                         exists = False
                     
                     if not exists:
-                        res = cloudinary.uploader.upload(
-                            io.BytesIO(vid_bytes), 
-                            resource_type='video',
-                            public_id=public_id,
-                            overwrite=False
-                        )
-                        cloudinary_url = res.get('secure_url')
+                        logger.info(f"Uploading video to Cloudinary: {public_id}")
+                        try:
+                            res = cloudinary.uploader.upload(
+                                io.BytesIO(vid_bytes), 
+                                resource_type='video',
+                                public_id=public_id,
+                                overwrite=False
+                            )
+                            cloudinary_url = res.get('secure_url')
+                            logger.info(f"Video uploaded successfully: {cloudinary_url}")
+                        except Exception as upload_error:
+                            logger.error(f"Cloudinary upload error: {str(upload_error)}", exc_info=True)
+                            raise upload_error
                     else:
                         # Get URL for existing resource
                         cloudinary_url = cloudinary.CloudinaryVideo(public_id).build_url(secure=True)
@@ -1031,6 +1112,26 @@ class MilestoneViewSet(viewsets.ModelViewSet):
             milestone.images = list(milestone.images or []) + uploaded_images
             milestone.videos = list(milestone.videos or []) + uploaded_videos
             milestone.save()
+            
+            # Create ConstructionUpdate record with uploaded media
+            try:
+                from datetime import date
+                ConstructionUpdate.objects.create(
+                    project=milestone.project,
+                    created_by=request.user,
+                    update_type='project_level',
+                    title=f"Progress Update - {milestone.title}",
+                    description=description or f"Construction progress update for {milestone.title}",
+                    update_date=date.today(),
+                    images=[{'url': img['url'], 'caption': img.get('description', '')} for img in uploaded_images],
+                    videos=[{'url': vid['url'], 'caption': vid.get('description', '')} for vid in uploaded_videos],
+                    completion_percentage=milestone.progress_percentage,
+                    milestone_achieved=milestone.title
+                )
+                logger.info(f"ConstructionUpdate created for milestone: {milestone.id}")
+            except Exception as e:
+                logger.error(f"Failed to create ConstructionUpdate: {str(e)}", exc_info=True)
+                # Don't fail the upload if ConstructionUpdate creation fails
             
             logger.info(f"Secure upload completed - Milestone: {milestone.id}")
             

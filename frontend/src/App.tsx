@@ -24,6 +24,7 @@ import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
 import OAuthCallback from "./pages/OAuthCallback";
 import NotFound from "./pages/NotFound";
+import AIChatbot from "./components/AIChatbot";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,8 @@ const Layout = () => {
         </Routes>
       </main>
       {showFooter && <Footer />}
+      {/* AI Chatbot - Available on all pages */}
+      <AIChatbot />
     </div>
   );
 };
