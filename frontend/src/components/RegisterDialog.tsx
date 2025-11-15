@@ -17,7 +17,8 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 const authAPI = {
   getGoogleAuthUrl: () => {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-    return `${API_BASE_URL}/api/users/auth/google/`;
+    // Use allauth's Google login URL
+    return `${API_BASE_URL}/accounts/google/login/`;
   },
 };
 
