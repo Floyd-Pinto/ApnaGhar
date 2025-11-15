@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
+from decimal import Decimal
 import uuid
 import hashlib
 import json
@@ -15,7 +16,7 @@ class Developer(models.Model):
     rera_number = models.CharField(max_length=100, unique=True, null=True, blank=True)
     verified = models.BooleanField(default=False)
     trust_score = models.DecimalField(max_digits=3, decimal_places=2, default=0.0, 
-                                     validators=[MinValueValidator(0), MaxValueValidator(5)])
+                                     validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('5'))])
     description = models.TextField(blank=True)
     logo = models.URLField(max_length=500, blank=True, null=True)
     website = models.URLField(max_length=500, blank=True, null=True)
@@ -96,7 +97,7 @@ class Project(models.Model):
     blockchain_hash = models.CharField(max_length=255, blank=True, null=True)
     verified = models.BooleanField(default=False)
     verification_score = models.DecimalField(max_digits=5, decimal_places=2, default=0.0,
-                                            validators=[MinValueValidator(0), MaxValueValidator(100)])
+                                            validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))])
     
     # Stats
     views_count = models.IntegerField(default=0)
@@ -263,7 +264,7 @@ class ConstructionMilestone(models.Model):
     # Status
     status = models.CharField(max_length=20, choices=MILESTONE_STATUS, default='pending')
     progress_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0.0,
-                                             validators=[MinValueValidator(0), MaxValueValidator(100)])
+                                             validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))])
     
     # Verification
     verified = models.BooleanField(default=False)
@@ -271,7 +272,7 @@ class ConstructionMilestone(models.Model):
                                    related_name='verified_milestones')
     verified_at = models.DateTimeField(null=True, blank=True)
     ai_verification_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True,
-                                                validators=[MinValueValidator(0), MaxValueValidator(100)])
+                                                validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))])
     
     # Media
     images = models.JSONField(default=list, blank=True)  # Array of image URLs
