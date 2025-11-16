@@ -37,9 +37,9 @@ ipfshttpclient==0.8.0a2
 razorpay==1.4.1
 
 # RAG Pipeline dependencies (for AI chatbot)
-# Pinned versions to avoid resolver conflicts on Render
+# Pinned versions compatible with Python 3.13
 sentence-transformers==2.7.0
-faiss-cpu==1.8.0
+faiss-cpu==1.9.0.post1
 numpy==1.26.4
 pandas==2.2.2
 langchain==0.2.14
