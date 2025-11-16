@@ -71,7 +71,7 @@ INSTALLED_APPS = [
 ]
 
 # Support System Configuration
-SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL', 'support@apnaghar.com')
+SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL')
 SUPPORT_AUTO_ASSIGN = os.getenv('SUPPORT_AUTO_ASSIGN', 'False') == 'True'
 SUPPORT_STAFF_EMAILS = os.getenv('SUPPORT_STAFF_EMAILS', '').split(',') if os.getenv('SUPPORT_STAFF_EMAILS') else []
 
@@ -204,14 +204,9 @@ SIMPLE_JWT = {
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "http://172.20.10.9:8080",
-    "https://apnaghar-five.vercel.app",  # Frontend on Vercel
-    "https://your-frontend-name.netlify.app",  # If using Netlify
-    "https://apnaghar-2emb.onrender.com",  # Backend on Render
-]
+# Parse CORS allowed origins from environment variable
+CORS_ALLOWED_ORIGINS_STR = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:8080,http://127.0.0.1:8080')
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS_STR.split(',') if origin.strip()]
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -286,10 +281,10 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
-# Get Cloudinary credentials from environment or use provided defaults
-CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', 'dq1czuqhi')
-CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '592366112797912')
-CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', 'ivgsDMPP5X9ZQqjXlr-65PQEhxU')
+# Get Cloudinary credentials from environment
+CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME')
+CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY')
+CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET')
 
 # Get Pinata IPFS credentials from environment
 PINATA_API_KEY = os.getenv('PINATA_API_KEY')
@@ -323,9 +318,9 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Razorpay Configuration
-RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
-RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')
-RAZORPAY_WEBHOOK_SECRET = os.getenv('RAZORPAY_WEBHOOK_SECRET', '')
+RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET')
+RAZORPAY_WEBHOOK_SECRET = os.getenv('RAZORPAY_WEBHOOK_SECRET')
 
 if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
     logger.info(f"Razorpay configured - Key ID: {RAZORPAY_KEY_ID[:10]}...")
@@ -334,12 +329,12 @@ else:
 
 # Email Configuration
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'ApnaGhar <noreply@apnaghar.com>')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
     logger.info(f"Email configured - From: {DEFAULT_FROM_EMAIL}")
