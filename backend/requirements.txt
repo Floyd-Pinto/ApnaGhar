@@ -30,8 +30,8 @@ sqlparse==0.5.3
 typing_extensions==4.15.0
 urllib3==2.5.0
 whitenoise==6.11.0
+setuptools>=65.5.1
 # IPFS dependencies (for immutable file storage)
 ipfshttpclient==0.8.0a2
 # Payment gateway dependencies
 razorpay==1.4.1
-cryptography==44.0.0
