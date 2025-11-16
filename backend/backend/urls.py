@@ -27,5 +27,6 @@ urlpatterns = [
     path('api/support/', include('support.urls')),
     path('api/analytics/', include('analytics.urls')),
     path('api/investments/', include('investments.urls')),
+    path('api/chatbot/', include('chatbot.urls')),
     path('accounts/', include('allauth.urls')),  # For allauth
 ]

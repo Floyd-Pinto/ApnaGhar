@@ -46,5 +46,9 @@ logs/
 *.env
 .env.*
 
-# RAG Pipeline (excluded from git)
-rag-pipeline/
+# RAG Pipeline - Only exclude env and cache
+rag-pipeline/.env
+rag-pipeline/__pycache__/
+rag-pipeline/**/__pycache__/
+rag-pipeline/.pytest_cache/
+rag-pipeline/notebooks/

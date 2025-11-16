@@ -1,0 +1,191 @@
+# ApnaGhar Platform - Context for AI Assistant
+
+## Platform Overview
+ApnaGhar is a comprehensive real estate platform providing transparency, security, and real-time tracking for property buyers and builders in India. The platform uses blockchain technology and AI to revolutionize property transactions.
+
+## Core Features
+
+### For Property Buyers
+1. **Verified Property Listings**
+   - RERA verified projects and properties
+   - Detailed property information (BHK, price, location, amenities)
+   - High-quality images and videos
+   - Floor plans and project layouts
+   - Trust scores and verification badges
+
+2. **Real-Time Construction Tracking**
+   - Weekly photo and video updates from construction sites
+   - Geotagged and timestamped media
+   - QR code-based secure uploads
+   - Milestone-based progress tracking
+   - Push notifications for important updates
+   - Direct communication with builders
+
+3. **Blockchain Security**
+   - Immutable booking contracts stored on Hyperledger Fabric
+   - IPFS (Pinata) for decentralized document storage
+   - Tamper-proof construction media verification
+   - Transparent payment and ownership records
+   - Secure digital signatures
+
+4. **Smart Booking Process**
+   - Browse and filter properties by location, price, type
+   - Virtual site visits and 360° tours
+   - Online booking with token payment
+   - Flexible payment plans (EMI, construction-linked, bank loans)
+   - Digital documentation and e-signing
+   - Automated payment reminders
+
+5. **Investment Dashboard**
+   - Track all bookings and investments
+   - View construction progress in real-time
+   - Payment history and upcoming dues
+   - Document repository
+   - Communication history with builders
+   - Property appreciation tracking
+
+### For Builders/Developers
+1. **Project Management**
+   - Create and manage multiple projects
+   - Add properties with detailed specifications
+   - Upload media (images, videos, floor plans)
+   - Set pricing and availability
+   - RERA registration verification
+
+2. **Construction Updates**
+   - Mobile-first QR code scanning for secure uploads
+   - Upload construction photos and videos on-site
+   - Mark milestone completion
+   - Automatic buyer notifications
+   - Progress percentage tracking
+
+3. **Buyer Communication**
+   - Respond to queries and concerns
+   - Send announcements and updates
+   - Schedule site visits
+   - Handle booking requests
+
+4. **Analytics & Insights**
+   - View count tracking
+   - Interest and booking analytics
+   - Revenue projections
+   - Buyer demographics
+
+## Property Types Available
+- **Residential**: 1BHK, 2BHK, 3BHK, 4BHK+, Studio, Penthouse, Villa
+- **Commercial**: Office spaces, retail shops, showrooms
+- **Plots**: Residential plots, commercial plots
+- **Mixed-Use**: Combined residential and commercial
+
+## Cities Covered
+Major metropolitan areas including:
+- Mumbai & MMR (Thane, Navi Mumbai, Kalyan)
+- Pune & PCMC
+- Bangalore (Whitefield, Electronic City, Koramangala)
+- Hyderabad (Gachibowli, HITEC City, Banjara Hills)
+- Delhi NCR (Gurgaon, Noida, Greater Noida)
+- Chennai, Kolkata, Ahmedabad, and more
+
+## Pricing & Payment
+- **Price Range**: ₹20 lakhs to ₹5+ crores
+- **Payment Options**:
+  - Full payment with discounts (typically 5-10%)
+  - Bank loans with partner banks (SBI, HDFC, ICICI)
+  - Construction-linked payment plan (milestone-based)
+  - Flexible EMI plans
+  - Token amount: Usually 10% of property value
+
+## Verification & Trust
+- **RERA Compliance**: All projects are RERA registered
+- **Developer Verification**: KYC and background checks
+- **Trust Scores**: Based on past projects, customer reviews, completion rate
+- **Third-Party Audits**: Regular audits of construction progress
+- **Blockchain Verification**: All transactions on immutable ledger
+
+## Technology Stack
+- **Frontend**: React + TypeScript, Tailwind CSS, Vercel hosting
+- **Backend**: Django REST Framework, PostgreSQL (Supabase), Render hosting
+- **Blockchain**: Hyperledger Fabric + IPFS (Pinata)
+- **Media Storage**: Cloudinary
+- **AI/ML**: RAG-based chatbot with Groq LLM, FAISS vector search
+
+## Key Differentiators
+1. **Transparency**: Real-time construction tracking with verified media
+2. **Security**: Blockchain-backed transactions and documents
+3. **Trust**: RERA verification, developer ratings, buyer reviews
+4. **Convenience**: Online booking, virtual tours, digital documentation
+5. **Communication**: Direct builder-buyer interaction
+6. **Technology**: AI chatbot, smart search, personalized recommendations
+
+## Common User Queries & Responses
+
+### About Booking
+- **Q**: How to book a property?
+- **A**: Browse properties → Select property → Click "Book Now" → Pay token amount (10%) → Complete KYC → Sign agreement digitally → Track construction
+
+### About Construction Tracking
+- **Q**: How do I track construction progress?
+- **A**: Access your Buyer Dashboard → View "My Investments" → Click on property → See real-time photos, videos, and milestone updates with timestamps
+
+### About Payments
+- **Q**: What payment options are available?
+- **A**: We offer full payment (with discount), bank loans (pre-approved partners), construction-linked plans, and flexible EMIs. Token: 10%, then milestone-based payments.
+
+### About Blockchain
+- **Q**: How does blockchain make transactions secure?
+- **A**: Every booking contract, payment, and construction update is stored on an immutable blockchain (Hyperledger Fabric + IPFS). This prevents tampering and ensures complete transparency.
+
+### About Verification
+- **Q**: How are properties verified?
+- **A**: All projects are RERA verified. We verify developer credentials, check legal documents, and assign trust scores based on past performance and buyer reviews.
+
+### About Amenities
+Common amenities include:
+- Swimming pool, Gym, Clubhouse
+- Children's play area, Parks
+- 24/7 security, CCTV surveillance
+- Power backup, Water supply
+- Parking (covered and open)
+- Elevators, Intercom facility
+- Jogging track, Sports facilities
+
+## Support & Contact
+- **24/7 AI Chatbot**: Available on all pages
+- **Email**: support@apnaghar.com
+- **Phone**: +91-1800-XXX-XXXX
+- **Live Chat**: Business hours (9 AM - 6 PM IST)
+- **Help Center**: Comprehensive FAQs and guides
+
+## User Roles
+1. **Buyer**: Browse, book, track construction, manage investments
+2. **Builder**: Create projects, upload updates, manage bookings
+3. **Admin**: Platform management, verification, support
+
+## Mobile Experience
+- **Responsive Design**: Works seamlessly on all devices
+- **QR Code Scanning**: Builders scan QR codes to upload construction media securely
+- **Push Notifications**: Real-time alerts for milestones, payments, messages
+- **Offline Capability**: View saved properties and updates offline
+
+## Search & Discovery
+- **Smart Search**: Natural language queries (e.g., "3BHK under 1 crore in Bangalore")
+- **Advanced Filters**: Price, location, BHK, amenities, status, developer
+- **Sorting**: By price, popularity, newest, verified
+- **Recommendations**: AI-powered suggestions based on preferences
+- **Similar Properties**: Find comparable options
+
+## Legal & Compliance
+- All transactions comply with RERA Act 2016
+- Digital signatures are legally valid (IT Act 2000)
+- Data protection per DPDPA 2023
+- Escrow accounts for secure payments
+- Title verification and legal due diligence
+
+---
+
+**Note to AI Assistant**: Use this context to provide accurate, helpful responses about ApnaGhar. Always:
+1. Be specific with numbers (prices, sizes, dates)
+2. Mention blockchain security when relevant
+3. Guide users to appropriate features (dashboard, explore page)
+4. Offer to connect with support for complex queries
+5. Stay professional and helpful

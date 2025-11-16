@@ -15,6 +15,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 interface Message {
   id: string;
   text: string;
@@ -23,11 +25,11 @@ interface Message {
 }
 
 const QUICK_QUESTIONS = [
-  "What types of properties are available?",
-  "How does the booking process work?",
-  "What are the payment options?",
-  "Tell me about construction tracking",
-  "How is blockchain used here?",
+  "Show me 3BHK properties under 1 crore",
+  "What projects are available in Mumbai?",
+  "Tell me about construction tracking features",
+  "How does blockchain security work?",
+  "What are the payment and EMI options?",
 ];
 
 const AIChatbot = () => {
@@ -60,51 +62,30 @@ const AIChatbot = () => {
     }
   }, [isOpen, isMinimized]);
 
-  const generateBotResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase();
+  const queryRAG = async (userMessage: string): Promise<string> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chatbot/query/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: userMessage,
+          format: 'detailed'
+        }),
+      });
 
-    // Property types
-    if (lowerMessage.includes("property") || lowerMessage.includes("types")) {
-      return "We offer various property types including:\n\n• Residential Apartments (1BHK to 4BHK)\n• Commercial Spaces\n• Villas & Row Houses\n• Plots & Land\n\nAll properties are RERA verified and come with complete transparency. Would you like to explore projects in a specific location?";
+      if (!response.ok) {
+        throw new Error('Failed to get response from AI');
+      }
+
+      const data = await response.json();
+      return data.answer || "I apologize, but I couldn't process that request. Please try again.";
+    } catch (error) {
+      console.error('RAG query error:', error);
+      // Fallback response if API fails
+      return "I'm having trouble connecting to my knowledge base right now. Please try again in a moment, or browse our properties directly on the Explore page.";
     }
-
-    // Booking process
-    if (lowerMessage.includes("book") || lowerMessage.includes("purchase")) {
-      return "Our booking process is simple and secure:\n\n1. Browse verified properties\n2. Schedule a site visit (optional)\n3. Book online with token amount\n4. Complete documentation\n5. Track construction progress in real-time\n\nAll transactions are blockchain-verified for your security. Ready to explore properties?";
-    }
-
-    // Payment options
-    if (lowerMessage.includes("payment") || lowerMessage.includes("emi") || lowerMessage.includes("loan")) {
-      return "We offer flexible payment options:\n\n• Full payment with attractive discounts\n• Bank loans with pre-approved partnerships\n• Flexible EMI plans\n• Construction-linked payment plans\n\nOur team can help you with loan processing. Would you like to connect with our finance advisor?";
-    }
-
-    // Construction tracking
-    if (lowerMessage.includes("track") || lowerMessage.includes("progress") || lowerMessage.includes("construction")) {
-      return "Our real-time construction tracking features:\n\n• Weekly photo/video updates\n• Geotagged & timestamped media\n• Milestone notifications\n• Progress dashboard\n• Direct builder communication\n\nYou can track every stage of construction from foundation to possession! 🏗️";
-    }
-
-    // Blockchain
-    if (lowerMessage.includes("blockchain") || lowerMessage.includes("security") || lowerMessage.includes("safe")) {
-      return "We use blockchain technology for:\n\n• Immutable booking contracts\n• Verified construction media\n• Transparent payment records\n• Tamper-proof documentation\n• Secure ownership transfer\n\nYour investment is protected with cutting-edge security! 🔐";
-    }
-
-    // Location queries
-    if (lowerMessage.includes("location") || lowerMessage.includes("where") || lowerMessage.includes("city")) {
-      return "We have verified projects across major cities:\n\n• Mumbai & MMR\n• Pune\n• Bangalore\n• Hyderabad\n• Delhi NCR\n• And more!\n\nWhich city are you interested in?";
-    }
-
-    // Contact/Support
-    if (lowerMessage.includes("contact") || lowerMessage.includes("call") || lowerMessage.includes("support")) {
-      return "We're here to help! You can:\n\n• Chat with me 24/7\n• Email: support@apnaghar.com\n• Call: +91-1800-XXX-XXXX\n• Schedule a callback\n\nWhat would you prefer?";
-    }
-
-    // Greetings
-    if (lowerMessage.includes("hello") || lowerMessage.includes("hi") || lowerMessage.includes("hey")) {
-      return "Hello! 😊 Welcome to ApnaGhar - your trusted real estate partner. I can help you with:\n\n• Finding properties\n• Booking process\n• Payment options\n• Construction tracking\n• Any other queries\n\nWhat would you like to know?";
-    }
-
-    // Default response
-    return "I'd be happy to help you with that! I can assist you with:\n\n• Property search & details\n• Booking & payment process\n• Construction tracking\n• Blockchain security\n• General inquiries\n\nCould you please provide more details about what you're looking for? Or select a quick question below!";
   };
 
   const handleSendMessage = async (messageText?: string) => {
@@ -123,18 +104,30 @@ const AIChatbot = () => {
     setInputValue("");
     setIsTyping(true);
 
-    // Simulate bot typing delay
-    setTimeout(() => {
+    // Get AI response from RAG backend
+    try {
+      const aiResponse = await queryRAG(text);
+      
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: generateBotResponse(text),
+        text: aiResponse,
         sender: "bot",
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, botResponse]);
+    } catch (error) {
+      console.error('Failed to get AI response:', error);
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "I apologize, but I'm having trouble processing your request. Please try again or contact our support team.",
+        sender: "bot",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorResponse]);
+    } finally {
       setIsTyping(false);
-    }, 1000 + Math.random() * 1000); // Random delay between 1-2 seconds
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

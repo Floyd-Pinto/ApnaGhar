@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'investments',
     'support',
     'analytics',
+    'chatbot',
     'notifications',
 ]
 
