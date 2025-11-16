@@ -45,6 +45,7 @@ langchain>=0.1.0
 langchain-community>=0.0.13
 langchain-core>=0.1.10
 langchain-groq>=0.0.1
+langchain-openai>=0.1.0
 langchain-text-splitters>=0.1.0
 tiktoken>=0.5.2
 groq>=0.4.1

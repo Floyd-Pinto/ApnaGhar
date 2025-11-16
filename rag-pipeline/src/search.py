@@ -10,7 +10,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from config import (
     PERSIST_DIR, EMBEDDING_MODEL, TOP_K_RESULTS, 
     LLM_MODEL, LLM_TEMPERATURE, LLM_MAX_TOKENS,
-    QUERY_TEMPLATES, GROQ_API_KEY, DEBUG
+    QUERY_TEMPLATES, GROQ_API_KEY, OPENAI_API_KEY, DEBUG
 )
 from src.vectorstore import FaissVectorStore
 
@@ -20,6 +20,13 @@ try:
 except ImportError:
     GROQ_AVAILABLE = False
     print("[WARNING] Groq not available. Install with: pip install langchain-groq")
+
+try:
+    from langchain_openai import ChatOpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    print("[WARNING] OpenAI not available. Install with: pip install langchain-openai")
 
 
 class RAGSearch:
@@ -43,9 +50,24 @@ class RAGSearch:
             print("[WARNING] FAISS index not found. Build it first using:")
             print("  python app.py build")
         
-        # Initialize LLM if available
+        # Initialize LLM if available (try OpenAI first, then Groq)
         self.llm = None
-        if GROQ_AVAILABLE:
+        
+        # Try OpenAI first
+        if OPENAI_AVAILABLE and OPENAI_API_KEY:
+            try:
+                self.llm = ChatOpenAI(
+                    openai_api_key=OPENAI_API_KEY,
+                    model_name="gpt-3.5-turbo",  # or "gpt-4"
+                    temperature=LLM_TEMPERATURE,
+                    max_tokens=LLM_MAX_TOKENS
+                )
+                print(f"[INFO] OpenAI LLM initialized: gpt-3.5-turbo")
+            except Exception as e:
+                print(f"[WARNING] Failed to initialize OpenAI: {e}")
+        
+        # Fallback to Groq if OpenAI not available
+        elif GROQ_AVAILABLE:
             api_key = groq_api_key or GROQ_API_KEY
             if api_key:
                 try:
@@ -61,7 +83,7 @@ class RAGSearch:
             else:
                 print("[WARNING] GROQ_API_KEY not set. LLM features disabled.")
         else:
-            print("[INFO] Running without LLM. Set up Groq for enhanced responses.")
+            print("[INFO] Running without LLM. Set up OpenAI or Groq for enhanced responses.")
     
     def retrieve_context(
         self, 
