@@ -85,10 +85,18 @@ def chatbot_health(request):
     
     GET /api/chatbot/health/
     """
-    is_available = rag_service.is_available()
-    
-    return Response({
-        'rag_available': is_available,
-        'status': 'healthy' if is_available else 'degraded',
-        'message': 'RAG service is operational' if is_available else 'RAG service unavailable - using fallback responses'
-    }, status=status.HTTP_200_OK)
+    try:
+        is_available = rag_service.is_available()
+        
+        return Response({
+            'rag_available': is_available,
+            'status': 'healthy' if is_available else 'degraded',
+            'message': 'RAG service is operational' if is_available else 'RAG service unavailable - using fallback responses'
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return Response({
+            'rag_available': False,
+            'status': 'error',
+            'message': f'Health check failed: {str(e)}'
+        }, status=status.HTTP_200_OK)
