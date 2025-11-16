@@ -291,9 +291,9 @@ CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', 'dq1czuqhi')
 CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '592366112797912')
 CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', 'ivgsDMPP5X9ZQqjXlr-65PQEhxU')
 
-# Get Pinata IPFS credentials from environment or use provided defaults
-PINATA_API_KEY = os.getenv('PINATA_API_KEY', '23210989886809173504')
-PINATA_API_SECRET = os.getenv('PINATA_API_SECRET', 'd1eab752bf299037c5dd3367111a6165456a3592c5c0a364254f4081ce2ee6a3')
+# Get Pinata IPFS credentials from environment
+PINATA_API_KEY = os.getenv('PINATA_API_KEY')
+PINATA_API_SECRET = os.getenv('PINATA_API_SECRET')
 PINATA_GATEWAY_URL = os.getenv('PINATA_GATEWAY_URL', 'https://gateway.pinata.cloud/ipfs/')
 
 CLOUDINARY_STORAGE = {
