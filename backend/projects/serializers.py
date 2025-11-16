@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import Developer, Project, Property, ConstructionMilestone, Review, ConstructionUpdate
+from .models import Developer, Project, Property, ConstructionMilestone, Review, ConstructionUpdate, Booking
 from django.contrib.auth import get_user_model
+from decimal import Decimal
 import cloudinary.utils
 
 User = get_user_model()
@@ -328,3 +329,133 @@ class ConstructionUpdateSerializer(serializers.ModelSerializer):
     
     def get_created_by_name(self, obj):
         return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.email
+
+
+class BookingSerializer(serializers.ModelSerializer):
+    """Serializer for Booking model"""
+    property_details = serializers.SerializerMethodField()
+    buyer_name = serializers.SerializerMethodField()
+    buyer_email = serializers.EmailField(source='buyer.email', read_only=True)
+    project_name = serializers.CharField(source='property.project.name', read_only=True)
+    project_id = serializers.UUIDField(source='property.project.id', read_only=True)
+    property_unit_number = serializers.CharField(source='property.unit_number', read_only=True)
+    property_type = serializers.CharField(source='property.property_type', read_only=True)
+    property_price_current = serializers.DecimalField(source='property.price', read_only=True, max_digits=12, decimal_places=2)
+    
+    class Meta:
+        model = Booking
+        fields = [
+            'id', 'booking_number', 'property', 'property_details', 'buyer', 'buyer_name', 'buyer_email',
+            'status', 'property_price', 'token_amount', 'total_amount', 'amount_paid', 'amount_due',
+            'payment_schedule', 'booking_date', 'token_payment_date', 'confirmation_date',
+            'agreement_date', 'expected_possession_date', 'cancellation_date', 'completion_date',
+            'payment_method', 'payment_reference', 'payment_gateway', 'agreement_document_url',
+            'agreement_document_hash', 'additional_documents', 'cancellation_reason',
+            'cancellation_initiated_by', 'refund_amount', 'refund_status', 'refund_reference',
+            'terms_accepted', 'terms_accepted_at', 'cancellation_policy', 'special_conditions',
+            'notes', 'metadata', 'project_name', 'project_id', 'property_unit_number',
+            'property_type', 'property_price_current', 'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'id', 'booking_number', 'property_details', 'buyer_name', 'buyer_email',
+            'project_name', 'project_id', 'property_unit_number', 'property_type',
+            'property_price_current', 'amount_due', 'created_at', 'updated_at'
+        ]
+    
+    def get_property_details(self, obj):
+        """Return basic property information"""
+        return {
+            'id': str(obj.property.id),
+            'unit_number': obj.property.unit_number,
+            'property_type': obj.property.property_type,
+            'floor_number': obj.property.floor_number,
+            'tower': obj.property.tower,
+            'carpet_area': str(obj.property.carpet_area),
+            'current_price': str(obj.property.price),
+            'current_status': obj.property.status,
+        }
+    
+    def get_buyer_name(self, obj):
+        """Return buyer's full name"""
+        if obj.buyer:
+            name = f"{obj.buyer.first_name} {obj.buyer.last_name}".strip()
+            return name if name else obj.buyer.email
+        return None
+    
+    def validate(self, data):
+        """Validate booking data"""
+        property_obj = data.get('property')
+        buyer = data.get('buyer')
+        
+        if property_obj and buyer:
+            # Check if property is available
+            if property_obj.status != 'available':
+                raise serializers.ValidationError({
+                    'property': f'Property is not available. Current status: {property_obj.status}'
+                })
+            
+            # Check if buyer already has an active booking for this property
+            active_booking = Booking.objects.filter(
+                property=property_obj,
+                buyer=buyer,
+                status__in=['pending', 'token_paid', 'confirmed', 'agreement_pending', 
+                           'agreement_signed', 'payment_in_progress']
+            ).exists()
+            
+            if active_booking:
+                raise serializers.ValidationError({
+                    'property': 'You already have an active booking for this property'
+                })
+            
+            # Set property_price and total_amount from property price
+            if 'total_amount' not in data or not data.get('total_amount'):
+                data['total_amount'] = property_obj.price
+                data['property_price'] = property_obj.price
+            
+            # Calculate amount_due
+            amount_paid = data.get('amount_paid', Decimal('0'))
+            total_amount = data.get('total_amount', property_obj.price)
+            data['amount_due'] = total_amount - amount_paid
+        
+        return data
+
+
+class BookingCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating bookings (simplified)"""
+    property_id = serializers.UUIDField(write_only=True)
+    
+    class Meta:
+        model = Booking
+        fields = [
+            'property_id', 'token_amount', 'payment_method', 'terms_accepted',
+            'expected_possession_date', 'special_conditions', 'notes'
+        ]
+        extra_kwargs = {
+            'token_amount': {'required': False, 'allow_null': True},
+            'expected_possession_date': {'required': False, 'allow_null': True},
+            'special_conditions': {'required': False, 'allow_null': True, 'allow_blank': True},
+            'notes': {'required': False, 'allow_null': True, 'allow_blank': True},
+        }
+    
+    def create(self, validated_data):
+        """Create a new booking"""
+        property_id = validated_data.pop('property_id')
+        property_obj = Property.objects.select_related('project').get(id=property_id)
+        buyer = self.context['request'].user
+        
+        # Get token amount (default to 5% of property price if not provided)
+        token_amount = validated_data.get('token_amount')
+        if not token_amount:
+            token_amount = property_obj.price * Decimal('0.05')  # 5% default
+        
+        booking = Booking.objects.create(
+            property=property_obj,
+            buyer=buyer,
+            property_price=property_obj.price,
+            total_amount=property_obj.price,
+            token_amount=token_amount,
+            amount_due=property_obj.price - token_amount,
+            **validated_data
+        )
+        
+        return booking

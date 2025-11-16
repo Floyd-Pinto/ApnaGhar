@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTrackEvent } from "@/hooks/useAnalytics";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Card,
@@ -50,6 +51,7 @@ import { apiRequest } from "@/services/api";
 import QRCodeDisplay from "@/components/QRCodeDisplay";
 import SecureUpload from "@/components/SecureUpload";
 import BlockchainDocumentUpload from "@/components/BlockchainDocumentUpload";
+import BookingDialog from "@/components/BookingDialog";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -94,6 +96,12 @@ export default function PropertyUnitDetails() {
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  // Track property view
+  useTrackEvent('property_view', {
+    related_object_type: 'property',
+    related_object_id: propertyId,
+  }, [propertyId]);
+  
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [progressLoading, setProgressLoading] = useState(false);
@@ -105,7 +113,6 @@ export default function PropertyUnitDetails() {
   const [uploadPhase, setUploadPhase] = useState("");
   const [uploadProgressPercent, setUploadProgressPercent] = useState<number | undefined>(undefined);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
-  const [booking, setBooking] = useState(false);
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [showSecureUploadDialog, setShowSecureUploadDialog] = useState(false);
   const [showDocumentUploadDialog, setShowDocumentUploadDialog] = useState(false);
@@ -220,67 +227,8 @@ export default function PropertyUnitDetails() {
     }
   };
 
-  const handleBookProperty = async () => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please login to book a property",
-        variant: "destructive",
-      });
-      navigate("/login");
-      return;
-    }
-
-    if (user?.role !== "buyer") {
-      toast({
-        title: "Access Denied",
-        description: "Only buyers can book properties",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setBooking(true);
-    try {
-      const token = localStorage.getItem("access_token");
-      const response = await fetch(
-        `${API_BASE_URL}/api/projects/user/properties/book/${propertyId}/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to book property");
-      }
-
-      const data = await response.json();
-      toast({
-        title: "Success!",
-        description: "Property booked successfully",
-      });
-
-      setShowBookingDialog(false);
-      fetchPropertyDetails(); // Refresh to show updated status
-      
-      // Redirect to buyer dashboard
-      setTimeout(() => {
-        navigate("/dashboard/buyer");
-      }, 2000);
-    } catch (error: any) {
-      toast({
-        title: "Booking Failed",
-        description: error.message || "Failed to book property",
-        variant: "destructive",
-      });
-    } finally {
-      setBooking(false);
-    }
+  const handleBookingSuccess = () => {
+    fetchPropertyDetails(); // Refresh to show updated status
   };
 
   const formatPrice = (price: string) => {
@@ -1083,64 +1031,17 @@ export default function PropertyUnitDetails() {
         </div>
       </div>
 
-      {/* Booking Confirmation Dialog */}
-      <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Booking</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to book Unit {property.unit_number}?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Property</span>
-                <span className="font-medium">Unit {property.unit_number}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Type</span>
-                <span className="font-medium">
-                  {getPropertyTypeDisplay(property.property_type)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Price</span>
-                <span className="font-bold text-primary">
-                  {formatPrice(property.price)}
-                </span>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              By booking this property, you agree to our terms and conditions. The
-              property will be marked as booked and you'll be able to view it in your
-              dashboard.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowBookingDialog(false)}
-              disabled={booking}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleBookProperty} disabled={booking}>
-              {booking ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Booking...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Confirm Booking
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Booking Dialog */}
+      {property && property.status === "available" && (
+        <BookingDialog
+          open={showBookingDialog}
+          onOpenChange={setShowBookingDialog}
+          propertyId={property.id}
+          propertyPrice={property.price}
+          propertyUnitNumber={property.unit_number}
+          onSuccess={handleBookingSuccess}
+        />
+      )}
 
       {/* Secure Upload Dialog */}
       <Dialog 

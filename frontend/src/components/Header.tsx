@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Shield, LogOut, User, Settings, Moon, Sun, Menu, X } from 'lucide-react';
+import { Shield, LogOut, User, Settings, Moon, Sun, Menu, X, MessageSquare } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import LoginDialog from './LoginDialog';
 import RegisterDialog from './RegisterDialog';
+import NotificationBell from './NotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -250,6 +251,15 @@ const Header = () => {
                           <span>Settings</span>
                         </Link>
                         
+                        <Link
+                          to="/support"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center space-x-2 px-3 sm:px-4 py-2.5 text-xs sm:text-sm rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-all w-full"
+                        >
+                          <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                          <span>Support</span>
+                        </Link>
+                        
                         <Button
                           variant="outline"
                           size="sm"
@@ -308,6 +318,9 @@ const Header = () => {
               )}
             </Button>
 
+            {/* Notification Bell - Only show when authenticated */}
+            {isAuthenticated && <NotificationBell />}
+
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -352,6 +365,12 @@ const Header = () => {
                     <Link to="/settings" className="flex items-center space-x-2 cursor-pointer">
                       <Settings className="h-4 w-4" />
                       <span>Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/support" className="flex items-center space-x-2 cursor-pointer">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Support</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

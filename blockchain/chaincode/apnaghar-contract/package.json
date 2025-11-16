@@ -4,6 +4,10 @@
   "description": "ApnaGhar Smart Contract for Hyperledger Fabric",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "start:server": "node index.js",
+    "start:server-nontls": "node index.js",
+    "start:server-debug": "node --inspect=0.0.0.0:9229 index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -15,7 +19,8 @@
   "author": "ApnaGhar",
   "license": "ISC",
   "dependencies": {
-    "fabric-contract-api": "^2.2.0"
+    "fabric-contract-api": "^2.2.0",
+    "fabric-shim": "^2.2.0"
   }
 }
 

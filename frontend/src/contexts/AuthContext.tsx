@@ -43,9 +43,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (accessToken && refreshToken) {
         console.log('🔑 AuthContext: Tokens found, fetching profile...');
         try {
-          // Try to get user profile with 3 second timeout
+          // Try to get user profile with 5 second timeout
           const timeoutPromise = new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Profile fetch timeout after 3s')), 3000)
+            setTimeout(() => reject(new Error('Profile fetch timeout after 5s')), 5000)
           );
           
           const userData = await Promise.race([
@@ -56,10 +56,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('✅ AuthContext: Profile loaded:', userData);
           setUser(userData);
         } catch (error: any) {
-          console.error('❌ AuthContext: Profile fetch failed:', error.message);
-          // If profile fetch fails, clear tokens and reset
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
+          console.warn('⚠️ AuthContext: Profile fetch failed:', error.message);
+          // If profile fetch fails with 401, tokens are invalid/expired - clear them
+          if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+            console.log('🔑 AuthContext: Tokens expired or invalid, clearing...');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+          }
+          // Continue without user - user can login again
           setUser(null);
         }
       } else {

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
 from decimal import Decimal
 import uuid
 import hashlib
@@ -405,4 +406,150 @@ class ConstructionUpdate(models.Model):
         if self.update_type == 'property_specific':
             return f"{self.project.name} - Unit {self.property_unit_number} - {self.title}"
         return f"{self.project.name} - {self.title}"
+
+
+class Booking(models.Model):
+    """Property booking system with full workflow tracking"""
+    BOOKING_STATUS = [
+        ('pending', 'Pending'),  # Booking created, payment pending
+        ('token_paid', 'Token Paid'),  # Token amount paid
+        ('confirmed', 'Confirmed'),  # Booking confirmed by builder
+        ('agreement_pending', 'Agreement Pending'),  # Waiting for agreement signing
+        ('agreement_signed', 'Agreement Signed'),  # Agreement signed
+        ('payment_in_progress', 'Payment In Progress'),  # Installments being paid
+        ('completed', 'Completed'),  # All payments done, ownership transferred
+        ('cancelled', 'Cancelled'),  # Booking cancelled
+        ('refund_pending', 'Refund Pending'),  # Waiting for refund
+        ('refunded', 'Refunded'),  # Refund processed
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    booking_number = models.CharField(max_length=50, unique=True, blank=True)  # Auto-generated
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name='bookings')
+    buyer = models.ForeignKey(User, on_delete=models.PROTECT, related_name='bookings')
+    
+    # Booking Details
+    status = models.CharField(max_length=30, choices=BOOKING_STATUS, default='pending')
+    
+    # Financial Details
+    property_price = models.DecimalField(max_digits=12, decimal_places=2)  # Snapshot of price at booking
+    token_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)  # Initial booking amount
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)  # Total property price
+    amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)  # Total paid so far
+    amount_due = models.DecimalField(max_digits=12, decimal_places=2)  # Remaining amount
+    payment_schedule = models.JSONField(default=dict, blank=True)  # Payment plan details
+    
+    # Dates
+    booking_date = models.DateTimeField(auto_now_add=True)  # When booking was created
+    token_payment_date = models.DateTimeField(null=True, blank=True)  # When token was paid
+    confirmation_date = models.DateTimeField(null=True, blank=True)  # When builder confirmed
+    agreement_date = models.DateTimeField(null=True, blank=True)  # When agreement was signed
+    expected_possession_date = models.DateField(null=True, blank=True)  # Expected possession
+    cancellation_date = models.DateTimeField(null=True, blank=True)  # When cancelled
+    completion_date = models.DateTimeField(null=True, blank=True)  # When completed
+    
+    # Payment Information
+    payment_method = models.CharField(max_length=50, blank=True, null=True)  # cash, cheque, online, etc.
+    payment_reference = models.CharField(max_length=255, blank=True, null=True)  # Transaction ID/reference
+    payment_gateway = models.CharField(max_length=50, blank=True, null=True)  # razorpay, stripe, etc.
+    
+    # Contract & Documents
+    agreement_document_url = models.URLField(max_length=500, blank=True, null=True)
+    agreement_document_hash = models.CharField(max_length=255, blank=True, null=True)  # For blockchain verification
+    additional_documents = models.JSONField(default=list, blank=True)  # [{"type": "...", "url": "...", "hash": "..."}]
+    
+    # Cancellation
+    cancellation_reason = models.TextField(blank=True, null=True)
+    cancellation_initiated_by = models.CharField(max_length=20, blank=True, null=True)  # buyer, builder, admin
+    refund_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0, null=True, blank=True)
+    refund_status = models.CharField(max_length=50, blank=True, null=True)  # pending, processed, failed
+    refund_reference = models.CharField(max_length=255, blank=True, null=True)
+    
+    # Terms & Conditions
+    terms_accepted = models.BooleanField(default=False)
+    terms_accepted_at = models.DateTimeField(null=True, blank=True)
+    cancellation_policy = models.TextField(blank=True)  # Cancellation terms
+    special_conditions = models.TextField(blank=True)  # Any special terms
+    
+    # Metadata
+    notes = models.TextField(blank=True)  # Internal notes
+    metadata = models.JSONField(default=dict, blank=True)  # Additional data
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        # Auto-generate booking number if not set
+        if not self.booking_number:
+            # Format: BK-{PROJECT_SHORT}-{DATE}-{RANDOM}
+            project_short = self.property.project.name[:5].upper().replace(' ', '')
+            date_part = timezone.now().strftime('%Y%m%d')
+            random_part = uuid.uuid4().hex[:6].upper()
+            self.booking_number = f"BK-{project_short}-{date_part}-{random_part}"
+        
+        # Calculate amount_due
+        if self.total_amount and self.amount_paid:
+            self.amount_due = self.total_amount - self.amount_paid
+        else:
+            self.amount_due = self.total_amount or Decimal('0')
+        
+        # Set confirmation date when status changes to confirmed
+        if self.status == 'confirmed' and not self.confirmation_date:
+            self.confirmation_date = timezone.now()
+        
+        # Set cancellation date when status changes to cancelled
+        if self.status == 'cancelled' and not self.cancellation_date:
+            self.cancellation_date = timezone.now()
+        
+        # Set completion date when status changes to completed
+        if self.status == 'completed' and not self.completion_date:
+            self.completion_date = timezone.now()
+        
+        super().save(*args, **kwargs)
+        
+        # Update property status when booking is confirmed or cancelled
+        if self.status == 'confirmed' and self.property.status == 'available':
+            self.property.status = 'booked'
+            self.property.buyer = self.buyer
+            self.property.save(update_fields=['status', 'buyer', 'updated_at'])
+            
+            # Update project available units count
+            self.property.project.available_units = self.property.project.properties.filter(status='available').count()
+            self.property.project.save(update_fields=['available_units'])
+        
+        elif self.status == 'cancelled' and self.property.status == 'booked':
+            # Check if there are other active bookings for this property
+            active_bookings = Booking.objects.filter(
+                property=self.property,
+                status__in=['pending', 'token_paid', 'confirmed', 'agreement_pending', 'agreement_signed', 'payment_in_progress']
+            ).exclude(id=self.id).exists()
+            
+            if not active_bookings:
+                self.property.status = 'available'
+                self.property.buyer = None
+                self.property.save(update_fields=['status', 'buyer', 'updated_at'])
+                
+                # Update project available units count
+                self.property.project.available_units = self.property.project.properties.filter(status='available').count()
+                self.property.project.save(update_fields=['available_units'])
+        
+        elif self.status == 'completed' and self.property.status == 'booked':
+            self.property.status = 'sold'
+            self.property.save(update_fields=['status', 'updated_at'])
+    
+    class Meta:
+        db_table = 'bookings'
+        verbose_name = 'Booking'
+        verbose_name_plural = 'Bookings'
+        ordering = ['-booking_date']
+        indexes = [
+            models.Index(fields=['property', 'status']),
+            models.Index(fields=['buyer', 'status']),
+            models.Index(fields=['booking_number']),
+            models.Index(fields=['booking_date']),
+            models.Index(fields=['status']),
+        ]
+    
+    def __str__(self):
+        return f"Booking {self.booking_number} - {self.property.project.name} - {self.buyer.email}"
 

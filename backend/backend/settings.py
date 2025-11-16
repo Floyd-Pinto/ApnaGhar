@@ -67,7 +67,13 @@ INSTALLED_APPS = [
     'investments',
     'support',
     'analytics',
+    'notifications',
 ]
+
+# Support System Configuration
+SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL', 'support@apnaghar.com')
+SUPPORT_AUTO_ASSIGN = os.getenv('SUPPORT_AUTO_ASSIGN', 'False') == 'True'
+SUPPORT_STAFF_EMAILS = os.getenv('SUPPORT_STAFF_EMAILS', '').split(',') if os.getenv('SUPPORT_STAFF_EMAILS') else []
 
 SITE_ID = 1
 
@@ -315,3 +321,27 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # Media files settings
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Razorpay Configuration
+RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')
+RAZORPAY_WEBHOOK_SECRET = os.getenv('RAZORPAY_WEBHOOK_SECRET', '')
+
+if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
+    logger.info(f"Razorpay configured - Key ID: {RAZORPAY_KEY_ID[:10]}...")
+else:
+    logger.warning("Razorpay credentials not set. Payment gateway will not work.")
+
+# Email Configuration
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'ApnaGhar <noreply@apnaghar.com>')
+
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    logger.info(f"Email configured - From: {DEFAULT_FROM_EMAIL}")
+else:
+    logger.warning("Email credentials not set. Email notifications will use console backend.")

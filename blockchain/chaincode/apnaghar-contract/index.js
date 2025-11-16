@@ -247,5 +247,9 @@ class ApnaGharContract extends Contract {
     }
 }
 
-module.exports = ApnaGharContract;
+// Export contract for both traditional and CCAAS modes  
+// For CCAAS, fabric-contract-api automatically starts a server 
+// when CHAINCODE_SERVER_ADDRESS environment variable is set
+module.exports.ApnaGharContract = ApnaGharContract;
+module.exports.contracts = [ApnaGharContract];
 
