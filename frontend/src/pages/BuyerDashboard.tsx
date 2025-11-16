@@ -261,8 +261,8 @@ export default function BuyerDashboard() {
     }] : []),
   ];
 
-  // Show loading only during auth or data loading - single condition
-  if (authLoading || loading) {
+  // Show loading only during initial auth check
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -312,6 +312,12 @@ export default function BuyerDashboard() {
 
       <div className="container mx-auto px-4 py-6 sm:py-8">
         {/* Stats Grid */}
+        {loading && (
+          <div className="flex items-center justify-center py-4 mb-4">
+            <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+            <span className="text-sm text-muted-foreground">Loading dashboard data...</span>
+          </div>
+        )}
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-6 mb-6 sm:mb-8 w-full">
           {stats.map((stat) => (
             <Card key={stat.title} className="w-full max-w-full">

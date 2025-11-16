@@ -469,60 +469,20 @@ export default function SecureUpload({ onSuccess, onClose }: SecureUploadProps) 
         description: `${result.uploaded_images || 0} images and ${result.uploaded_videos || 0} videos uploaded successfully`,
       });
 
-      // Call onSuccess callback first
+      // Call onSuccess callback to refresh data
       if (onSuccess) {
         onSuccess();
-      }
-
-      // Close the popup
-      if (onClose) {
-        onClose();
       }
 
       // Reset state
       resetUpload();
 
-      // Redirect to property page based on verification data
-      if (verificationData) {
-        if (verificationData.entity_type === 'property' && verificationData.entity_id) {
-          // Redirect to property page
-          setTimeout(() => {
-            navigate(`/property/${verificationData.entity_id}`);
-            // Refresh the page to show updated data
-            setTimeout(() => {
-              window.location.reload();
-            }, 300);
-          }, 500);
-        } else if (verificationData.entity_type === 'milestone' && verificationData.entity_id) {
-          // For milestones, redirect to source page or project page
-          if (sourcePath) {
-            setTimeout(() => {
-              navigate(sourcePath);
-              setTimeout(() => {
-                window.location.reload();
-              }, 300);
-            }, 500);
-          }
-        } else {
-          // Fallback: redirect to source page
-          if (sourcePath) {
-            setTimeout(() => {
-              navigate(sourcePath);
-              setTimeout(() => {
-                window.location.reload();
-              }, 300);
-            }, 500);
-          }
+      // Close the popup after a brief delay
+      setTimeout(() => {
+        if (onClose) {
+          onClose();
         }
-      } else if (sourcePath) {
-        // Fallback: redirect to source page
-        setTimeout(() => {
-          navigate(sourcePath);
-          setTimeout(() => {
-            window.location.reload();
-          }, 300);
-        }, 500);
-      }
+      }, 1000);
       
     } catch (error: any) {
       toast({
