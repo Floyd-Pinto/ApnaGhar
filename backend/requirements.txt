@@ -35,3 +35,18 @@ setuptools>=65.5.1
 ipfshttpclient==0.8.0a2
 # Payment gateway dependencies
 razorpay==1.4.1
+
+# RAG Pipeline dependencies (for AI chatbot)
+sentence-transformers>=2.2.2
+faiss-cpu>=1.9.0
+numpy>=1.26.0
+pandas>=2.1.0
+langchain>=0.1.0
+langchain-community>=0.0.13
+langchain-core>=0.1.10
+langchain-groq>=0.0.1
+langchain-text-splitters>=0.1.0
+tiktoken>=0.5.2
+groq>=0.4.1
+openai>=1.6.1
+tqdm>=4.66.1
