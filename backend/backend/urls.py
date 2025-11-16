@@ -22,5 +22,10 @@ urlpatterns = [
     path('api/auth/', include('users.urls')),
     path('api/projects/', include('projects.urls')),
     path('api/blockchain/', include('blockchain.urls')),
+    path('api/payments/', include('payments.urls')),
+    path('api/notifications/', include('notifications.urls')),
+    path('api/support/', include('support.urls')),
+    path('api/analytics/', include('analytics.urls')),
+    path('api/investments/', include('investments.urls')),
     path('accounts/', include('allauth.urls')),  # For allauth
 ]

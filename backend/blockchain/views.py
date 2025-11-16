@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.core.files.uploadedfile import InMemoryUploadedFile
 import uuid
 import logging
+import asyncio
 
 from .models import BlockchainProgressUpdate, BlockchainDocument
 from .serializers import BlockchainProgressUpdateSerializer, BlockchainDocumentSerializer

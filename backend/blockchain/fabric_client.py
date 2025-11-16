@@ -118,10 +118,15 @@ class FabricService:
             
             logger.info(f"Progress update stored on blockchain: {progress_id}")
             
+            # Extract transaction ID from response
+            response_data = response.get('data', {})
+            tx_id = response_data.get('txId') or response_data.get('transactionId') or response.get('txId') or response.get('transactionId')
+            
             return {
                 'success': True,
                 'progress_id': progress_id,
-                'data': response.get('data', {}),
+                'tx_id': tx_id,
+                'data': response_data,
                 'timestamp': datetime.utcnow().isoformat()
             }
             
@@ -182,10 +187,15 @@ class FabricService:
             
             logger.info(f"Document stored on blockchain: {document_id}")
             
+            # Extract transaction ID from response
+            response_data = response.get('data', {})
+            tx_id = response_data.get('txId') or response_data.get('transactionId') or response.get('txId') or response.get('transactionId')
+            
             return {
                 'success': True,
                 'document_id': document_id,
-                'data': response.get('data', {}),
+                'tx_id': tx_id,
+                'data': response_data,
                 'timestamp': datetime.utcnow().isoformat()
             }
             

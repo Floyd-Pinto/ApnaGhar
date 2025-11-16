@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     DeveloperViewSet, ProjectViewSet, PropertyViewSet,
-    MilestoneViewSet, ReviewViewSet, ConstructionUpdateViewSet
+    MilestoneViewSet, ReviewViewSet, ConstructionUpdateViewSet, BookingViewSet
 )
 from .user_views import UserPropertyViewSet, UserProjectViewSet
 
@@ -13,6 +13,7 @@ router.register(r'properties', PropertyViewSet, basename='property')
 router.register(r'milestones', MilestoneViewSet, basename='milestone')
 router.register(r'reviews', ReviewViewSet, basename='review')
 router.register(r'construction-updates', ConstructionUpdateViewSet, basename='construction-update')
+router.register(r'bookings', BookingViewSet, basename='booking')
 
 # User-specific endpoints
 router.register(r'user/properties', UserPropertyViewSet, basename='user-property')

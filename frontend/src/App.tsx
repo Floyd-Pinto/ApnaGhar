@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Homepage from "./pages/Homepage";
@@ -26,6 +27,11 @@ import RegisterPage from "./pages/Register";
 import OAuthCallback from "./pages/OAuthCallback";
 import NotFound from "./pages/NotFound";
 import AIChatbot from "./components/AIChatbot";
+import MyBookings from "./pages/MyBookings";
+import BookingDetail from "./pages/BookingDetail";
+import Notifications from "./pages/Notifications";
+import SupportTickets from "./pages/SupportTickets";
+import SupportTicketDetail from "./pages/SupportTicketDetail";
 
 const queryClient = new QueryClient();
 
@@ -105,6 +111,46 @@ const Layout = () => {
               </ProtectedRoute>
             } 
           />
+          <Route 
+            path="/bookings" 
+            element={
+              <ProtectedRoute>
+                <MyBookings />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/bookings/:id" 
+            element={
+              <ProtectedRoute>
+                <BookingDetail />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/notifications" 
+            element={
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/support" 
+            element={
+              <ProtectedRoute>
+                <SupportTickets />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/support/:id" 
+            element={
+              <ProtectedRoute>
+                <SupportTicketDetail />
+              </ProtectedRoute>
+            } 
+          />
           
           {/* 404 catch-all route */}
           <Route path="*" element={<NotFound />} />
@@ -118,19 +164,26 @@ const Layout = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <ThemeProvider>
-        <AuthProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <ThemeProvider>
+          <AuthProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
             <Layout />
           </BrowserRouter>
-        </AuthProvider>
-      </ThemeProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

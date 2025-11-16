@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePageView } from "@/hooks/useAnalytics";
 import { Link } from "react-router-dom";
 import {
   Card,
@@ -29,10 +30,15 @@ import {
   Loader2,
   MapPin,
   QrCode,
+  Calendar,
+  ArrowRight,
+  XCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import CreateProjectDialog from "@/components/CreateProjectDialog";
+import { bookingAPI, Booking } from "@/services/api";
+import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -95,9 +101,12 @@ interface Inquiry {
 export default function BuilderDashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  usePageView(); // Track page view
   const [projects, setProjects] = useState<Project[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [constructionUpdates, setConstructionUpdates] = useState<ConstructionUpdate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +158,14 @@ export default function BuilderDashboard() {
         if (projectsArray.length > 0) {
           await loadConstructionUpdates(projectsArray.map(p => p.id));
           
+          // Fetch bookings for builder's projects
+          try {
+            const bookingsData = await bookingAPI.getAll();
+            setBookings(Array.isArray(bookingsData) ? bookingsData : []);
+          } catch (error: any) {
+            setBookings([]);
+          }
+          
           setInquiries([
             {
               id: "1",
@@ -165,6 +182,7 @@ export default function BuilderDashboard() {
         } else {
           setInquiries([]);
           setConstructionUpdates([]);
+          setBookings([]);
         }
       }
     } catch (err: any) {
@@ -241,6 +259,12 @@ export default function BuilderDashboard() {
       value: `${conversionRate}%`,
       icon: TrendingUp,
       description: "Views to interest",
+    },
+    {
+      title: "Total Bookings",
+      value: loading ? "..." : bookings.length.toString(),
+      icon: Calendar,
+      description: "All bookings",
     },
   ];
 
@@ -468,6 +492,137 @@ export default function BuilderDashboard() {
                         </div>
                       </Card>
                     ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="bookings" className="mt-6">
+            <Card>
+              <CardHeader className="text-center space-y-2">
+                <CardTitle>Project Bookings</CardTitle>
+                <CardDescription>Manage all bookings for your projects</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {bookings.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No bookings yet</h3>
+                    <p className="text-muted-foreground mb-6">Bookings from buyers will appear here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bookings.map((booking) => {
+                      const getStatusBadge = (status: string) => {
+                        const statusConfig: { [key: string]: { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any } } = {
+                          pending: { label: "Pending", variant: "outline", icon: Clock },
+                          token_paid: { label: "Token Paid", variant: "secondary", icon: CheckCircle2 },
+                          confirmed: { label: "Confirmed", variant: "default", icon: CheckCircle2 },
+                          agreement_pending: { label: "Agreement Pending", variant: "outline", icon: FileText },
+                          agreement_signed: { label: "Agreement Signed", variant: "default", icon: FileText },
+                          payment_in_progress: { label: "Payment In Progress", variant: "secondary", icon: Clock },
+                          completed: { label: "Completed", variant: "default", icon: CheckCircle2 },
+                          cancelled: { label: "Cancelled", variant: "destructive", icon: XCircle },
+                          refund_pending: { label: "Refund Pending", variant: "outline", icon: Clock },
+                          refunded: { label: "Refunded", variant: "secondary", icon: XCircle },
+                        };
+                        const config = statusConfig[status] || { label: status, variant: "outline" as const, icon: Clock };
+                        const Icon = config.icon;
+                        return (
+                          <Badge variant={config.variant} className="flex items-center gap-1">
+                            <Icon className="h-3 w-3" />
+                            {config.label}
+                          </Badge>
+                        );
+                      };
+
+                      const formatPrice = (price: string) => {
+                        const num = parseFloat(price);
+                        if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
+                        if (num >= 100000) return `₹${(num / 100000).toFixed(2)} L`;
+                        return `₹${num.toLocaleString("en-IN")}`;
+                      };
+
+                      return (
+                        <Card key={booking.id} className="hover:shadow-md transition-shadow">
+                          <CardContent className="pt-6">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h3 className="font-semibold text-lg">{booking.project_name}</h3>
+                                  {getStatusBadge(booking.status)}
+                                </div>
+                                <p className="text-sm text-muted-foreground mb-1">
+                                  Unit {booking.property_unit_number} • {booking.property_type}
+                                </p>
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  Booking #{booking.booking_number}
+                                </p>
+                                <div className="flex items-center gap-4 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">Buyer: </span>
+                                    <span className="font-semibold">{booking.buyer_name}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Email: </span>
+                                    <span className="font-semibold">{booking.buyer_email}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 mb-4">
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Total Amount</p>
+                                <p className="font-semibold">{formatPrice(booking.total_amount)}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Amount Paid</p>
+                                <p className="font-semibold text-green-600">{formatPrice(booking.amount_paid)}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Amount Due</p>
+                                <p className="font-semibold text-red-600">{formatPrice(booking.amount_due)}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => navigate(`/bookings/${booking.id}`)}
+                              >
+                                View Details
+                                <ArrowRight className="h-4 w-4 ml-2" />
+                              </Button>
+                              {(booking.status === "pending" || booking.status === "token_paid") && (
+                                <Button
+                                  variant="default"
+                                  onClick={async () => {
+                                    try {
+                                      await bookingAPI.confirm(booking.id);
+                                      toast({
+                                        title: "Booking Confirmed",
+                                        description: "Booking has been confirmed successfully",
+                                      });
+                                      loadProjects();
+                                    } catch (error: any) {
+                                      toast({
+                                        title: "Confirmation Failed",
+                                        description: error.message || "Failed to confirm booking",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                                  Confirm
+                                </Button>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>

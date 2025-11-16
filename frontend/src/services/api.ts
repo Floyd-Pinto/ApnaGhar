@@ -310,3 +310,191 @@ export const apiRequest = async (url: string, options: RequestInit = {}) => {
 
   return response;
 };
+
+// Booking types
+export interface Booking {
+  id: string;
+  booking_number: string;
+  property: string;
+  property_details: {
+    id: string;
+    unit_number: string;
+    property_type: string;
+    floor_number: number | null;
+    tower: string | null;
+    carpet_area: string;
+    current_price: string;
+    current_status: string;
+  };
+  buyer: string;
+  buyer_name: string;
+  buyer_email: string;
+  status: string;
+  property_price: string;
+  token_amount: string;
+  total_amount: string;
+  amount_paid: string;
+  amount_due: string;
+  payment_schedule: any;
+  booking_date: string;
+  token_payment_date: string | null;
+  confirmation_date: string | null;
+  agreement_date: string | null;
+  expected_possession_date: string | null;
+  cancellation_date: string | null;
+  completion_date: string | null;
+  payment_method: string | null;
+  payment_reference: string | null;
+  payment_gateway: string | null;
+  agreement_document_url: string | null;
+  agreement_document_hash: string | null;
+  additional_documents: any[];
+  cancellation_reason: string | null;
+  cancellation_initiated_by: string | null;
+  refund_amount: string | null;
+  refund_status: string | null;
+  refund_reference: string | null;
+  terms_accepted: boolean;
+  terms_accepted_at: string | null;
+  cancellation_policy: string;
+  special_conditions: string;
+  notes: string;
+  metadata: any;
+  project_name: string;
+  project_id: string;
+  property_unit_number: string;
+  property_type: string;
+  property_price_current: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateBookingRequest {
+  property_id: string;
+  token_amount?: string | number;
+  payment_method?: string;
+  terms_accepted: boolean;
+  expected_possession_date?: string;
+  special_conditions?: string;
+  notes?: string;
+}
+
+// Booking API functions
+export const bookingAPI = {
+  // Create a booking
+  create: async (data: CreateBookingRequest): Promise<Booking> => {
+    const response = await apiRequest('api/projects/bookings/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.property?.[0] || error.detail || 'Failed to create booking');
+    }
+
+    return response.json();
+  },
+
+  // Get all bookings (filtered by user role)
+  getAll: async (params?: { status?: string; property_id?: string; project_id?: string }): Promise<Booking[]> => {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.property_id) queryParams.append('property_id', params.property_id);
+    if (params?.project_id) queryParams.append('project_id', params.project_id);
+    
+    const url = `api/projects/bookings/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await apiRequest(url);
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch bookings');
+    }
+
+    return response.json();
+  },
+
+  // Get a single booking
+  get: async (id: string): Promise<Booking> => {
+    const response = await apiRequest(`api/projects/bookings/${id}/`);
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch booking');
+    }
+
+    return response.json();
+  },
+
+  // Get my bookings
+  getMyBookings: async (): Promise<Booking[]> => {
+    const response = await apiRequest('api/projects/bookings/my_bookings/');
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch my bookings');
+    }
+
+    return response.json();
+  },
+
+  // Get active bookings
+  getActiveBookings: async (): Promise<Booking[]> => {
+    const response = await apiRequest('api/projects/bookings/active_bookings/');
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch active bookings');
+    }
+
+    return response.json();
+  },
+
+  // Confirm a booking (builder only)
+  confirm: async (id: string): Promise<{ message: string; booking: Booking }> => {
+    const response = await apiRequest(`api/projects/bookings/${id}/confirm/`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to confirm booking');
+    }
+
+    return response.json();
+  },
+
+  // Cancel a booking
+  cancel: async (id: string, cancellation_reason?: string): Promise<{ message: string; booking: Booking }> => {
+    const response = await apiRequest(`api/projects/bookings/${id}/cancel/`, {
+      method: 'POST',
+      body: JSON.stringify({ cancellation_reason }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to cancel booking');
+    }
+
+    return response.json();
+  },
+
+  // Update payment
+  updatePayment: async (
+    id: string,
+    data: {
+      amount_paid?: string | number;
+      payment_method?: string;
+      payment_reference?: string;
+      payment_gateway?: string;
+    }
+  ): Promise<{ message: string; booking: Booking }> => {
+    const response = await apiRequest(`api/projects/bookings/${id}/update_payment/`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update payment');
+    }
+
+    return response.json();
+  },
+};

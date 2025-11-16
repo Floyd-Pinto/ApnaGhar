@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTrackEvent } from "@/hooks/useAnalytics";
 import { useParams, Link } from "react-router-dom";
 import {
   Card,
@@ -153,6 +154,13 @@ export default function ProjectOverview() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Track project view
+  useTrackEvent('project_view', {
+    related_object_type: 'project',
+    related_object_id: id,
+  }, [id]);
+  
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -1114,6 +1122,12 @@ export default function ProjectOverview() {
                         src={image}
                         alt={`${project.name} ${idx + 1}`}
                         className="w-full h-24 object-cover rounded-lg"
+                        onError={(e) => {
+                          // Fallback to placeholder if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhYyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIE5vdCBGb3VuZDwvdGV4dD48L3N2Zz4=';
+                          target.onerror = null; // Prevent infinite loop
+                        }}
                       />
                     ))}
                   </div>

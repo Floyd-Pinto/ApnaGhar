@@ -5,11 +5,11 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticate
 from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Avg
-from .models import Developer, Project, Property, ConstructionMilestone, Review, ConstructionUpdate
+from .models import Developer, Project, Property, ConstructionMilestone, Review, ConstructionUpdate, Booking
 from .serializers import (
     DeveloperSerializer, ProjectListSerializer, ProjectDetailSerializer,
     ProjectCreateUpdateSerializer, PropertySerializer, MilestoneSerializer,
-    ReviewSerializer, ConstructionUpdateSerializer
+    ReviewSerializer, ConstructionUpdateSerializer, BookingSerializer, BookingCreateSerializer
 )
 from .permissions import IsOwnerOrBuilderOrReadOnly, IsBuilderOrReadOnly
 import cloudinary
@@ -1347,6 +1347,206 @@ class ConstructionUpdateViewSet(viewsets.ModelViewSet):
         
         # Apply ordering
         queryset = queryset.order_by('-update_date', '-created_at')
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class BookingViewSet(viewsets.ModelViewSet):
+    """ViewSet for Booking management"""
+    queryset = Booking.objects.select_related('property', 'property__project', 'buyer')
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['booking_number', 'property__unit_number', 'buyer__email']
+    ordering_fields = ['booking_date', 'status', 'total_amount']
+    ordering = ['-booking_date']
+    
+    def get_serializer_class(self):
+        """Use different serializers for create vs other actions"""
+        if self.action == 'create':
+            return BookingCreateSerializer
+        return BookingSerializer
+    
+    def get_queryset(self):
+        """Filter bookings based on user role and permissions"""
+        user = self.request.user
+        queryset = super().get_queryset()
+        
+        # Buyers can only see their own bookings
+        # Builders can see bookings for their projects
+        # Admins can see all bookings
+        
+        if hasattr(user, 'developer_profile'):
+            # Builder: Show bookings for their projects
+            developer = user.developer_profile
+            queryset = queryset.filter(property__project__developer=developer)
+        elif not user.is_staff:
+            # Regular user: Show only their own bookings
+            queryset = queryset.filter(buyer=user)
+        
+        # Filter by status if provided
+        status_filter = self.request.query_params.get('status', None)
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        # Filter by property_id if provided
+        property_id = self.request.query_params.get('property_id', None)
+        if property_id:
+            queryset = queryset.filter(property_id=property_id)
+        
+        # Filter by project_id if provided
+        project_id = self.request.query_params.get('project_id', None)
+        if project_id:
+            queryset = queryset.filter(property__project_id=project_id)
+        
+        return queryset
+    
+    def perform_create(self, serializer):
+        """Set buyer to current user when creating booking"""
+        serializer.save(buyer=self.request.user)
+    
+    @action(detail=True, methods=['post'])
+    def confirm(self, request, pk=None):
+        """Confirm a booking (builder action)"""
+        booking = self.get_object()
+        
+        # Check if user is the builder for this property
+        if not hasattr(request.user, 'developer_profile'):
+            raise PermissionDenied("Only builders can confirm bookings")
+        
+        developer = request.user.developer_profile
+        if booking.property.project.developer != developer:
+            raise PermissionDenied("You can only confirm bookings for your own projects")
+        
+        if booking.status not in ['pending', 'token_paid']:
+            return Response(
+                {'error': f'Cannot confirm booking with status: {booking.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        booking.status = 'confirmed'
+        if not booking.confirmation_date:
+            booking.confirmation_date = timezone.now()
+        booking.save()
+        
+        serializer = self.get_serializer(booking)
+        return Response({
+            'message': 'Booking confirmed successfully',
+            'booking': serializer.data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        """Cancel a booking"""
+        booking = self.get_object()
+        
+        # Check permissions: buyer can cancel their own, builder can cancel for their projects
+        if booking.buyer != request.user:
+            if not hasattr(request.user, 'developer_profile'):
+                raise PermissionDenied("You can only cancel your own bookings")
+            developer = request.user.developer_profile
+            if booking.property.project.developer != developer:
+                raise PermissionDenied("You can only cancel bookings for your own projects")
+        
+        if booking.status in ['cancelled', 'completed', 'refunded']:
+            return Response(
+                {'error': f'Cannot cancel booking with status: {booking.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        cancellation_reason = request.data.get('cancellation_reason', '')
+        cancellation_initiated_by = 'buyer' if booking.buyer == request.user else 'builder'
+        
+        booking.status = 'cancelled'
+        booking.cancellation_reason = cancellation_reason
+        booking.cancellation_initiated_by = cancellation_initiated_by
+        booking.cancellation_date = timezone.now()
+        
+        # Calculate refund amount (could be token amount or full amount based on policy)
+        # For now, default to token amount
+        booking.refund_amount = booking.token_amount
+        booking.refund_status = 'pending'
+        
+        booking.save()
+        
+        serializer = self.get_serializer(booking)
+        return Response({
+            'message': 'Booking cancelled successfully',
+            'booking': serializer.data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def update_payment(self, request, pk=None):
+        """Update payment information for a booking"""
+        booking = self.get_object()
+        
+        # Only builder or buyer can update payment
+        if booking.buyer != request.user:
+            if not hasattr(request.user, 'developer_profile'):
+                raise PermissionDenied("You can only update payment for your own bookings")
+            developer = request.user.developer_profile
+            if booking.property.project.developer != developer:
+                raise PermissionDenied("You can only update payment for bookings in your projects")
+        
+        amount_paid = request.data.get('amount_paid')
+        payment_method = request.data.get('payment_method')
+        payment_reference = request.data.get('payment_reference')
+        payment_gateway = request.data.get('payment_gateway')
+        
+        if amount_paid is not None:
+            try:
+                from decimal import Decimal
+                amount_paid = Decimal(str(amount_paid))
+                booking.amount_paid = amount_paid
+                booking.amount_due = booking.total_amount - amount_paid
+            except (ValueError, TypeError):
+                return Response(
+                    {'error': 'Invalid amount_paid value'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        if payment_method:
+            booking.payment_method = payment_method
+        if payment_reference:
+            booking.payment_reference = payment_reference
+        if payment_gateway:
+            booking.payment_gateway = payment_gateway
+        
+        # Update status based on payment progress
+        if booking.amount_paid >= booking.token_amount and booking.status == 'pending':
+            booking.status = 'token_paid'
+            booking.token_payment_date = timezone.now()
+        
+        if booking.amount_paid >= booking.total_amount and booking.status != 'completed':
+            booking.status = 'completed'
+            booking.completion_date = timezone.now()
+        elif booking.amount_paid > 0 and booking.status == 'confirmed':
+            booking.status = 'payment_in_progress'
+        
+        booking.save()
+        
+        serializer = self.get_serializer(booking)
+        return Response({
+            'message': 'Payment updated successfully',
+            'booking': serializer.data
+        })
+    
+    @action(detail=False, methods=['get'])
+    def my_bookings(self, request):
+        """Get current user's bookings"""
+        bookings = self.get_queryset().filter(buyer=request.user)
+        serializer = self.get_serializer(bookings, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def active_bookings(self, request):
+        """Get active bookings for current user or builder's projects"""
+        user = request.user
+        queryset = self.get_queryset()
+        
+        active_statuses = ['pending', 'token_paid', 'confirmed', 'agreement_pending', 
+                          'agreement_signed', 'payment_in_progress']
+        queryset = queryset.filter(status__in=active_statuses)
         
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
