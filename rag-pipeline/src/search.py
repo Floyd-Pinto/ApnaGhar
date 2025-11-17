@@ -121,12 +121,14 @@ class RAGSearch:
         
         if any(word in query_lower for word in ['compare', 'vs', 'versus', 'difference']):
             return 'comparison'
-        elif any(word in query_lower for word in ['developer', 'builder', 'company']):
+        elif any(word in query_lower for word in ['developer', 'builder', 'company', 'developers', 'builders']):
             return 'developer_info'
+        elif any(word in query_lower for word in ['construction', 'tracking', 'progress', 'milestone', 'phase']):
+            return 'default'  # Use default for better context extraction
         elif any(word in query_lower for word in ['project', 'complex', 'development']):
             return 'project_info'
         else:
-            return 'property_search'
+            return 'default'  # Changed from 'property_search' to 'default' for better general queries
     
     def generate_response(
         self, 

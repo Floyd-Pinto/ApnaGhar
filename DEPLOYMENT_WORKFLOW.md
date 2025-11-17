@@ -11,12 +11,14 @@
 ## Initial Setup (One-time per team member)
 
 ### 1. Clone Repository
+
 ```bash
 git clone https://github.com/Floyd-Pinto/ApnaGhar.git
 cd ApnaGhar
 ```
 
 ### 2. Install Python Dependencies
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -26,6 +28,7 @@ pip install flask flask-cors
 ```
 
 ### 3. Install ngrok
+
 ```bash
 # Linux (Arch/Manjaro)
 yay -S chaotic-aur/ngrok
@@ -42,6 +45,7 @@ brew install ngrok/ngrok/ngrok
 ```
 
 ### 4. Setup ngrok Account (Free)
+
 1. Sign up: https://dashboard.ngrok.com/signup
 2. Get authtoken: https://dashboard.ngrok.com/get-started/your-authtoken
 3. Add token:
@@ -52,6 +56,7 @@ brew install ngrok/ngrok/ngrok
 ### 5. Setup Environment Files
 
 **Backend** (`backend/.env`):
+
 ```env
 SECRET_KEY=your-secret-key
 DEBUG=False
@@ -64,6 +69,7 @@ BACKEND_URL=https://apnaghar-2emb.onrender.com
 ```
 
 **RAG Pipeline** (`rag-pipeline/.env`):
+
 ```env
 GROQ_API_KEY=gsk_your_groq_key
 RAG_DEBUG=true
@@ -91,6 +97,7 @@ git push origin main
 **Step 1: Start Local Services**
 
 Terminal 1 - RAG Service:
+
 ```bash
 cd /home/floydpinto/ApnaGhar
 source venv/bin/activate
@@ -98,6 +105,7 @@ python rag-service.py
 ```
 
 Terminal 2 - ngrok:
+
 ```bash
 ngrok http 8000
 ```
@@ -105,6 +113,7 @@ ngrok http 8000
 **Step 2: Copy ngrok URL**
 
 From ngrok terminal, copy the HTTPS URL:
+
 ```
 Forwarding  https://abc-123-xyz.ngrok-free.app -> http://localhost:8000
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -124,11 +133,13 @@ Forwarding  https://abc-123-xyz.ngrok-free.app -> http://localhost:8000
 **Step 4: Test**
 
 Local test:
+
 ```bash
 curl https://YOUR-NGROK-URL.ngrok-free.app/health
 ```
 
 Production test (after Render deploys):
+
 ```bash
 curl https://apnaghar-2emb.onrender.com/api/chatbot/health/
 ```
@@ -140,6 +151,7 @@ Open https://apnagharr.vercel.app/ and test the AI chatbot!
 **Step 6: After Demo**
 
 Stop both terminals (Ctrl+C in each):
+
 - Terminal 1: RAG service
 - Terminal 2: ngrok
 
@@ -148,11 +160,13 @@ Stop both terminals (Ctrl+C in each):
 ## Important Notes
 
 ### ngrok Free Tier Limitations
+
 - ⚠️ **URL changes every restart** - You'll get a new URL each time you run `ngrok http 8000`
 - ⏰ **2-hour session limit** - Free tier expires after 2 hours
 - 📝 **Update Render** - Must update `RAG_SERVICE_URL` in Render each time URL changes
 
 ### When AI Chatbot is NOT Running
+
 - Frontend and backend work normally
 - Chatbot shows fallback messages: "I'm your ApnaGhar AI assistant! The advanced AI is currently unavailable."
 - All other features (login, browse projects, bookings) work fine
@@ -160,6 +174,7 @@ Stop both terminals (Ctrl+C in each):
 ### Production Deployment Checklist
 
 Before presentation/demo:
+
 - [ ] Render backend is awake (visit https://apnaghar-2emb.onrender.com/api/projects/projects/)
 - [ ] RAG service running (`python rag-service.py`)
 - [ ] ngrok running (`ngrok http 8000`)
@@ -171,23 +186,99 @@ Before presentation/demo:
 ## Troubleshooting
 
 ### "502 Bad Gateway" on Render
+
 **Cause**: Render free tier sleeps after 15 min inactivity  
 **Fix**: Visit any API endpoint to wake it up (takes 30-50 seconds)
 
 ### Chatbot shows fallback responses
+
 **Cause**: RAG service not running or ngrok URL outdated  
-**Fix**: 
+**Fix**:
+
 1. Check `python rag-service.py` is running
 2. Check `ngrok http 8000` is running
 3. Verify `RAG_SERVICE_URL` in Render matches current ngrok URL
 
 ### ngrok "endpoint offline"
+
 **Cause**: RAG service not running on port 8000  
 **Fix**: Start `python rag-service.py` first, then ngrok
 
 ### CORS errors
+
 **Cause**: Backend is down or restarting  
 **Fix**: Wait for Render to fully wake up/deploy
+
+---
+
+## 🔄 Rebuilding RAG with Fresh Data
+
+When you add new projects, properties, or developers to the database, you need to rebuild the RAG index so the AI chatbot has the latest information.
+
+### When to Rebuild RAG:
+
+- After running seeders or adding bulk data
+- When builders add new projects/properties
+- When you want to improve chatbot responses with fresh data
+- After making changes to developer information
+
+### Rebuild Steps:
+
+```bash
+# Run the rebuild script (recommended - does everything automatically)
+cd /home/floydpinto/ApnaGhar
+source venv/bin/activate
+bash rebuild_rag.sh
+```
+
+The script will:
+
+- Export fresh data from Django database to CSV
+- Backup old FAISS index
+- Build new FAISS index with updated data
+- Test the new index with sample queries
+- Show you statistics and next steps
+
+**Alternative manual steps** (if rebuild_rag.sh has issues):
+
+```bash
+# 1. Export data from Django
+cd /home/floydpinto/ApnaGhar
+source venv/bin/activate
+cd backend && python manage.py export_for_rag
+
+# OR use direct export (backup method):
+cd /home/floydpinto/ApnaGhar
+python export_db_to_csv.py
+
+# 2. Build FAISS index
+cd rag-pipeline
+python app.py build
+
+# 3. Test the index
+python app.py info  # Show stats
+python app.py query "tell me about all builders"
+```
+
+### After Rebuilding:
+
+**⚠️ You MUST restart the RAG service** for it to load the new index:
+
+```bash
+# 1. Stop the running rag-service.py (Ctrl+C in its terminal)
+
+# 2. Restart it
+cd /home/floydpinto/ApnaGhar
+source venv/bin/activate
+python rag-service.py
+
+# 3. ngrok keeps running - no need to restart it!
+
+# 4. Test with a query to verify new data is loaded
+curl -X POST http://localhost:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "tell me about all builders"}'
+```
 
 ---
 
@@ -202,6 +293,9 @@ python rag-service.py
 
 # Start ngrok
 ngrok http 8000
+
+# Rebuild RAG with fresh database data
+bash rebuild_rag.sh
 
 # Test RAG locally
 curl http://localhost:8000/health
@@ -223,11 +317,13 @@ git push origin main
 ## Team Coordination
 
 ### Before Demo Day
+
 1. **Coordinator**: Start RAG service and ngrok at least 10 min before demo
 2. **Verify**: Test production chatbot works
 3. **Backup**: Have fallback plan if ngrok fails (chatbot still shows fallback messages gracefully)
 
 ### During Development
+
 - Push code changes normally - no need to run RAG for regular development
 - Only start RAG when specifically testing/demoing the AI chatbot feature
 - Communicate in team chat when updating Render environment variables

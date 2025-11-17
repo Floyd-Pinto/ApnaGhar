@@ -163,20 +163,36 @@ class RealEstateDataLoader:
     
     def developer_to_document(self, row: pd.Series) -> Document:
         """Convert a developer row to a LangChain Document"""
+        # Add rich keywords for better search matching
         content_parts = [
-            f"Developer ID: {row['id']}",
+            f"🏢 REAL ESTATE DEVELOPER / BUILDER PROFILE",
+            f"",
             f"Company Name: {row['company_name']}",
-            f"RERA Number: {row.get('rera_number', 'Not registered')}",
-            f"Verification Status: {'✓ Verified' if row.get('verified') else '✗ Not Verified'}",
-            f"Trust Score: {row.get('trust_score', 'N/A')}/5.0",
-            f"Established Year: {row.get('established_year', 'N/A')}",
-            f"Total Projects: {row.get('total_projects', 0)}",
-            f"Completed Projects: {row.get('completed_projects', 0)}",
-            f"Description: {row.get('description', 'No description available')}",
+            f"Builder ID: {row['id']}",
+            f"",
+            f"This is a real estate developer/builder company that constructs residential and commercial properties.",
+            f"",
+            f"📋 CREDENTIALS:",
+            f"RERA Registration Number: {row.get('rera_number', 'Not registered')}",
+            f"Verification Status: {'✓ VERIFIED DEVELOPER' if row.get('verified') else '✗ Not Verified'}",
+            f"Trust Score: {row.get('trust_score', 'N/A')}/5.0 ⭐",
+            f"Established Since: {row.get('established_year', 'N/A')}",
+            f"",
+            f"📊 PROJECT PORTFOLIO:",
+            f"Total Projects Built: {row.get('total_projects', 0)}",
+            f"Successfully Completed Projects: {row.get('completed_projects', 0)}",
+            f"",
+            f"ℹ️ ABOUT THE BUILDER:",
+            f"{row.get('description', 'No description available')}",
         ]
         
         if pd.notna(row.get('website')):
-            content_parts.append(f"Website: {row['website']}")
+            content_parts.append(f"")
+            content_parts.append(f"🌐 Website: {row['website']}")
+        
+        # Add searchable keywords
+        content_parts.append("")
+        content_parts.append(f"Keywords: builder, developer, real estate company, construction company, property developer, {row['company_name']}")
         
         page_content = '\n'.join(content_parts)
         
@@ -187,25 +203,41 @@ class RealEstateDataLoader:
             'verified': bool(row.get('verified', False)),
             'trust_score': float(row.get('trust_score', 0)) if pd.notna(row.get('trust_score')) else 0,
             'total_projects': int(row.get('total_projects', 0)) if pd.notna(row.get('total_projects')) else 0,
-            'rera_number': str(row.get('rera_number', ''))
+            'rera_number': str(row.get('rera_number', '')),
+            'text': page_content  # Include full text for LLM context
         }
         
         return Document(page_content=page_content, metadata=metadata)
     
     def milestone_to_document(self, row: pd.Series) -> Document:
         """Convert a construction milestone row to a LangChain Document"""
+        progress = row.get('progress_percentage', 0)
+        status = row.get('status', 'N/A').upper()
+        
+        # Add rich context for construction tracking queries
         content_parts = [
-            f"Milestone ID: {row.get('id', 'N/A')}",
+            f"🏗️ CONSTRUCTION MILESTONE / PROGRESS TRACKING",
+            f"",
             f"Project ID: {row.get('project_id', 'N/A')}",
-            f"Phase: {row.get('name', 'Unknown Phase')}",
-            f"Phase Number: {row.get('phase_number', 'N/A')}",
-            f"Status: {row.get('status', 'N/A').upper()}",
-            f"Description: {row.get('description', 'No description')}",
+            f"Construction Phase: {row.get('name', 'Unknown Phase')} (Phase #{row.get('phase_number', 'N/A')})",
+            f"",
+            f"📊 CURRENT STATUS:",
+            f"Status: {status}",
+            f"Progress: {progress}% Complete",
+            f"",
+            f"📅 TIMELINE:",
             f"Start Date: {row.get('start_date', 'N/A')}",
-            f"Target Date: {row.get('target_date', 'N/A')}",
-            f"Completion Date: {row.get('completion_date', 'Not completed')}",
-            f"Progress: {row.get('progress_percentage', 0)}%",
+            f"Target Completion: {row.get('target_date', 'N/A')}",
+            f"Actual Completion: {row.get('completion_date', 'Not completed yet')}",
+            f"",
+            f"📝 DETAILS:",
+            f"{row.get('description', 'No description')}",
+            f"",
+            f"This milestone tracks the construction progress and phase completion status.",
         ]
+        
+        # Add searchable keywords for construction tracking
+        content_parts.append(f"Keywords: construction tracking, construction progress, building phase, milestone, construction status, project progress, {status.lower()}")
         
         page_content = '\n'.join(content_parts)
         
@@ -215,7 +247,8 @@ class RealEstateDataLoader:
             'project_id': str(row.get('project_id', '')),
             'phase_number': int(row.get('phase_number', 0)) if pd.notna(row.get('phase_number')) else 0,
             'status': str(row.get('status', '')),
-            'progress': float(row.get('progress_percentage', 0)) if pd.notna(row.get('progress_percentage')) else 0
+            'progress': float(row.get('progress_percentage', 0)) if pd.notna(row.get('progress_percentage')) else 0,
+            'text': page_content  # Include full text for LLM context
         }
         
         return Document(page_content=page_content, metadata=metadata)

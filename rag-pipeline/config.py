@@ -59,6 +59,22 @@ LLM_MAX_TOKENS = 1024
 
 # Query Templates
 QUERY_TEMPLATES = {
+    'default': """You are a helpful real estate assistant for ApnaGhar platform. Use the information below to answer the user's question accurately.
+
+Context (from ApnaGhar database):
+{context}
+
+Question: {question}
+
+Instructions:
+- Extract ALL relevant details from the context above
+- If specific data like trust scores, prices, or dates are shown in context, include them in your answer
+- Do not say information is "not available" if it's present in the context
+- Organize your answer with clear formatting (bullet points, numbers, sections)
+- Be specific and detailed
+
+Answer:""",
+    
     'property_search': """Based on the following real estate data, answer the user's question about properties:
 
 Context:
@@ -88,18 +104,23 @@ Provide details about:
 
 Answer:""",
     
-    'developer_info': """Based on the following developer information, answer the user's question:
+    'developer_info': """You are a real estate assistant. Based on the developer/builder information below, provide a comprehensive answer.
 
-Context:
+Context (Real Estate Developers/Builders):
 {context}
 
 Question: {question}
 
-Include:
-1. Developer name and credentials
-2. Trust score and verification status
-3. Notable projects
-4. Contact information if available
+IMPORTANT: Extract and include ALL available information from the context above, including:
+1. Developer/Builder name and company details
+2. Trust score (out of 5.0) and verification status (Verified/Not Verified)
+3. RERA registration number
+4. Total projects and completed projects
+5. Established year
+6. Description and specialties
+7. Website if available
+
+Format the answer clearly with bullet points or numbered lists. If information is present in the context, include it. Do not say "not available" if the data is in the context above.
 
 Answer:""",
     
