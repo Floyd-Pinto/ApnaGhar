@@ -36,18 +36,4 @@ ipfshttpclient==0.8.0a2
 # Payment gateway dependencies
 razorpay==1.4.1
 
-# RAG Pipeline dependencies (for AI chatbot)
-# Let pip auto-resolve numpy version (langchain requires <2.0, pandas needs >=1.26)
-sentence-transformers==3.0.1
-faiss-cpu==1.9.0.post1
-pandas==2.2.3
-langchain==0.2.16
-langchain-community==0.2.16
-langchain-core==0.2.38
-langchain-groq==0.1.9
-langchain-openai==0.1.23
-langchain-text-splitters==0.2.4
-tiktoken==0.8.0
-groq==0.11.0
-openai==1.54.3
-tqdm==4.67.1
+# RAG Pipeline dependencies removed - chatbot runs locally via ngrok

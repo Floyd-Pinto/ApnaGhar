@@ -1,21 +1,25 @@
 """
-Chatbot API Views
+Chatbot API Views - Proxies requests to local RAG service via ngrok
 """
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from .rag_wrapper import rag_service
+import requests
+import os
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Local RAG service URL (set via environment variable)
+RAG_SERVICE_URL = os.getenv('RAG_SERVICE_URL', 'http://localhost:8000')
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])  # Allow unauthenticated users to ask questions
 def chatbot_query(request):
     """
-    Handle chatbot queries using RAG pipeline
+    Proxy chatbot queries to local RAG service via ngrok
     
     POST /api/chatbot/query/
     Body: {
@@ -33,23 +37,47 @@ def chatbot_query(request):
         )
     
     # Log query
-    logger.info(f"Chatbot query: {query_text}")
+    logger.info(f"Chatbot query forwarded to RAG service: {query_text}")
     
-    # Query RAG system
-    result = rag_service.query(
-        query_text=query_text,
-        top_k=5,
-        format_type=format_type
+    try:
+        # Forward to local RAG service
+        response = requests.post(
+            f"{RAG_SERVICE_URL}/query",
+            json={"query": query_text, "format": format_type},
+            timeout=30
+        )
+        response.raise_for_status()
+        return Response(response.json(), status=status.HTTP_200_OK)
+    except requests.exceptions.RequestException as e:
+        logger.error(f"RAG service error: {e}")
+        return Response({
+            'error': 'RAG service unavailable',
+            'answer': _get_fallback_response(query_text),
+            'rag_available': False
+        }, status=status.HTTP_200_OK)
+
+
+def _get_fallback_response(query: str) -> str:
+    """Fallback responses when RAG is unavailable"""
+    query_lower = query.lower()
+    
+    if any(word in query_lower for word in ['property', 'apartment', 'flat', 'bhk']):
+        return (
+            "I can help you find properties! However, my AI search is currently unavailable. "
+            "Please browse our verified properties on the Explore page."
+        )
+    
+    return (
+        "I'm your ApnaGhar AI assistant! The advanced AI is currently unavailable. "
+        "Please browse properties on the Explore page or contact support."
     )
-    
-    return Response(result, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def search_properties(request):
     """
-    Structured property search via RAG
+    Proxy structured property search to RAG service
     
     POST /api/chatbot/search-properties/
     Body: {
@@ -60,64 +88,45 @@ def search_properties(request):
         "status": "available"
     }
     """
-    bedrooms = request.data.get('bedrooms')
-    city = request.data.get('city')
-    max_price = request.data.get('max_price')
-    min_price = request.data.get('min_price')
-    status_filter = request.data.get('status', 'available')
-    
-    result = rag_service.search_properties(
-        bedrooms=bedrooms,
-        city=city,
-        max_price=max_price,
-        min_price=min_price,
-        status=status_filter
-    )
-    
-    return Response(result, status=status.HTTP_200_OK)
+    try:
+        response = requests.post(
+            f"{RAG_SERVICE_URL}/search",
+            json=request.data,
+            timeout=30
+        )
+        response.raise_for_status()
+        return Response(response.json(), status=status.HTTP_200_OK)
+    except requests.exceptions.RequestException as e:
+        logger.error(f"RAG service error: {e}")
+        return Response({
+            'error': 'RAG service unavailable',
+            'rag_available': False
+        }, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def chatbot_health(request):
     """
-    Check if RAG service is available
-    Auto-initializes on first call or when ?init=true is passed
+    Check if local RAG service (via ngrok) is available
     
     GET /api/chatbot/health/
-    GET /api/chatbot/health/?init=true  (force re-initialization)
     """
     try:
-        # Check if we should trigger initialization
-        should_init = request.GET.get('init', '').lower() == 'true'
-        
-        # Auto-initialize if not yet initialized OR if explicitly requested
-        if (not rag_service._initialized) or should_init:
-            # Trigger initialization in background (don't wait)
-            import threading
-            def init_worker():
-                logger.info("Background RAG initialization requested via API")
-                rag_service.initialize()
-            thread = threading.Thread(target=init_worker, daemon=True)
-            thread.start()
-            
-            return Response({
-                'rag_available': False,
-                'status': 'initializing',
-                'message': 'RAG initialization started in background. Check back in 30-60 seconds.'
-            }, status=status.HTTP_200_OK)
-        
-        is_available = rag_service.is_available()
-        
+        response = requests.get(f"{RAG_SERVICE_URL}/health", timeout=5)
+        response.raise_for_status()
+        data = response.json()
         return Response({
-            'rag_available': is_available,
-            'status': 'healthy' if is_available else 'degraded',
-            'message': 'RAG service is operational' if is_available else 'RAG service unavailable - using fallback responses'
+            'rag_available': data.get('status') == 'healthy',
+            'status': data.get('status', 'unknown'),
+            'message': data.get('message', 'RAG service is operational'),
+            'service_url': RAG_SERVICE_URL
         }, status=status.HTTP_200_OK)
-    except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"RAG service unavailable: {e}")
         return Response({
             'rag_available': False,
-            'status': 'error',
-            'message': f'Health check failed: {str(e)}'
+            'status': 'unavailable',
+            'message': 'RAG service is not reachable. Make sure local service is running and ngrok is active.',
+            'service_url': RAG_SERVICE_URL
         }, status=status.HTTP_200_OK)
