@@ -82,15 +82,17 @@ def search_properties(request):
 def chatbot_health(request):
     """
     Check if RAG service is available
+    Auto-initializes on first call or when ?init=true is passed
     
     GET /api/chatbot/health/
-    GET /api/chatbot/health/?init=true  (trigger initialization)
+    GET /api/chatbot/health/?init=true  (force re-initialization)
     """
     try:
         # Check if we should trigger initialization
         should_init = request.GET.get('init', '').lower() == 'true'
         
-        if should_init and not rag_service._initialized:
+        # Auto-initialize if not yet initialized OR if explicitly requested
+        if (not rag_service._initialized) or should_init:
             # Trigger initialization in background (don't wait)
             import threading
             def init_worker():

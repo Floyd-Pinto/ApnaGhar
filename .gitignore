@@ -46,9 +46,11 @@ logs/
 *.env
 .env.*
 
-# RAG Pipeline - Only exclude env and cache
+# RAG Pipeline - exclude env, cache, and data sources
+# BUT INCLUDE the built faiss_store for deployment
 rag-pipeline/.env
 rag-pipeline/__pycache__/
 rag-pipeline/**/__pycache__/
 rag-pipeline/.pytest_cache/
 rag-pipeline/notebooks/
+rag-pipeline/data/

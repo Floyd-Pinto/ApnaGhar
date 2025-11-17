@@ -21,12 +21,12 @@ except ImportError:
     GROQ_AVAILABLE = False
     print("[WARNING] Groq not available. Install with: pip install langchain-groq")
 
+# OpenAI is optional - Groq is preferred (free tier)
 try:
     from langchain_openai import ChatOpenAI
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
-    print("[WARNING] OpenAI not available. Install with: pip install langchain-openai")
 
 
 class RAGSearch:
@@ -50,24 +50,11 @@ class RAGSearch:
             print("[WARNING] FAISS index not found. Build it first using:")
             print("  python app.py build")
         
-        # Initialize LLM if available (try OpenAI first, then Groq)
+        # Initialize LLM if available (prefer Groq - it's free!)
         self.llm = None
         
-        # Try OpenAI first
-        if OPENAI_AVAILABLE and OPENAI_API_KEY:
-            try:
-                self.llm = ChatOpenAI(
-                    openai_api_key=OPENAI_API_KEY,
-                    model_name="gpt-3.5-turbo",  # or "gpt-4"
-                    temperature=LLM_TEMPERATURE,
-                    max_tokens=LLM_MAX_TOKENS
-                )
-                print(f"[INFO] OpenAI LLM initialized: gpt-3.5-turbo")
-            except Exception as e:
-                print(f"[WARNING] Failed to initialize OpenAI: {e}")
-        
-        # Fallback to Groq if OpenAI not available
-        elif GROQ_AVAILABLE:
+        # Try Groq first (free tier available)
+        if GROQ_AVAILABLE:
             api_key = groq_api_key or GROQ_API_KEY
             if api_key:
                 try:
@@ -77,13 +64,26 @@ class RAGSearch:
                         temperature=LLM_TEMPERATURE,
                         max_tokens=LLM_MAX_TOKENS
                     )
-                    print(f"[INFO] Groq LLM initialized: {llm_model}")
+                    print(f"[INFO] ✅ Groq LLM initialized: {llm_model}")
                 except Exception as e:
                     print(f"[WARNING] Failed to initialize Groq: {e}")
             else:
-                print("[WARNING] GROQ_API_KEY not set. LLM features disabled.")
+                print("[WARNING] GROQ_API_KEY not set. Get free key at: https://console.groq.com/")
+        
+        # Fallback to OpenAI if configured (paid service)
+        elif OPENAI_AVAILABLE and OPENAI_API_KEY:
+            try:
+                self.llm = ChatOpenAI(
+                    openai_api_key=OPENAI_API_KEY,
+                    model_name="gpt-3.5-turbo",
+                    temperature=LLM_TEMPERATURE,
+                    max_tokens=LLM_MAX_TOKENS
+                )
+                print(f"[INFO] OpenAI LLM initialized: gpt-3.5-turbo")
+            except Exception as e:
+                print(f"[WARNING] Failed to initialize OpenAI: {e}")
         else:
-            print("[INFO] Running without LLM. Set up OpenAI or Groq for enhanced responses.")
+            print("[INFO] Running without LLM. Set GROQ_API_KEY for enhanced responses.")
     
     def retrieve_context(
         self, 

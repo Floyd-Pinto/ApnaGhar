@@ -3,9 +3,13 @@ Configuration file for ApnaGhar RAG Pipeline
 """
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Base directories
 BASE_DIR = Path(__file__).parent
+
+# Load environment variables from .env file
+load_dotenv(BASE_DIR / '.env')
 DATA_DIR = BASE_DIR / "data"
 FAISS_STORE_DIR = BASE_DIR / "faiss_store"
 NOTEBOOKS_DIR = BASE_DIR / "notebooks"
