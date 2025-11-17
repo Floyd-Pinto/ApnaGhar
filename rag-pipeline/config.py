@@ -49,10 +49,11 @@ TOP_K_RESULTS = 5  # Number of similar documents to retrieve
 SIMILARITY_THRESHOLD = 0.7  # Minimum similarity score (0-1)
 
 # LLM Configuration
-LLM_MODEL = "gemma2-9b-it"  # Groq model
+LLM_MODEL = "llama-3.3-70b-versatile"  # Groq model (latest, fast, and accurate)
 # Alternative models:
-# "llama3-70b-8192"
+# "llama-3.1-70b-versatile"
 # "mixtral-8x7b-32768"
+# "gemma2-9b-it" (decommissioned)
 LLM_TEMPERATURE = 0.3  # Lower = more focused, Higher = more creative
 LLM_MAX_TOKENS = 1024
 
