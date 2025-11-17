@@ -84,8 +84,27 @@ def chatbot_health(request):
     Check if RAG service is available
     
     GET /api/chatbot/health/
+    GET /api/chatbot/health/?init=true  (trigger initialization)
     """
     try:
+        # Check if we should trigger initialization
+        should_init = request.GET.get('init', '').lower() == 'true'
+        
+        if should_init and not rag_service._initialized:
+            # Trigger initialization in background (don't wait)
+            import threading
+            def init_worker():
+                logger.info("Background RAG initialization requested via API")
+                rag_service.initialize()
+            thread = threading.Thread(target=init_worker, daemon=True)
+            thread.start()
+            
+            return Response({
+                'rag_available': False,
+                'status': 'initializing',
+                'message': 'RAG initialization started in background. Check back in 30-60 seconds.'
+            }, status=status.HTTP_200_OK)
+        
         is_available = rag_service.is_available()
         
         return Response({

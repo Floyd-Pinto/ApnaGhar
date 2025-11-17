@@ -58,13 +58,9 @@ class RAGService:
             return False
     
     def is_available(self) -> bool:
-        """Check if RAG service is available"""
-        if not self._initialized:
-            try:
-                self.initialize()
-            except Exception as e:
-                logger.error(f"Error checking RAG availability: {str(e)}")
-                return False
+        """Check if RAG service is available (non-blocking check)"""
+        # Don't try to initialize in request thread - too slow
+        # Just return current status
         return self._initialized
     
     def query(
