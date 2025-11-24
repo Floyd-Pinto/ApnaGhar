@@ -54,3 +54,4 @@ rag-pipeline/**/__pycache__/
 rag-pipeline/.pytest_cache/
 rag-pipeline/notebooks/
 rag-pipeline/data/
+blockchain/fabric-samples/
