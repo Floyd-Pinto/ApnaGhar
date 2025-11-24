@@ -15,7 +15,7 @@ import asyncio
 from .models import BlockchainProgressUpdate, BlockchainDocument
 from .serializers import BlockchainProgressUpdateSerializer, BlockchainDocumentSerializer
 from .ipfs_service import get_pinata_service
-from .fabric_client import get_fabric_service
+# from .fabric_client import get_fabric_service
 from projects.models import Project, Property
 from users.models import CustomUser
 
@@ -117,24 +117,20 @@ class BlockchainProgressUpdateViewSet(viewsets.ModelViewSet):
             
             # Store on blockchain
             try:
-                fabric_service = get_fabric_service()
-                # Run async function in sync context
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                blockchain_result = loop.run_until_complete(fabric_service.store_progress_update(
-                    progress_id=progress_id,
+                from .blockchain_service import get_blockchain_service
+                blockchain_service = get_blockchain_service()
+                blockchain_result = blockchain_service.store_progress_update_on_blockchain(
                     project_id=str(project.id),
-                    property_id=str(property_obj.id) if property_obj else '',
-                    milestone_id=milestone_id or '',
-                    ipfs_hash=ipfs_hash,
+                    property_id=str(property_obj.id) if property_obj else None,
+                    milestone_id=milestone_id,
                     description=description,
+                    cloudinary_urls=[], 
                     uploaded_by=str(request.user.id),
                     metadata=metadata
-                ))
-                loop.close()
-            except Exception as fabric_error:
-                logger.warning(f"Blockchain storage failed, but IPFS upload succeeded: {str(fabric_error)}")
-                blockchain_result = {'tx_id': None}
+                )
+            except Exception as e:
+                logger.warning(f"Blockchain storage failed: {str(e)}")
+                blockchain_result = {'success': False}
             
             # Create local record
             progress_update = BlockchainProgressUpdate.objects.create(
@@ -176,11 +172,10 @@ class BlockchainProgressUpdateViewSet(viewsets.ModelViewSet):
             progress_update = self.get_object()
             
             # Query from blockchain
-            fabric_service = get_fabric_service()
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            blockchain_data = loop.run_until_complete(fabric_service.get_progress_update(progress_update.progress_id))
-            loop.close()
+            # Fabric integration removed for fresh start
+            blockchain_data = {}
+            # fabric_service = get_fabric_service()
+            # ...
             
             return Response({
                 'local_data': {
@@ -296,24 +291,21 @@ class BlockchainDocumentViewSet(viewsets.ModelViewSet):
             
             # Store on blockchain
             try:
-                fabric_service = get_fabric_service()
-                # Run async function in sync context
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                blockchain_result = loop.run_until_complete(fabric_service.store_document(
-                    document_id=document_id,
+                from .blockchain_service import get_blockchain_service
+                blockchain_service = get_blockchain_service()
+                blockchain_result = blockchain_service.store_document_on_blockchain(
                     project_id=str(project.id),
-                    property_id=str(property_obj.id) if property_obj else '',
+                    property_id=str(property_obj.id) if property_obj else None,
                     document_name=document_name,
                     document_type=document_type,
-                    ipfs_hash=ipfs_hash,
+                    file_bytes=b'', # Skipped as we pass ipfs_hash
                     uploaded_by=str(request.user.id),
-                    metadata=metadata
-                ))
-                loop.close()
-            except Exception as fabric_error:
-                logger.warning(f"Blockchain storage failed, but IPFS upload succeeded: {str(fabric_error)}")
-                blockchain_result = {'tx_id': None}
+                    metadata=metadata,
+                    ipfs_hash=ipfs_hash
+                )
+            except Exception as e:
+                logger.warning(f"Blockchain storage failed: {str(e)}")
+                blockchain_result = {'success': False}
             
             # Create local record
             document = BlockchainDocument.objects.create(
@@ -355,11 +347,10 @@ class BlockchainDocumentViewSet(viewsets.ModelViewSet):
             document = self.get_object()
             
             # Query from blockchain
-            fabric_service = get_fabric_service()
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            blockchain_data = loop.run_until_complete(fabric_service.get_document(document.document_id))
-            loop.close()
+            # Fabric integration removed for fresh start
+            blockchain_data = {}
+            # fabric_service = get_fabric_service()
+            # ...
             
             return Response({
                 'local_data': {

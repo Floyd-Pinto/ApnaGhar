@@ -157,7 +157,7 @@ export default function BuilderDashboard() {
         // Fetch construction updates for all projects
         if (projectsArray.length > 0) {
           await loadConstructionUpdates(projectsArray.map(p => p.id));
-          
+
           // Fetch bookings for builder's projects
           try {
             const bookingsData = await bookingAPI.getAll();
@@ -165,18 +165,95 @@ export default function BuilderDashboard() {
           } catch (error: any) {
             setBookings([]);
           }
-          
+
           setInquiries([
             {
               id: "1",
               project_id: projectsArray[0]?.id || "",
               project_name: projectsArray[0]?.name || "Sample Project",
-              buyer_name: "John Doe",
-              buyer_email: "john@example.com",
+              buyer_name: "Rahul Sharma",
+              buyer_email: "rahul.sharma@example.com",
               buyer_phone: "+91 98765 43210",
-              message: "I'm interested in 3BHK units. Can you share more details?",
+              message: "I'm interested in 3BHK units. Can you share more details about the pricing and payment plans? Also, when is the expected possession date?",
               status: "new",
-              created_at: new Date().toISOString(),
+              created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+            },
+            {
+              id: "2",
+              project_id: projectsArray[0]?.id || "",
+              project_name: projectsArray[0]?.name || "Sample Project",
+              buyer_name: "Priya Patel",
+              buyer_email: "priya.patel@gmail.com",
+              buyer_phone: "+91 98765 43211",
+              message: "Looking for a 2BHK apartment on a higher floor with good ventilation. What are the available options?",
+              status: "new",
+              created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
+            },
+            {
+              id: "3",
+              project_id: projectsArray[1]?.id || projectsArray[0]?.id || "",
+              project_name: projectsArray[1]?.name || projectsArray[0]?.name || "Sample Project",
+              buyer_name: "Amit Kumar",
+              buyer_email: "amit.k@yahoo.com",
+              buyer_phone: "+91 98765 43212",
+              message: "I visited the site yesterday. Very impressed! Can we schedule a meeting to discuss the booking process?",
+              status: "responded",
+              created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+            },
+            {
+              id: "4",
+              project_id: projectsArray[0]?.id || "",
+              project_name: projectsArray[0]?.name || "Sample Project",
+              buyer_name: "Sneha Desai",
+              buyer_email: "sneha.desai@hotmail.com",
+              buyer_phone: "+91 98765 43213",
+              message: "Is home loan assistance available? Also, what are the amenities included in the project?",
+              status: "new",
+              created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), // 8 hours ago
+            },
+            {
+              id: "5",
+              project_id: projectsArray[1]?.id || projectsArray[0]?.id || "",
+              project_name: projectsArray[1]?.name || projectsArray[0]?.name || "Sample Project",
+              buyer_name: "Vikram Singh",
+              buyer_email: "vikram.singh@outlook.com",
+              buyer_phone: "+91 98765 43214",
+              message: "Interested in investing. Do you have any units available for immediate possession? What's the rental yield in this area?",
+              status: "new",
+              created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
+            },
+            {
+              id: "6",
+              project_id: projectsArray[0]?.id || "",
+              project_name: projectsArray[0]?.name || "Sample Project",
+              buyer_name: "Anjali Mehta",
+              buyer_email: "anjali.mehta@gmail.com",
+              buyer_phone: "+91 98765 43215",
+              message: "Can you share the floor plans and virtual tour? I'm currently based in Dubai and planning to invest in Mumbai.",
+              status: "responded",
+              created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+            },
+            {
+              id: "7",
+              project_id: projectsArray[1]?.id || projectsArray[0]?.id || "",
+              project_name: projectsArray[1]?.name || projectsArray[0]?.name || "Sample Project",
+              buyer_name: "Rajesh Gupta",
+              buyer_email: "rajesh.gupta@company.com",
+              buyer_phone: "+91 98765 43216",
+              message: "Looking for 4BHK penthouse. What are the customization options available? Also interested in knowing about the security features.",
+              status: "new",
+              created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
+            },
+            {
+              id: "8",
+              project_id: projectsArray[0]?.id || "",
+              project_name: projectsArray[0]?.name || "Sample Project",
+              buyer_name: "Kavita Reddy",
+              buyer_email: "kavita.reddy@email.com",
+              buyer_phone: "+91 98765 43217",
+              message: "Is parking included? How many parking spaces per unit? Also, what about the maintenance charges?",
+              status: "new",
+              created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
             },
           ]);
         } else {
@@ -430,7 +507,7 @@ export default function BuilderDashboard() {
                               />
                             </div>
                           )}
-                          
+
                           <div className="flex-1 p-4 sm:p-6">
                             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
                               <div className="flex-1 min-w-0">

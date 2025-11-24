@@ -1,9 +1,0 @@
-
-// Export contract for both traditional and CCAAS modes  
-// For CCAAS, fabric-contract-api automatically starts a server 
-// when CHAINCODE_SERVER_ADDRESS environment variable is set
-const apnagharContract = new ApnaGharContract();
-module.exports.ApnaGharContract = ApnaGharContract;
-module.exports.contracts = [apnagharContract];
-END
-cat index.js | tail -10
