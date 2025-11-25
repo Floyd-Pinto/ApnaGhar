@@ -1,0 +1,10 @@
+version: "2"
+authtoken: your_ngrok_authtoken_here
+
+tunnels:
+  backend:
+    proto: http
+    addr: 8000
+  frontend:
+    proto: http
+    addr: 8081
